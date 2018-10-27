@@ -29,6 +29,7 @@
 #include "RNAInteraction_relax.h"
 #include "TEPInteraction.h"
 #include "JordanInteraction.h"
+#include "GaussianChainInteraction.h"
 
 
 InteractionFactory::InteractionFactory() {
@@ -62,6 +63,7 @@ IBaseInteraction<number> *InteractionFactory::make_interaction(input_file &inp) 
 	else if(inter_type.compare("DNA_nomesh") == 0) return new DNAInteraction_nomesh<number>();
 	else if(inter_type.compare("DNA2_nomesh") == 0) return new DNA2Interaction_nomesh<number>();
 	else if(inter_type.compare("LJ") == 0) return new LJInteraction<number>();
+	else if(inter_type.compare("GC") == 0) return new GaussianChainInteraction<number>();
 	else if(inter_type.compare("DNA_relax") == 0) return new DNAInteraction_relax<number>();
 	else if(inter_type.compare("RNA") == 0) return new RNAInteraction<number>();
 	else if(inter_type.compare("patchy") == 0) return new PatchyInteraction<number>();
