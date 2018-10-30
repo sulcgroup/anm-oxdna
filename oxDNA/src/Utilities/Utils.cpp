@@ -63,6 +63,110 @@ char Utils::encode_base(int b) {
 	}
 }
 
+
+// Encode and Decode Amino Acid Added 10/30/2018
+int Utils::decode_aminoacid(char c) {
+	c = toupper(c);
+	switch(c) {
+	case 'A':
+		return A_A;
+	case 'G':
+		return A_G;
+	case 'I':
+		return A_I;
+	case 'L':
+		return A_L;
+	case 'P':
+		return A_P;
+	case 'V':
+		return A_V;
+	case 'F':
+		return A_F;
+	case 'W':
+		return A_W;
+	case 'Y':
+		return A_Y;
+	case 'D':
+		return A_D;
+	case 'E':
+		return A_E;
+	case 'R':
+		return A_R;
+	case 'H':
+		return A_H;
+	case 'K':
+		return A_K;
+	case 'S':
+		return A_S;
+	case 'T':
+		return A_T;
+	case 'C':
+		return A_C;
+	case 'M':
+		return A_M;
+	case 'N':
+		return A_N;
+	case 'Q':
+		return A_Q;
+	case 'X':
+		return A_DUMMY;
+	default:
+		return P_INVALID;
+	}
+}
+// TODO: What is it doing with these numbers!
+
+char Utils::encode_aminoacid(int b) {
+	switch(b) {
+	case A_A:
+		return 'A';
+	case A_G:
+		return 'G';
+	case A_I:
+		return 'I';
+	case A_L:
+		return 'L';
+	case A_P:
+		return 'P';
+	case A_V:
+		return 'V';
+	case A_F:
+		return 'F';
+	case A_W:
+		return 'W';
+	case A_Y:
+		return 'Y';
+	case A_D:
+		return 'D';
+	case A_E:
+		return 'E';
+	case A_R:
+		return 'R';
+	case A_H:
+		return 'H';
+	case A_K:
+		return 'K';
+	case A_S:
+		return 'S';
+	case A_T:
+		return 'T';
+	case A_C:
+		return 'C';
+	case A_M:
+		return 'M';
+	case A_N:
+		return 'N';
+	case A_Q:
+		return 'Q';
+	case A_DUMMY:
+		return 'X';
+	default:
+		return P_INVALID;
+	}
+}
+
+
+
 std::vector<std::string> Utils::split(const string &s, char delim) {
 	string s_copy(s);
 	if(delim == ' ') Utils::trim(s_copy);

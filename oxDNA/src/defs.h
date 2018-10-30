@@ -37,6 +37,29 @@
 #define N_T 3
 #define N_DUMMY 4
 
+//Amino Acids Added
+#define A_A 0
+#define A_G 1
+#define A_I 2
+#define A_L 3
+#define A_P 4
+#define A_V 5
+#define A_F 6
+#define A_W 7
+#define A_Y 8
+#define A_D 9
+#define A_E 10
+#define A_R 11
+#define A_H 12
+#define A_K 13
+#define A_S 14
+#define A_T 15
+#define A_C 16
+#define A_M 17
+#define A_N 18
+#define A_Q 19
+#define A_DUMMY 20
+
 #include <cmath>
 #include <strings.h>
 #include <iostream>

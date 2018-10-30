@@ -25,11 +25,11 @@
 #include "HardSpheroCylinderInteraction.h"
 #include "CustomInteraction.h"
 #include "DNA2Interaction.h"
+#include "GCInteraction.h"
 #include "RNAInteraction2.h"
 #include "RNAInteraction_relax.h"
 #include "TEPInteraction.h"
 #include "JordanInteraction.h"
-#include "GaussianChainInteraction.h"
 
 
 InteractionFactory::InteractionFactory() {

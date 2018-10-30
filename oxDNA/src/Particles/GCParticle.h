@@ -1,8 +1,8 @@
 /*
  * GCParticle.h
  *
- *  Created on: 17/mag/2013
- *      Author: lorenzo
+ *  Created on: 29/oct/2018
+ *      Author: jonah
  */
 
 #ifndef GCPARTICLE_H_

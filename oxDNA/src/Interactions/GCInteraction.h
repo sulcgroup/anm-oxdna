@@ -1,12 +1,12 @@
 /*
- * GaussianChainInteraction.h
+ * GCInteraction.h
  *
  *  Created on: 10/feb/2013
  *      Author: lorenzo
  */
 
-#ifndef GAUSSIAN_CHAIN_INTERACTION_H_
-#define GAUSSIAN_CHAIN_INTERACTION_H_
+#ifndef GC_INTERACTION_H_
+#define GC_INTERACTION_H_
 
 #include "BaseInteraction.h"
 
@@ -27,7 +27,7 @@ LJ_rcut = <float> (interaction cutoff)
 @endverbatim
  */
 template <typename number>
-class GaussianChainInteraction: public BaseInteraction<number, GaussianChainInteraction<number> > {
+class GCInteraction: public BaseInteraction<number, GCInteraction<number> > {
 protected:
 
 	/*
@@ -42,7 +42,7 @@ protected:
     */
 
 	number _k; //stiffness of the spring
-	number _r; //radius of the aminoacid
+	number _r; //radius of the amino acid
 
 	number _sigma, _rstar, _b, _rc, STRENGTH; //TODO initialize in init() !!!!
 
@@ -56,11 +56,20 @@ public:
 
 	};
 
-	GaussianChainInteraction();
-	virtual ~GaussianChainInteraction();
+	GCInteraction();
+	virtual ~GCInteraction();
 
 	virtual void get_settings(input_file &inp);
-	virtual void init();
+	/* TODO: Figure out these values */
+	virtual void init(){
+		_sigma = 1.0f;
+		_rstar= 1.0f;
+		_b = 1.0f;
+		_rc = 1.0f;
+		_r = 1.0f;
+		_k = 1.0f;
+		STRENGTH = 1.0f;
+	}
 
 	virtual void allocate_particles(BaseParticle<number> **particles, int N);
 	virtual void read_topology(int N, int *N_strands, BaseParticle<number> **particles);
@@ -76,7 +85,7 @@ public:
 };
 
 template<typename number>
-number GaussianChainInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+number GCInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
 	LR_verctor<number> force(0,0,0);
 
@@ -93,11 +102,11 @@ number GaussianChainInteraction<number>::_exc_volume(BaseParticle<number> *p, Ba
 
 
 template<typename number>
-number GaussianChainInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
 
 
-	number rnorm = r->norm();
+	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
 	number energy = 0.5 * _k * rnorm;
 
 	if (update_forces) {
@@ -143,6 +152,6 @@ number DNAInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vect
 
 
 
-
+// TODO: Delete This Bottom Line? It's commented out anyway??
 
 #endif /* LJINTERACTION_H_ */

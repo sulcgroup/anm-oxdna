@@ -1,17 +1,17 @@
 /*
- * GaussianChainInteraction.cpp
+ * GCInteraction.cpp
  *
  *  Created on: 10/feb/2018
  *      Author: jonah
  */
 
-#include "GaussianChainInteraction.h"
+#include "GCInteraction.h"
 #include <sstream>
 
 template<typename number>
-GaussianChainInteraction<number>::GaussianChainInteraction() : BaseInteraction<number, GaussianChainInteraction<number> >() {
-	this->_int_map[SPRING_POTENTIAL] = &GaussianChainInteraction<number>::_spring;
-	this->_int_map[EXC_VOL] = &GaussianChainInteraction<number>::_exc_vol;
+GCInteraction<number>::GCInteraction() : BaseInteraction<number, GCInteraction<number> >() {
+	this->_int_map[SPRING_POTENTIAL] = &GCInteraction<number>::_spring;
+	this->_int_map[EXC_VOL] = &GCInteraction<number>::_exc_vol;
 
 	_is_ka_mixture = false;
 	_sigma[0] = _sigma[1] = _sigma[2] = 1.;
@@ -23,12 +23,12 @@ GaussianChainInteraction<number>::GaussianChainInteraction() : BaseInteraction<n
 }
 
 template<typename number>
-GaussianChainInteraction<number>::~GaussianChainInteraction() {
+GCInteraction<number>::~GCInteraction() {
 
 }
 
 template<typename number>
-void GaussianChainInteraction<number>::get_settings(input_file &inp) {
+void GCInteraction<number>::get_settings(input_file &inp) {
 	IBaseInteraction<number>::get_settings(inp);
 
 	getInputInt(&inp, "LJ_n", _n, 0);
@@ -50,7 +50,7 @@ void GaussianChainInteraction<number>::get_settings(input_file &inp) {
 }
 
 template<typename number>
-void GaussianChainInteraction<number>::init() {
+void GCInteraction<number>::init() {
 	if(_is_ka_mixture) {
 		_sigma[1] = 0.8;
 		_sigma[2] = 0.88;
@@ -70,12 +70,12 @@ void GaussianChainInteraction<number>::init() {
 }
 
 template<typename number>
-void GaussianChainInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
+void GCInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
 	for(int i = 0; i < N; i++) particles[i] = new GCParticle<number>();
 }
 
 template<typename number>
-void GaussianChainInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<number> **particles) {
+void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<number> **particles) {
 	*N_strands = N;
 	allocate_particles(particles, N);
 	for (int i = 0; i < N; i ++) {
@@ -98,7 +98,7 @@ void GaussianChainInteraction<number>::read_topology(int N, int *N_strands, Base
 
 	sscanf(line, "%d %d\n", &my_N, &my_N_strands);
 
-	char base;
+	char aminoacid;
 	int strand, i = 0;
 	while (topology.good()) {
 		topology.getline(line, 2040);
@@ -113,7 +113,7 @@ void GaussianChainInteraction<number>::read_topology(int N, int *N_strands, Base
 
 		//int res = sscanf(line, "%d %s %d %d", &strand, base, &tmpn3, &tmpn5);
 		std::stringstream ss(line);
-		ss >> strand >> base >> tmpn3 >> tmpn5;
+		ss >> strand >> aminoacid >> tmpn3 >> tmpn5;
 		if(!ss.good())
 		{
 			throw oxDNAException(
@@ -132,7 +132,7 @@ void GaussianChainInteraction<number>::read_topology(int N, int *N_strands, Base
 									"Line %d of the topology file has an invalid syntax, neigbor has invalid id",
 									i + 2);
 			}
-			myneighs.push_back(x);
+			myneighs.insert(x);
 			ss >> x;
 		}
 
@@ -162,18 +162,18 @@ void GaussianChainInteraction<number>::read_topology(int N, int *N_strands, Base
 		p->strand_id = strand - 1;
 
 
-		//TODO CONVERT  BASE TO INTEGER, set it to type and base type
+		//TODO WHAT IS IT DOING WITH THE ATOI stuff????
 
 		// the base can be either a char or an integer
-		if (strlen(base) == 1) {
-			p->type = Utils::decode_base(base[0]);
-			p->btype = Utils::decode_base(base[0]);
+		if (strlen(aminoacid) == 1) {
+			p->type = Utils::decode_aminoacid(aminoacid[0]);
+			p->btype = Utils::decode_aminoacid(aminoacid[0]);
 		} else {
-			if (atoi(base) > 0)
-				p->type = atoi(base) % 4;
+			if (atoi(aminoacid) > 0)
+				p->type = atoi(aminoacid) % 4;
 			else
-				p->type = 3 - ((3 - atoi(base)) % 4);
-			p->btype = atoi(base);
+				p->type = 3 - ((3 - atoi(aminoacid)) % 4);
+			p->btype = atoi(aminoacid);
 		}
 
 		// until here replacem after here is fine
@@ -181,7 +181,7 @@ void GaussianChainInteraction<number>::read_topology(int N, int *N_strands, Base
 
 		if (p->type == P_INVALID)
 			throw oxDNAException(
-					"Particle #%d in strand #%d contains a non valid base '%c'. Aborting",
+					"Particle #%d in strand #%d contains a non valid aminoacid '%c'. Aborting",
 					i, strand, base);
 
 		p->index = i;
@@ -203,7 +203,7 @@ void GaussianChainInteraction<number>::read_topology(int N, int *N_strands, Base
 
 	if (my_N != N_from_conf)
 		throw oxDNAException(
-				"Number of lines in the configuration file and\nnumber of particles in the topology files don't match. Aborting");
+				"Number of lines in the configuration file and number of particles in the topology files don't match. Aborting");
 
 	*N_strands = my_N_strands;
 
@@ -249,7 +249,7 @@ void GaussianChainInteraction<number>::read_topology(int N, int *N_strands, Base
 }
 
 template<typename number>
-number GaussianChainInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+number GCInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 	number energy = pair_interaction_nonbonded(p, q, r, update_forces);
 	energy += pair_interaction_bonded(p, q, r, update_forces);
 
@@ -257,7 +257,7 @@ number GaussianChainInteraction<number>::pair_interaction(BaseParticle<number> *
 }
 
 template<typename number>
-number GaussianChainInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+number GCInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 	LR_vector<number> computed_r(0, 0, 0);
 		if(r == NULL) {
 			computed_r = this->_box->min_image(p->pos, q->pos);
@@ -268,7 +268,7 @@ number GaussianChainInteraction<number>::pair_interaction_bonded(BaseParticle<nu
 }
 
 template<typename number>
-number GaussianChainInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+number GCInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 	LR_vector<number> computed_r(0, 0, 0);
 	if(r == NULL) {
 		computed_r = this->_box->min_image(p->pos, q->pos);
@@ -279,9 +279,9 @@ number GaussianChainInteraction<number>::pair_interaction_nonbonded(BaseParticle
 }
 
 template<typename number>
-void GaussianChainInteraction<number>::check_input_sanity(BaseParticle<number> **particles, int N) {
+void GCInteraction<number>::check_input_sanity(BaseParticle<number> **particles, int N) {
 
 }
 
-template class GaussianChainInteraction<float>;
-template class GaussianChainInteraction<double>;
+template class GCInteraction<float>;
+template class GCInteraction<double>;
