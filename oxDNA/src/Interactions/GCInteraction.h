@@ -9,6 +9,8 @@
 #define GC_INTERACTION_H_
 
 #include "BaseInteraction.h"
+#include "../Particles/GCParticle.h"
+#include "DNAInteraction.h"
 
 /**
  * @brief Handles (generalised) Lennard-Jones interactions between spheres of size 1 or a Kob-Andersen interaction.
@@ -46,7 +48,7 @@ protected:
 
 	number _sigma, _rstar, _b, _rc, STRENGTH; //TODO initialize in init() !!!!
 
-	inline number _repulsive_LJ(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
+	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
 
 public:
@@ -61,15 +63,7 @@ public:
 
 	virtual void get_settings(input_file &inp);
 	/* TODO: Figure out these values */
-	virtual void init(){
-		_sigma = 1.0f;
-		_rstar= 1.0f;
-		_b = 1.0f;
-		_rc = 1.0f;
-		_r = 1.0f;
-		_k = 1.0f;
-		STRENGTH = 1.0f;
-	}
+	virtual void init();
 
 	virtual void allocate_particles(BaseParticle<number> **particles, int N);
 	virtual void read_topology(int N, int *N_strands, BaseParticle<number> **particles);
@@ -87,7 +81,7 @@ public:
 template<typename number>
 number GCInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
-	LR_verctor<number> force(0,0,0);
+	LR_vector<number> force(0,0,0);
 
 	number energy =  DNAInteraction<number>::_repulsive_lj(*r, force, this->_sigma, this->_rstar, this->_b, this->_rc,update_forces);
 
@@ -106,7 +100,7 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 
 
 
-	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
+	number rnorm = SQR(r->x) + SQR(r->y) + SQR(r->z);
 	number energy = 0.5 * _k * rnorm;
 
 	if (update_forces) {
@@ -119,38 +113,6 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 
 	return energy;
 }
-
-
-
-template<typename number>
-number DNAInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, number sigma, number rstar, number b, number rc, bool update_forces) {
-	// this is a bit faster than calling r.norm()
-	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
-	number energy = (number) 0;
-
-	if(rnorm < SQR(rc)) {
-		if(rnorm > SQR(rstar)) {
-			number rmod = sqrt(rnorm);
-			number rrc = rmod - rc;
-			energy = STRENGTH * b * SQR(rrc);
-			if(update_forces) force = -r * (2 * STRENGTH * b * rrc / rmod);
-		}
-		else {
-			number tmp = SQR(sigma) / rnorm;
-			number lj_part = tmp * tmp * tmp;
-			energy = 4 * STRENGTH * (SQR(lj_part) - lj_part);
-			if(update_forces) force = -r * (24 * STRENGTH * (lj_part - 2*SQR(lj_part)) / rnorm);
-		}
-	}
-
-	if(update_forces && energy == (number) 0) force.x = force.y = force.z = (number) 0;
-
-	return energy;
-}
-
-
-
-
 
 // TODO: Delete This Bottom Line? It's commented out anyway??
 

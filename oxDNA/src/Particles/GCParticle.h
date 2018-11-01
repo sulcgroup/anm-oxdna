@@ -25,9 +25,10 @@ public:
 	virtual bool is_rigid_body() { return false; }
 
 	virtual bool is_bonded(BaseParticle<number> *q);
-	virtual void add_bonded_neigh(GCParticle<number> *nn);
+	virtual void add_bonded_neighbor(GCParticle<number> *nn);
 
 	std::set<GCParticle<number> *> bonded_neighs;
 };
 
+// TODO: Can I delete this??
 #endif /* CUSTOMPARTICLE_H_ */

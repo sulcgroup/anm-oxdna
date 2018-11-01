@@ -18,7 +18,7 @@ GCParticle<number>::~GCParticle() {
 }
 
 template<typename number>
-void GCParticle<number>::add_bonded_neigh(GCParticle<number> *nn) {
+void GCParticle<number>::add_bonded_neighbor(GCParticle<number> *nn) {
 	if(!is_bonded(nn)) {
 		bonded_neighs.insert(nn);
 		nn->bonded_neighs.insert(this);

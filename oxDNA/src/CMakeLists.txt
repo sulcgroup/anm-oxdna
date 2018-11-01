@@ -91,7 +91,7 @@ SET(interactions_SOURCES
 	Interactions/TEPInteraction.cpp
 	Interactions/TSPInteraction.cpp
 	Interactions/LJInteraction.cpp
-	Interactions/GaussianChainInteraction.cpp
+	Interactions/GCInteraction.cpp
 	Interactions/HSInteraction.cpp
 	Interactions/DHSInteraction.cpp
 	Interactions/HardCylinderInteraction.cpp

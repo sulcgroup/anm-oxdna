@@ -98,6 +98,8 @@ protected:
 	 */
 	bool _check_bonded_neighbour(BaseParticle<number> **p, BaseParticle<number> **q, LR_vector<number> *r);
 
+	friend class GCInteraction;
+
 public:
 	enum {
 		BACKBONE = 0,

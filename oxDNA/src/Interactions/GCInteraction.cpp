@@ -11,14 +11,14 @@
 template<typename number>
 GCInteraction<number>::GCInteraction() : BaseInteraction<number, GCInteraction<number> >() {
 	this->_int_map[SPRING_POTENTIAL] = &GCInteraction<number>::_spring;
-	this->_int_map[EXC_VOL] = &GCInteraction<number>::_exc_vol;
+	this->_int_map[EXC_VOL] = &GCInteraction<number>::_exc_volume;
 
-	_is_ka_mixture = false;
-	_sigma[0] = _sigma[1] = _sigma[2] = 1.;
+	/*_is_ka_mixture = false;
+	_sigma[0] = _sigma[1] = _sigma[2] = 1.;    Compiler didn't have problem with this line
 	_epsilon[0] = _epsilon[1] = _epsilon[2] = 1.;
 	_n[0] = _n[1] = _n[2] = 6;
 	_N_A = _N_B = 0;
-
+	*/
 
 }
 
@@ -31,6 +31,7 @@ template<typename number>
 void GCInteraction<number>::get_settings(input_file &inp) {
 	IBaseInteraction<number>::get_settings(inp);
 
+	/*
 	getInputInt(&inp, "LJ_n", _n, 0);
 	_n[1] = _n[2] = _n[0];
 	// no odd exponents allowed
@@ -43,15 +44,24 @@ void GCInteraction<number>::get_settings(input_file &inp) {
 		_sigma[2] = sigma;
 		_sigma[1] = 0.5*(1. + _sigma[2]);
 	}
-
-	float rcut = 2.5f;
-	getInputFloat(&inp, "LJ_rcut", &rcut, 0);
+	*/
+	float rcut = 1.5f;
+	getInputFloat(&inp, "rcut", &rcut, 0);
 	this->_rcut = (number) rcut;
+
 }
 
 template<typename number>
 void GCInteraction<number>::init() {
-	if(_is_ka_mixture) {
+	_r = 0.75f;
+	_k = -1.0f;
+	_sigma = 0.75f;
+	_rstar= 0.9f;
+	_b = -2.4409f;
+	_rc = 1.50426f;
+	STRENGTH = 1.0f;
+
+	/*if(_is_ka_mixture) {
 		_sigma[1] = 0.8;
 		_sigma[2] = 0.88;
 		_epsilon[1] = 1.5;
@@ -66,7 +76,7 @@ void GCInteraction<number>::init() {
 	}
 
 	if(_sigma[2] > _sigma[0]) this->_rcut *= _sigma[2];
-	this->_sqr_rcut = SQR(this->_rcut);
+	this->_sqr_rcut = SQR(this->_rcut);*/
 }
 
 template<typename number>
@@ -98,7 +108,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 	sscanf(line, "%d %d\n", &my_N, &my_N_strands);
 
-	char aminoacid;
+	char aminoacid[2040];
 	int strand, i = 0;
 	while (topology.good()) {
 		topology.getline(line, 2040);
@@ -163,7 +173,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 
 		//TODO WHAT IS IT DOING WITH THE ATOI stuff????
-
+		//THIS is from DNAInteraction.cpp... How much of it do I really need?
 		// the base can be either a char or an integer
 		if (strlen(aminoacid) == 1) {
 			p->type = Utils::decode_aminoacid(aminoacid[0]);
@@ -182,7 +192,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		if (p->type == P_INVALID)
 			throw oxDNAException(
 					"Particle #%d in strand #%d contains a non valid aminoacid '%c'. Aborting",
-					i, strand, base);
+					i, strand, aminoacid);
 
 		p->index = i;
 		i++;
@@ -193,40 +203,19 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		if (p->n5 != P_VIRTUAL)
 			p->affected.push_back(ParticlePair<number>(p, p->n5));
 	}
-
-	if (i < N_from_conf)
+	// TODO: Is this the right N?
+	if (i < N)
 		throw oxDNAException(
 				"Not enough particles found in the topology file (should be %d). Aborting",
-				N_from_conf);
+				N);
 
 	topology.close();
 
-	if (my_N != N_from_conf)
+	if (my_N != N)
 		throw oxDNAException(
 				"Number of lines in the configuration file and number of particles in the topology files don't match. Aborting");
 
 	*N_strands = my_N_strands;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 	/*
