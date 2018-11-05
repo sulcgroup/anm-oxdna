@@ -10,7 +10,7 @@
 
 #include "BaseInteraction.h"
 #include "../Particles/GCParticle.h"
-#include "DNAInteraction.h"
+
 
 /**
  * @brief Handles (generalised) Lennard-Jones interactions between spheres of size 1 or a Kob-Andersen interaction.
@@ -50,6 +50,7 @@ protected:
 
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
+	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, number sigma, number rstar, number b, number rc, bool update_forces);
 
 public:
 	enum {
@@ -78,12 +79,40 @@ public:
 	virtual void check_input_sanity(BaseParticle<number> **particles, int N);
 };
 
+
+template<typename number>
+number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, number sigma, number rstar, number b, number rc, bool update_forces) {
+	// this is a bit faster than calling r.norm()
+	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
+	number energy = (number) 0;
+
+	if(rnorm < SQR(rc)) {
+		if(rnorm > SQR(rstar)) {
+			number rmod = sqrt(rnorm);
+			number rrc = rmod - rc;
+			energy = EXCL_EPS * b * SQR(rrc);
+			if(update_forces) force = -r * (2 * EXCL_EPS * b * rrc / rmod);
+		}
+		else {
+			number tmp = SQR(sigma) / rnorm;
+			number lj_part = tmp * tmp * tmp;
+			energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
+			if(update_forces) force = -r * (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part)) / rnorm);
+		}
+	}
+
+	if(update_forces && energy == (number) 0) force.x = force.y = force.z = (number) 0;
+
+	return energy;
+}
+
+
 template<typename number>
 number GCInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
 	LR_vector<number> force(0,0,0);
 
-	number energy =  DNAInteraction<number>::_repulsive_lj(*r, force, this->_sigma, this->_rstar, this->_b, this->_rc,update_forces);
+	number energy =  GCInteraction<number>::_repulsive_lj(*r, force, this->_sigma, this->_rstar, this->_b, this->_rc,update_forces);
 
 	if(update_forces)
 	{
@@ -113,6 +142,8 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 
 	return energy;
 }
+
+
 
 // TODO: Delete This Bottom Line? It's commented out anyway??
 

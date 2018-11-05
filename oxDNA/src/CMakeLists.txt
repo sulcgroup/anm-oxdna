@@ -162,6 +162,7 @@ SET(common_SOURCES
 	Particles/PatchyParticleDan.cpp
 	Particles/TSPParticle.cpp
 	Particles/SpheroCylinder.cpp
+	Particles/GCParticle.cpp
 	Particles/CustomParticle.cpp
 	Managers/SimManager.cpp
 	Utilities/OrderParameters.cpp
