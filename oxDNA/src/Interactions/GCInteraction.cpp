@@ -30,53 +30,18 @@ GCInteraction<number>::~GCInteraction() {
 template<typename number>
 void GCInteraction<number>::get_settings(input_file &inp) {
 	IBaseInteraction<number>::get_settings(inp);
-
-	/*
-	getInputInt(&inp, "LJ_n", _n, 0);
-	_n[1] = _n[2] = _n[0];
-	// no odd exponents allowed
-	if((_n[0] % 2) == 1) throw oxDNAException("LJ_n must be an even integer");
-
-	getInputBool(&inp, "LJ_kob_andersen", &_is_ka_mixture, 0);
-
-	double sigma;
-	if(getInputDouble(&inp, "LJ_sigma[2]", &sigma, 0) == KEY_FOUND) {
-		_sigma[2] = sigma;
-		_sigma[1] = 0.5*(1. + _sigma[2]);
-	}
-	*/
-	float rcut = 1.5f;
-	getInputFloat(&inp, "rcut", &rcut, 0);
-	this->_rcut = (number) rcut;
-
 }
 
 template<typename number>
 void GCInteraction<number>::init() {
-	_r = 0.75f;
-	_k = -1.0f;
-	_sigma = 0.75f;
-	_rstar= 0.9f;
-	_b = -2.4409f;
-	_rc = 1.50426f;
-	STRENGTH = 1.0f;
 
-	/*if(_is_ka_mixture) {
-		_sigma[1] = 0.8;
-		_sigma[2] = 0.88;
-		_epsilon[1] = 1.5;
-		_epsilon[2] = 0.5;
-	}
-
-	for(int i = 0; i < 3; i++) {
-		number rcut = this->_rcut * _sigma[i];
-		_sqr_LJ_rcut[i] = SQR(rcut);
-		_E_cut[i] = 4. * _epsilon[i] * (pow(_sigma[i]/rcut, (number)2*_n[i]) - pow(_sigma[i]/rcut, (number)_n[i]));
-		_sqr_sigma[i] = SQR(_sigma[i]);
-	}
-
-	if(_sigma[2] > _sigma[0]) this->_rcut *= _sigma[2];
-	this->_sqr_rcut = SQR(this->_rcut);*/
+//TODO: Figure out these values
+	_r = 0.07865696f;
+	_k = 1.0f;
+	_sigma = 0.06755f;
+	_rstar= 0.0787f;
+	_b = -155.35f;
+	_rcut = 0.1573f;
 }
 
 template<typename number>
@@ -217,7 +182,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 	*N_strands = my_N_strands;
 
-
+	//TODO:Delete?
 	/*
 	*N_strands = N;
 

@@ -1,7 +1,7 @@
 /*
  * GCInteraction.h
  *
- *  Created on: 10/feb/2013
+ *  Created on: 13/Nov/18
  *      Author: lorenzo
  */
 
@@ -13,40 +13,25 @@
 
 
 /**
- * @brief Handles (generalised) Lennard-Jones interactions between spheres of size 1 or a Kob-Andersen interaction.
+ * @brief Handles (generalised) Gaussian-Chain interactions between spheres of size .1573 simulation units
  *
- * TODO: the Kob-Andersen mixture should be better implemented.
  *
  * This interaction is selected with
- * interaction_type = LJ
+ * interaction_type = GC
  *
  * Input options:
  *
  * @verbatim
-LJ_rcut = <float> (interaction cutoff)
-[LJ_kob_andersen = <bool> (Simulate a Kob-Andersen mixture. Defaults to false.)]
-[LJ_n = <int> (Generalised LJ exponent. Defaults to 6, which is the classic LJ value.)]
-@endverbatim
+ * none
  */
 template <typename number>
 class GCInteraction: public BaseInteraction<number, GCInteraction<number> > {
 protected:
 
-	/*
-	number _E_cut[3];
-	bool _is_ka_mixture;
-	int _N_A, _N_B;
-	int _n[3];
-	number _sigma[3];
-	number _sqr_sigma[3];
-	number _epsilon[3];
-	number _sqr_LJ_rcut[3];
-    */
-
 	number _k; //stiffness of the spring
-	number _r; //radius of the amino acid
+	number _r; //radius of alpha carbon of amino acid
 
-	number _sigma, _rstar, _b, _rc, STRENGTH; //TODO initialize in init() !!!!
+	number _sigma, _rstar, _b, _rcut, STRENGTH;
 
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
@@ -63,7 +48,6 @@ public:
 	virtual ~GCInteraction();
 
 	virtual void get_settings(input_file &inp);
-	/* TODO: Figure out these values */
 	virtual void init();
 
 	virtual void allocate_particles(BaseParticle<number> **particles, int N);
@@ -112,7 +96,7 @@ number GCInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<
 
 	LR_vector<number> force(0,0,0);
 
-	number energy =  GCInteraction<number>::_repulsive_lj(*r, force, this->_sigma, this->_rstar, this->_b, this->_rc,update_forces);
+	number energy =  GCInteraction<number>::_repulsive_lj(*r, force, this->_sigma, this->_rstar, this->_b, this->_rcut,update_forces);
 
 	if(update_forces)
 	{

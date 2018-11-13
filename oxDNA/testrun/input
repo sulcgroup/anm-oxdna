@@ -25,7 +25,6 @@ dt = 0.005
 ##############################
 ####     INTERACTIONS     ####
 ##############################
-rcut = 1.5
 
 ##############################
 ####    INPUT / OUTPUT    ####
@@ -34,7 +33,7 @@ topology = top.top
 conf_file = last_conf.dat
 trajectory_file = trajectory.dat
 refresh_vel = 1
-#log_file = log.dat
+log_file = log.dat
 no_stdout_energy = 0
 restart_step_counter = 0
 energy_file = energy.dat
