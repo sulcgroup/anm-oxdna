@@ -37,7 +37,7 @@ void GCInteraction<number>::init() {
 
 //TODO: Figure out these values
 	_r = 0.07865696f;
-	_k = 0.1f;
+	_k = 0.75f;
 	_sigma = 0.06755f;
 	_rstar= 0.0787f;
 	_b = -155.35f;
@@ -84,11 +84,11 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 					"Too many particles found in the topology file (should be %d), aborting",
 					N);
 
-		int tmpn3, tmpn5;
+		int nside, cside;
 
 		//int res = sscanf(line, "%d %s %d %d", &strand, base, &tmpn3, &tmpn5);
 		std::stringstream ss(line);
-		ss >> strand >> aminoacid >> tmpn3 >> tmpn5;
+		ss >> strand >> aminoacid >> nside >> cside;
 		if(!ss.good())
 		{
 			throw oxDNAException(
@@ -104,7 +104,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 			if(x < 0 || x >= N)
 			{
 				throw oxDNAException(
-									"Line %d of the topology file has an invalid syntax, neigbor has invalid id",
+									"Line %d of the topology file has an invalid syntax, neighbor has invalid id",
 									i + 2);
 			}
 			myneighs.insert(x);
@@ -114,14 +114,14 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 		GCParticle<number> *p = dynamic_cast< GCParticle<number>  * > (particles[i]);
 
-		if (tmpn3 < 0)
+		if (nside < 0)
 			p->n3 = P_VIRTUAL;
 		else
-			p->n3 = particles[tmpn3];
-		if (tmpn5 < 0)
+			p->n3 = particles[nside];
+		if (cside < 0)
 			p->n5 = P_VIRTUAL;
 		else
-			p->n5 = particles[tmpn5];
+			p->n5 = particles[cside];
 
 		for(std::set<int>::iterator k = myneighs.begin(); k != myneighs.end(); ++k )
 		{
@@ -169,10 +169,10 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 			p->affected.push_back(ParticlePair<number>(p, p->n5));
 	}
 	// TODO: Is this the right N?
-	if (i < N)
+	if (i < my_N)
 		throw oxDNAException(
 				"Not enough particles found in the topology file (should be %d). Aborting",
-				N);
+				my_N);
 
 	topology.close();
 
@@ -182,24 +182,6 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 	*N_strands = my_N_strands;
 
-	//TODO:Delete?
-	/*
-	*N_strands = N;
-
-	std::ifstream topology(this->_topology_filename, ios::in);
-	if(!topology.good()) throw oxDNAException("Can't read topology file '%s'. Aborting", this->_topology_filename);
-	char line[512];
-	topology.getline(line, 512);
-	topology.close();
-	sscanf(line, "%*d %d\n", &_N_B);
-	_N_A = N - _N_B;
-
-	allocate_particles(particles, N);
-	for (int i = 0; i < N; i ++) {
-	   particles[i]->index = particles[i]->strand_id = i;
-	   particles[i]->type = particles[i]->btype = (i < _N_A) ? P_A : P_B;
-	}
-	*/
 }
 
 template<typename number>

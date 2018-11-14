@@ -6,25 +6,27 @@ backend_precision = double
 #debug = 1
 #seed = 1369909050
 interaction_type = GC
-salt_concentration = 1.
+#salt_concentration = 1.
 
 ##############################
 ####    SIM PARAMETERS    ####
 ##############################
-sim_type = MD
+sim_type = MC
 steps = 2e10
 newtonian_steps = 51 
 diff_coeff = 1.25
-#pt = 0.1
-thermostat = langevin
+ensemble = NVT
+delta_translation = .02
+delta_rotation =.04
 
 T = 25C
 verlet_skin = 0.05
-dt = 0.005
+dt = 0.05
 
 ##############################
 ####     INTERACTIONS     ####
 ##############################
+#rcut = 1.5
 
 ##############################
 ####    INPUT / OUTPUT    ####
@@ -32,8 +34,8 @@ dt = 0.005
 topology = top.top
 conf_file = last_conf.dat
 trajectory_file = trajectory.dat
-refresh_vel = 1
-log_file = log.dat
+refresh_vel = 0
+#log_file = log.dat
 no_stdout_energy = 0
 restart_step_counter = 0
 energy_file = energy.dat
