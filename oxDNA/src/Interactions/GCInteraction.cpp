@@ -6,20 +6,13 @@
  */
 
 #include "GCInteraction.h"
+#include "../Particles/GCParticle.h"
 #include <sstream>
 
 template<typename number>
 GCInteraction<number>::GCInteraction() : BaseInteraction<number, GCInteraction<number> >() {
 	this->_int_map[SPRING_POTENTIAL] = &GCInteraction<number>::_spring;
-	this->_int_map[EXC_VOL] = &GCInteraction<number>::_exc_volume;
-
-	/*_is_ka_mixture = false;
-	_sigma[0] = _sigma[1] = _sigma[2] = 1.;    Compiler didn't have problem with this line
-	_epsilon[0] = _epsilon[1] = _epsilon[2] = 1.;
-	_n[0] = _n[1] = _n[2] = 6;
-	_N_A = _N_B = 0;
-	*/
-
+	// this->_int_map[EXC_VOL] = &GCInteraction<number>::_exc_volume;
 }
 
 template<typename number>
@@ -205,13 +198,14 @@ number GCInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, B
 
 template<typename number>
 number GCInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-	LR_vector<number> computed_r(0, 0, 0);
+	/*LR_vector<number> computed_r(0, 0, 0);
 	if(r == NULL) {
 		computed_r = this->_box->min_image(p->pos, q->pos);
 		r = &computed_r;
 	}
 
-	return _exc_volume(p, q, r, update_forces);
+	return _exc_volume(p, q, r, update_forces);*/
+	return (number) 0.f;
 }
 
 template<typename number>

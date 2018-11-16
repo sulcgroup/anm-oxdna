@@ -9,8 +9,6 @@
 #define GC_INTERACTION_H_
 
 #include "BaseInteraction.h"
-#include "../Particles/GCParticle.h"
-
 
 /**
  * @brief Handles (generalised) Gaussian-Chain interactions between spheres of size .1573 simulation units
@@ -33,9 +31,9 @@ protected:
 
 	number _sigma, _rstar, _b, _rcut, STRENGTH;
 
-	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
+	//inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
-	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
+	//inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
 
 public:
 	enum {
@@ -63,7 +61,7 @@ public:
 	virtual void check_input_sanity(BaseParticle<number> **particles, int N);
 };
 
-
+/*
 template<typename number>
 number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
 	// this is a bit faster than calling r.norm()
@@ -89,8 +87,8 @@ number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 
 	return energy;
 }
-
-
+*/
+/*
 template<typename number>
 number GCInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
@@ -106,7 +104,7 @@ number GCInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<
 
 	return energy;
 }
-
+*/
 
 template<typename number>
 number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {

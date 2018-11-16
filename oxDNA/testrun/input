@@ -12,21 +12,19 @@ interaction_type = GC
 ####    SIM PARAMETERS    ####
 ##############################
 sim_type = MC
-steps = 2e10
-newtonian_steps = 51 
-diff_coeff = 1.25
+steps = 200000 
 ensemble = NVT
-delta_translation = .02
-delta_rotation =.04
 
+delta_translation = 0.1
+delta_rotation = 0.25
+check_energy_every = 10000
+check_energy_threshold = 1.e-4
 T = 25C
-verlet_skin = 0.05
-dt = 0.05
-
+verlet_skin = 0.20
 ##############################
 ####     INTERACTIONS     ####
 ##############################
-#rcut = 1.5
+
 
 ##############################
 ####    INPUT / OUTPUT    ####
@@ -34,13 +32,11 @@ dt = 0.05
 topology = top.top
 conf_file = last_conf.dat
 trajectory_file = trajectory.dat
-refresh_vel = 0
-#log_file = log.dat
+log_file = log.dat
 no_stdout_energy = 0
-restart_step_counter = 0
+restart_step_counter = 1
 energy_file = energy.dat
-print_conf_interval = 1000000
-print_conf_ppc = 51
-print_energy_every = 1e2 
+print_conf_interval = 100000
+print_energy_every = 100 
 time_scale = linear
 external_forces=0
