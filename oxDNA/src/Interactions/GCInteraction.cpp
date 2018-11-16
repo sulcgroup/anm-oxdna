@@ -130,7 +130,6 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		p->strand_id = strand - 1;
 
 
-		//TODO WHAT IS IT DOING WITH THE ATOI stuff????
 		//THIS is from DNAInteraction.cpp... How much of it do I really need?
 		// the base can be either a char or an integer
 		if (strlen(aminoacid) == 1) {
@@ -161,7 +160,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		if (p->n5 != P_VIRTUAL)
 			p->affected.push_back(ParticlePair<number>(p, p->n5));
 	}
-	// TODO: Is this the right N?
+
 	if (i < my_N)
 		throw oxDNAException(
 				"Not enough particles found in the topology file (should be %d). Aborting",
