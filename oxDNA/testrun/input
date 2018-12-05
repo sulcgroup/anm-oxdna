@@ -1,3 +1,4 @@
+
 ##############################
 ####  PROGRAM PARAMETERS  ####
 ##############################
@@ -11,14 +12,18 @@ interaction_type = GC
 ##############################
 ####    SIM PARAMETERS    ####
 ##############################
-sim_type = MC
-steps = 200000 
-ensemble = NVT
-
-delta_translation = 0.1
-delta_rotation = 0.25
-check_energy_every = 10000
-check_energy_threshold = 1.e-4
+sim_type = MD
+steps = 2000000 
+dt = 0.005
+#ensemble = NVT
+newtonian_steps=51
+diff_coeff=1.25
+thermostat=langevin
+#delta_translation = 0.1
+#delta_rotation = 0.25
+#check_energy_every = 10000
+#check_energy_threshold = 1.e-4
+refresh_vel=1
 T = 25C
 verlet_skin = 0.20
 ##############################
@@ -29,6 +34,7 @@ verlet_skin = 0.20
 ##############################
 ####    INPUT / OUTPUT    ####
 ##############################
+PARFILE = generated.par
 topology = top.top
 conf_file = last_conf.dat
 trajectory_file = trajectory.dat

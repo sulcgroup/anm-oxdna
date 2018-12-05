@@ -23,6 +23,36 @@ GCInteraction<number>::~GCInteraction() {
 template<typename number>
 void GCInteraction<number>::get_settings(input_file &inp) {
 	IBaseInteraction<number>::get_settings(inp);
+	char parameterfile[500];
+	getInputString(&inp, "PARFILE", parameterfile, 0);
+
+	//Addition of Reading Parameter File for GCInteraction Only!
+	int key1;
+	int key2;
+	pair <int, int> keys;
+	double dist;
+	string carbons;
+	fstream parameters;
+	parameters.open(parameterfile, ios::in);
+	if (parameters.is_open())
+	{
+		getline (parameters,carbons);
+		while (parameters.good())
+		{
+			parameters >> key1 >> key2 >> dist;
+			keys = make_pair<int,int> (key1,key2);
+			rknot[keys] = dist;
+		}
+		parameters.close();
+	}
+	else
+	{
+		throw oxDNAException("ParameterFile Could Not Be Opened");
+	}
+	//TODO: READ THE Parameters File I believe
+	//have Parameters File as option in input file
+
+	//I think I have done this correctly! let's hope!!
 }
 
 template<typename number>
@@ -30,7 +60,7 @@ void GCInteraction<number>::init() {
 
 //TODO: Figure out these values
 	_r = 0.07865696f;
-	_k = 0.75f;
+	_k = 0.1f;
 	_sigma = 0.06755f;
 	_rstar= 0.0787f;
 	_b = -155.35f;
@@ -173,6 +203,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 				"Number of lines in the configuration file and number of particles in the topology files don't match. Aborting");
 
 	*N_strands = my_N_strands;
+
 
 }
 

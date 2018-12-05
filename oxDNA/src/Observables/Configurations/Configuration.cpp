@@ -128,6 +128,7 @@ string Configuration<number>::_particle(BaseParticle<number> *p) {
 	conf << p->vel.x << " " << p->vel.y << " " << p->vel.z << " ";
 	conf << p->L.x << " " << p->L.y << " " << p->L.z;
 
+
 	return conf.str();
 }
 

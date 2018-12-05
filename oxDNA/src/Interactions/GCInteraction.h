@@ -26,14 +26,16 @@ template <typename number>
 class GCInteraction: public BaseInteraction<number, GCInteraction<number> > {
 protected:
 
+
 	number _k; //stiffness of the spring
 	number _r; //radius of alpha carbon of amino acid
-
+	map<pair<int, int>, double> rknot;
 	number _sigma, _rstar, _b, _rcut, STRENGTH;
 
-	//inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
+
+	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
-	//inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
+	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
 
 public:
 	enum {
@@ -61,7 +63,7 @@ public:
 	virtual void check_input_sanity(BaseParticle<number> **particles, int N);
 };
 
-/*
+
 template<typename number>
 number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
 	// this is a bit faster than calling r.norm()
@@ -87,8 +89,8 @@ number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 
 	return energy;
 }
-*/
-/*
+
+
 template<typename number>
 number GCInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
@@ -104,19 +106,39 @@ number GCInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<
 
 	return energy;
 }
-*/
+
+
 
 template<typename number>
 number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-
-
-
-	number rnorm = SQR(r->x) + SQR(r->y) + SQR(r->z);
-	number energy = 0.5 * _k * rnorm;
+	pair <int,int> keys;
+	number eqdist;
+	if (p->index != q->index)
+	{
+		if (p->index > q->index)
+		{
+			keys= std::make_pair<int,int> (p->index,q->index);
+			eqdist = rknot[keys];
+				if ((eqdist == 0) || (eqdist > 1))
+				{
+					throw oxDNAException("No rknot or invalid rknot value for particle %d and %d", p->index, q->index);
+				}
+		}
+		else {
+			keys=std::make_pair<int,int> (q->index,p->index);
+			eqdist = rknot[keys];
+		}
+	}
+	else {
+		eqdist = 0.;
+	}
+	number rnorm = r->norm();
+	number rinsta = sqrt(rnorm);
+	number energy = 0.5 * _k * SQR(rinsta-eqdist);
 
 	if (update_forces) {
 		LR_vector<number> force(*r) ;
-		force *= (-1.0f * _k);
+		force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
 
 		p->force -= force;
 		q->force += force;
