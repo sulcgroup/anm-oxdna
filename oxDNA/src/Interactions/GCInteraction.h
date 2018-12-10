@@ -29,7 +29,7 @@ protected:
 
 	number _k; //stiffness of the spring
 	number _r; //radius of alpha carbon of amino acid
-	map<pair<int, int>, double> rknot;
+	map<pair<int, int>, double> _rknot;
 	number _sigma, _rstar, _b, _rcut, STRENGTH;
 
 
@@ -117,34 +117,52 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 	{
 		if (p->index > q->index)
 		{
-			keys= std::make_pair<int,int> (p->index,q->index);
-			eqdist = rknot[keys];
-				if ((eqdist == 0) || (eqdist > 1))
-				{
-					throw oxDNAException("No rknot or invalid rknot value for particle %d and %d", p->index, q->index);
-				}
+			keys.first=q->index;
+			keys.second=p->index;
+			eqdist = _rknot[keys];
+			if ((eqdist == 0.0) || (eqdist > 1))
+			{
+				throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
+			}
+			number rnorm = r->norm();
+			number rinsta = sqrt(rnorm);
+			number energy = 0.5 * _k * SQR(rinsta-eqdist);
+
+			if (update_forces)
+			{
+			LR_vector<number> force(*r) ;
+			force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
+			p->force -= force;
+			q->force += force;
+			}
+			return energy;
 		}
 		else {
-			keys=std::make_pair<int,int> (q->index,p->index);
-			eqdist = rknot[keys];
+			keys.first=p->index;
+			keys.second=q->index;
+			eqdist = _rknot[keys];
+			if ((eqdist == 0.0) || (eqdist > 1))
+			{
+				throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", p->index, q->index, eqdist);
+			}
+			number rnorm = r->norm();
+			number rinsta = sqrt(rnorm);
+			number energy = 0.5 * _k * SQR(rinsta-eqdist);
+
+			if (update_forces)
+			{
+			LR_vector<number> force(*r) ;
+			force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
+			p->force -= force;
+			q->force += force;
+			}
+			return energy;
 		}
 	}
 	else {
-		eqdist = 0.;
-	}
-	number rnorm = r->norm();
-	number rinsta = sqrt(rnorm);
-	number energy = 0.5 * _k * SQR(rinsta-eqdist);
-
-	if (update_forces) {
-		LR_vector<number> force(*r) ;
-		force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
-
-		p->force -= force;
-		q->force += force;
+		return 0;
 	}
 
-	return energy;
 }
 
 

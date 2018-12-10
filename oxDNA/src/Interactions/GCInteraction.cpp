@@ -8,6 +8,8 @@
 #include "GCInteraction.h"
 #include "../Particles/GCParticle.h"
 #include <sstream>
+#include <fstream>
+
 
 template<typename number>
 GCInteraction<number>::GCInteraction() : BaseInteraction<number, GCInteraction<number> >() {
@@ -29,19 +31,24 @@ void GCInteraction<number>::get_settings(input_file &inp) {
 	//Addition of Reading Parameter File for GCInteraction Only!
 	int key1;
 	int key2;
-	pair <int, int> keys;
+	pair <int, int> lkeys;
 	double dist;
 	string carbons;
 	fstream parameters;
 	parameters.open(parameterfile, ios::in);
+	getline (parameters,carbons);
 	if (parameters.is_open())
 	{
-		getline (parameters,carbons);
 		while (parameters.good())
 		{
 			parameters >> key1 >> key2 >> dist;
-			keys = make_pair<int,int> (key1,key2);
-			rknot[keys] = dist;
+			lkeys.first=key1;
+			lkeys.second=key2;
+			_rknot[lkeys] = dist;
+			if(_rknot.empty())
+			{
+				throw oxDNAException("No rknot values loaded");
+			}
 		}
 		parameters.close();
 	}
@@ -52,7 +59,7 @@ void GCInteraction<number>::get_settings(input_file &inp) {
 	//TODO: READ THE Parameters File I believe
 	//have Parameters File as option in input file
 
-	//I think I have done this correctly! let's hope!!
+	//For some reason the dist keeps coming back as a random 6 or 7 digit long number
 }
 
 template<typename number>
@@ -60,7 +67,7 @@ void GCInteraction<number>::init() {
 
 //TODO: Figure out these values
 	_r = 0.07865696f;
-	_k = 0.1f;
+	_k = 0.3f;
 	_sigma = 0.06755f;
 	_rstar= 0.0787f;
 	_b = -155.35f;
