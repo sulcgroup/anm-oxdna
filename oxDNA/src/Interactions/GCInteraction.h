@@ -82,7 +82,7 @@ number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 			number rmod = sqrt(rnorm);
 			number lj_part = tmp * tmp * tmp;
 			energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
-			if(update_forces) force = -r/rmod * (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rmod);
+			if(update_forces) force = r/rmod * (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rmod);
 		}
 	}
 
