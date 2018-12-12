@@ -75,13 +75,14 @@ number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 			number rmod = sqrt(rnorm);
 			number rrc = rmod - _rcut;
 			energy = EXCL_EPS * _b * SQR(rrc);
-			if(update_forces) force = -r * (2 * EXCL_EPS * _b * rrc / rmod);
+			if(update_forces) force = r/rmod * (2 * EXCL_EPS * _b * rrc);
 		}
 		else {
 			number tmp = SQR(_sigma) / rnorm;
+			number rmod = sqrt(rnorm);
 			number lj_part = tmp * tmp * tmp;
 			energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
-			if(update_forces) force = -r * (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part)) / rnorm);
+			if(update_forces) force = -r/rmod * (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rmod);
 		}
 	}
 
@@ -119,48 +120,34 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 		{
 			keys.first=q->index;
 			keys.second=p->index;
-			eqdist = _rknot[keys];
-			if ((eqdist == 0.0) || (eqdist > 1))
-			{
-				throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
-			}
-			number rnorm = r->norm();
-			number rinsta = sqrt(rnorm);
-			number energy = 0.5 * _k * SQR(rinsta-eqdist);
-
-			if (update_forces)
-			{
-			LR_vector<number> force(*r) ;
-			force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
-			p->force -= force;
-			q->force += force;
-			}
-			return energy;
-		}
-		else {
+		} else {
 			keys.first=p->index;
 			keys.second=q->index;
-			eqdist = _rknot[keys];
-			if ((eqdist == 0.0) || (eqdist > 1))
-			{
-				throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", p->index, q->index, eqdist);
-			}
-			number rnorm = r->norm();
-			number rinsta = sqrt(rnorm);
-			number energy = 0.5 * _k * SQR(rinsta-eqdist);
-
-			if (update_forces)
-			{
-			LR_vector<number> force(*r) ;
-			force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
-			p->force -= force;
-			q->force += force;
-			}
-			return energy;
 		}
-	}
-	else {
-		return 0;
+
+		eqdist = _rknot[keys];
+		if ((eqdist == 0.0) || (eqdist > 1))
+		{
+			throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
+		}
+
+		number rnorm = r->norm();
+		number rinsta = sqrt(rnorm);
+		number energy = 0.5 * _k * SQR(rinsta-eqdist);
+
+		if (update_forces)
+		{
+		LR_vector<number> force(*r) ;
+		force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
+		p->force -= force;
+		q->force += force;
+		}
+		return energy;
+
+	} else {
+
+		return (number) 0.f;
+
 	}
 
 }

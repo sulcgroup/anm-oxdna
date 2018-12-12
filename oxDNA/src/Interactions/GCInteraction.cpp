@@ -14,7 +14,7 @@
 template<typename number>
 GCInteraction<number>::GCInteraction() : BaseInteraction<number, GCInteraction<number> >() {
 	this->_int_map[SPRING_POTENTIAL] = &GCInteraction<number>::_spring;
-	// this->_int_map[EXC_VOL] = &GCInteraction<number>::_exc_volume;
+	this->_int_map[EXC_VOL] = &GCInteraction<number>::_exc_volume;
 }
 
 template<typename number>
@@ -56,10 +56,6 @@ void GCInteraction<number>::get_settings(input_file &inp) {
 	{
 		throw oxDNAException("ParameterFile Could Not Be Opened");
 	}
-	//TODO: READ THE Parameters File I believe
-	//have Parameters File as option in input file
-
-	//For some reason the dist keeps coming back as a random 6 or 7 digit long number
 }
 
 template<typename number>
@@ -67,7 +63,7 @@ void GCInteraction<number>::init() {
 
 //TODO: Figure out these values
 	_r = 0.07865696f;
-	_k = 0.3f;
+	_k = 1.0f;
 	_sigma = 0.06755f;
 	_rstar= 0.0787f;
 	_b = -155.35f;
@@ -235,14 +231,13 @@ number GCInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, B
 
 template<typename number>
 number GCInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-	/*LR_vector<number> computed_r(0, 0, 0);
+	LR_vector<number> computed_r(0, 0, 0);
 	if(r == NULL) {
 		computed_r = this->_box->min_image(p->pos, q->pos);
 		r = &computed_r;
 	}
 
-	return _exc_volume(p, q, r, update_forces);*/
-	return (number) 0.f;
+	return _exc_volume(p, q, r, update_forces);
 }
 
 template<typename number>
