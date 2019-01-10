@@ -9,7 +9,7 @@
 #define GC_INTERACTION_H_
 
 #include "BaseInteraction.h"
-
+#include "../Particles/GCParticle.h"
 /**
  * @brief Handles (generalised) Gaussian-Chain interactions between spheres of size .1573 simulation units
  *
@@ -75,14 +75,14 @@ number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 			number rmod = sqrt(rnorm);
 			number rrc = rmod - _rcut;
 			energy = EXCL_EPS * _b * SQR(rrc);
-			if(update_forces) force = r/rmod * (2 * EXCL_EPS * _b * rrc);
+			if(update_forces) force = -r/rmod * (2 * EXCL_EPS * _b * rrc);
 		}
 		else {
 			number tmp = SQR(_sigma) / rnorm;
 			number rmod = sqrt(rnorm);
 			number lj_part = tmp * tmp * tmp;
 			energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
-			if(update_forces) force = r/rmod * (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rmod);
+			if(update_forces) force = -r/rmod * (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rmod);
 		}
 	}
 
@@ -94,18 +94,21 @@ number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 
 template<typename number>
 number GCInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+	if (p->index != q->index){
+		LR_vector<number> force(0,0,0);
 
-	LR_vector<number> force(0,0,0);
+		number energy =  GCInteraction<number>::_repulsive_lj(*r, force, update_forces);
 
-	number energy =  GCInteraction<number>::_repulsive_lj(*r, force, update_forces);
+		if(update_forces)
+		{
+			p->force -= force;
+			q->force += force;
+		}
 
-	if(update_forces)
-	{
-		p->force -= force;
-		q->force += force;
+		return energy;
+	} else {
+		return (number) 0.f;
 	}
-
-	return energy;
 }
 
 
@@ -114,6 +117,7 @@ template<typename number>
 number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 	pair <int,int> keys;
 	number eqdist;
+
 	if (p->index != q->index)
 	{
 		if (p->index > q->index)
@@ -126,30 +130,30 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 		}
 
 		eqdist = _rknot[keys];
-		if ((eqdist == 0.0) || (eqdist > 1))
+		if (eqdist != 0.0) //Added so that non-bonded aas wouldn't return a spring energy
 		{
-			throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
+			if ((eqdist < 0.0) || (eqdist > 0.8217))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
+			{
+				throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
+			}
+			number rnorm = r->norm();
+			number rinsta = sqrt(rnorm);
+			number energy = 0.5 * _k * SQR(rinsta-eqdist);
+
+			if (update_forces)
+			{
+			LR_vector<number> force(*r) ;
+			force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
+			p->force -= force;
+			q->force += force;
+			}
+			return energy;
+		} else {
+			return (number) 0.f; //returns 0 if no rknot value in parameter value aka they aren't bonded
 		}
-
-		number rnorm = r->norm();
-		number rinsta = sqrt(rnorm);
-		number energy = 0.5 * _k * SQR(rinsta-eqdist);
-
-		if (update_forces)
-		{
-		LR_vector<number> force(*r) ;
-		force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
-		p->force -= force;
-		q->force += force;
-		}
-		return energy;
-
 	} else {
-
-		return (number) 0.f;
-
+		return (number) 0.f; //returns 0 if particle pair is a particle and itself
 	}
-
 }
 
 

@@ -61,12 +61,12 @@ void GCInteraction<number>::get_settings(input_file &inp) {
 template<typename number>
 void GCInteraction<number>::init() {
 
+
 //TODO: Figure out these values
-	_r = 0.07865696f;
-	_k = 1.0f;
+	_k = 4.0f;
 	_sigma = 0.06755f;
 	_rstar= 0.0787f;
-	_b = -155.35f;
+	_b = 155.35f;
 	_rcut = 0.1573f;
 }
 
