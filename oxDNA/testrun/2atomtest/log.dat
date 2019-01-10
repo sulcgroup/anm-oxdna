@@ -1,0 +1,38 @@
+INFO: seeding the RNG with 379909493
+INFO: Initializing backend 
+INFO: Backend precision: double
+INFO: Simulation type: MD
+INFO: pid: 23572
+INFO: (Cells.cpp) N_cells_side: 3, 3, 3; rcut=2.9, IS_MC: 0
+INFO: N: 2
+INFO: Using randomly distributed velocities
+INFO: Initial kinetic energy: 0.050748
+INFO: Langevin thermostat parameters: gamma, gamma_rot, diff, diff_rot: 0.008 0.00266667 1.25 3.75
+INFO: SVN CODE VERSION: Unversioned directory
+INFO: COMPILED ON: 08/01/19
+INFO: diffusion fixed.. 0.00423377 0.00423377
+INFO: diffusion fixed.. 0.0285637 0.0285637
+INFO: diffusion fixed.. 0.00218643 0.00218643
+INFO: diffusion fixed.. 0.0363262 0.0363262
+INFO: diffusion fixed.. 0.00326844 0.00326844
+INFO: diffusion fixed.. 0.000460218 0.000460218
+INFO: diffusion fixed.. 0.00457322 0.00457322
+INFO: diffusion fixed.. 0.0157524 0.0157524
+INFO: diffusion fixed.. 0.026352 0.026352
+INFO: diffusion fixed.. 0.0210303 0.0210303
+
+INFO: Total Running Time: 3.89627 s, per step: 0.00389627 ms
+INFO: Timings, in seconds, by Timer (total, own, spent in children)
+> SimBackend                          3.896 (100.0%)        1.935 ( 49.7%)        1.961 ( 50.3%)
+***> Lists                            0.383 (  9.8%)        0.383 (  9.8%)        0.000 (  0.0%)
+***> Thermostat                       0.646 ( 16.6%)        0.646 ( 16.6%)        0.000 (  0.0%)
+***> Forces                           0.487 ( 12.5%)        0.487 ( 12.5%)        0.000 (  0.0%)
+***> First Step                       0.444 ( 11.4%)        0.444 ( 11.4%)        0.000 (  0.0%)
+
+INFO: END OF THE SIMULATION, everything went OK!
+INFO: Lists updated 5192 times (every ~192.604006 steps)
+INFO: Aggregated I/O statistics (set debug=1 for file-wise information)
+	  9.858 MB written to files
+	605.529 KB written to stdout/stderr
+	For a total of     2.68 MB/s
+
