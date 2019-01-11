@@ -64,10 +64,10 @@ void GCInteraction<number>::init() {
 
 //TODO: Figure out these values
 	_k = 4.0f;
-	_sigma = 0.06755f;
-	_rstar= 0.0787f;
-	_b = 155.35f;
-	_rcut = 0.1573f;
+	_sigma = 0.0786f;
+	_rstar= 0.0746f;
+	_b = 72471.9f;
+	_rcut = 0.0798717f;
 }
 
 template<typename number>
@@ -238,6 +238,7 @@ number GCInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 	}
 
 	return _exc_volume(p, q, r, update_forces);
+	//return 0.0f;
 }
 
 template<typename number>

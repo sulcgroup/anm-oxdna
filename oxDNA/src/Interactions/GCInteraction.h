@@ -75,6 +75,7 @@ number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 			number rmod = sqrt(rnorm);
 			number rrc = rmod - _rcut;
 			energy = EXCL_EPS * _b * SQR(rrc);
+			if (energy > 10.0) energy = 10.0;
 			if(update_forces) force = -r/rmod * (2 * EXCL_EPS * _b * rrc);
 		}
 		else {
