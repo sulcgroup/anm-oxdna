@@ -26,11 +26,10 @@ template <typename number>
 class GCInteraction: public BaseInteraction<number, GCInteraction<number> > {
 protected:
 
-
-	number _k; //stiffness of the spring
 	number _r; //radius of alpha carbon of amino acid
-	map<pair<int, int>, double> _rknot;
-	number _sigma, _rstar, _b, _rcut, STRENGTH;
+	map<pair<int, int>, double> _rknot; //eqdist of each bond of psuedobond
+	map<pair<int, int>, pair<char, double> > _potential; //switch to tell lj or spring as well as strength for each pair of particles
+	number _sigma, _rstar, _b, _rcut;
 
 
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
@@ -118,7 +117,7 @@ template<typename number>
 number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 	pair <int,int> keys;
 	number eqdist;
-
+	char interactiontype;
 	if (p->index != q->index)
 	{
 		if (p->index > q->index)
@@ -129,28 +128,42 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 			keys.first=p->index;
 			keys.second=q->index;
 		}
-
 		eqdist = _rknot[keys];
-		if (eqdist != 0.0) //Added so that non-bonded aas wouldn't return a spring energy
-		{
-			if ((eqdist < 0.0) || (eqdist > 0.8217))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
-			{
-				throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
-			}
-			number rnorm = r->norm();
-			number rinsta = sqrt(rnorm);
-			number energy = 0.5 * _k * SQR(rinsta-eqdist);
+		interactiontype = _potential[keys].first;
+		// interaction is
+		switch (interactiontype){
+			case 's':
+				if (eqdist != 0.0) //Added so that non-bonded aas wouldn't return a spring energy
+				{
+					if ((eqdist < 0.0) || (eqdist > 0.8217))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
+					{
+						throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
+					}
+					number _k = _potential[keys].second; //stiffness of the spring
+					if ((_k == 0) || (_k < 0)){
+						throw oxDNAException("No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f", p->index, q->index, _k);
+					}
+					number rnorm = r->norm();
+					number rinsta = sqrt(rnorm);
+					number energy = 0.5 * _k * SQR(rinsta-eqdist);
 
-			if (update_forces)
-			{
-			LR_vector<number> force(*r) ;
-			force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
-			p->force -= force;
-			q->force += force;
-			}
-			return energy;
-		} else {
-			return (number) 0.f; //returns 0 if no rknot value in parameter value aka they aren't bonded
+					if (update_forces)
+					{
+					LR_vector<number> force(*r) ;
+					force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
+					p->force -= force;
+					q->force += force;
+					}
+					return energy;
+				} else {
+					return (number) 0.f; //returns 0 if no rknot value in parameter value aka they aren't bonded
+				}
+				break;
+			case 'l':
+				return (number) 0.f;
+				break;
+			default:
+				throw oxDNAException("Interaction type specified in .par file is Invalid");
 		}
 	} else {
 		return (number) 0.f; //returns 0 if particle pair is a particle and itself

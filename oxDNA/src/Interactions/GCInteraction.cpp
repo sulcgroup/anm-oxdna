@@ -31,7 +31,10 @@ void GCInteraction<number>::get_settings(input_file &inp) {
 	//Addition of Reading Parameter File for GCInteraction Only!
 	int key1;
 	int key2;
+	char potswitch;
+	double potential;
 	pair <int, int> lkeys;
+	pair <char, double> pot;
 	double dist;
 	string carbons;
 	fstream parameters;
@@ -41,16 +44,15 @@ void GCInteraction<number>::get_settings(input_file &inp) {
 	{
 		while (parameters.good())
 		{
-			parameters >> key1 >> key2 >> dist;
+			parameters >> key1 >> key2 >> dist >> potswitch >> potential;
 			lkeys.first=key1;
 			lkeys.second=key2;
+			pot.first=potswitch;
+			pot.second=potential;
 			_rknot[lkeys] = dist;
-			if(_rknot.empty())
-			{
-				throw oxDNAException("No rknot values loaded");
-			}
+			_potential[lkeys]=pot;
 		}
-		parameters.close();
+	parameters.close();
 	}
 	else
 	{
@@ -63,7 +65,6 @@ void GCInteraction<number>::init() {
 
 
 //TODO: Figure out these values
-	_k = 4.0f;
 	_sigma = 0.0786f;
 	_rstar= 0.0746f;
 	_b = 72471.9f;
