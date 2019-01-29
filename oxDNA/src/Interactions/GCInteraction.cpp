@@ -238,7 +238,7 @@ number GCInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 		r = &computed_r;
 	}
 
-	return _exc_volume(p, q, r, update_forces);
+	return (number) this->_exc_volume(p, q, r, update_forces);
 	//return 0.0f;
 }
 

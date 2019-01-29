@@ -1,87 +1,67 @@
-INFO: seeding the RNG with -80145171
+INFO: seeding the RNG with -1560738245
 INFO: Initializing backend 
 INFO: Backend precision: double
 INFO: Simulation type: MD
-INFO: pid: 32208
+INFO: pid: 11670
 INFO: (Cells.cpp) N_cells_side: 3, 3, 3; rcut=2.9, IS_MC: 0
 INFO: N: 5
 INFO: Using randomly distributed velocities
-INFO: Initial kinetic energy: 0.155483
+INFO: Initial kinetic energy: 0.000133
 INFO: SVN CODE VERSION: Unversioned directory
-INFO: COMPILED ON: 10/01/19
-INFO: diffusion fixed.. 4.10722 4.10722
-INFO: diffusion fixed.. 3.70384 3.70384
-INFO: diffusion fixed.. 2.7618 2.7618
-INFO: diffusion fixed.. 2.0646 2.0646
-INFO: diffusion fixed.. 1.95319 1.95319
-INFO: diffusion fixed.. 1.65624 1.65624
-INFO: diffusion fixed.. 1.06363 1.06363
-INFO: diffusion fixed.. 0.764273 0.764273
-INFO: diffusion fixed.. 0.788711 0.788711
-INFO: diffusion fixed.. 1.06112 1.06112
-INFO: diffusion fixed.. 1.15052 1.15052
-INFO: diffusion fixed.. 1.35841 1.35841
-INFO: diffusion fixed.. 1.93328 1.93328
-INFO: diffusion fixed.. 2.65287 2.65287
-INFO: diffusion fixed.. 2.98282 2.98282
-INFO: diffusion fixed.. 3.03843 3.03843
-INFO: diffusion fixed.. 2.97611 2.97611
-INFO: diffusion fixed.. 3.27534 3.27534
-INFO: diffusion fixed.. 3.5829 3.5829
-INFO: diffusion fixed.. 4.02352 4.02352
-INFO: diffusion fixed.. 3.9467 3.9467
-INFO: diffusion fixed.. 3.37184 3.37184
-INFO: diffusion fixed.. 2.59669 2.59669
-INFO: diffusion fixed.. 1.83503 1.83503
-INFO: diffusion fixed.. 1.17932 1.17932
-INFO: diffusion fixed.. 0.697118 0.697118
-INFO: diffusion fixed.. 0.344935 0.344935
-INFO: diffusion fixed.. 0.324175 0.324175
-INFO: diffusion fixed.. 0.45707 0.45707
-INFO: diffusion fixed.. 0.784845 0.784845
-INFO: diffusion fixed.. 1.12242 1.12242
-INFO: diffusion fixed.. 1.13833 1.13833
-INFO: diffusion fixed.. 0.684401 0.684401
-INFO: diffusion fixed.. 0.476901 0.476901
-INFO: diffusion fixed.. 0.501056 0.501056
-INFO: diffusion fixed.. 0.606343 0.606343
-INFO: diffusion fixed.. 0.509541 0.509541
-INFO: diffusion fixed.. 0.404116 0.404116
-INFO: diffusion fixed.. 0.546952 0.546952
-INFO: diffusion fixed.. 1.10106 1.10106
-INFO: diffusion fixed.. 1.85336 1.85336
-INFO: diffusion fixed.. 2.34393 2.34393
-INFO: diffusion fixed.. 3.06344 3.06344
-INFO: diffusion fixed.. 3.99321 3.99321
-INFO: diffusion fixed.. 5.16662 5.16662
-INFO: diffusion fixed.. 5.81785 5.81785
-INFO: diffusion fixed.. 5.22172 5.22172
-INFO: diffusion fixed.. 3.85135 3.85135
-INFO: diffusion fixed.. 2.80453 2.80453
-INFO: diffusion fixed.. 2.07342 2.07342
-INFO: diffusion fixed.. 1.19913 1.19913
-INFO: diffusion fixed.. 0.557942 0.557942
-INFO: diffusion fixed.. 0.156102 0.156102
-INFO: diffusion fixed.. 0.249536 0.249536
-INFO: diffusion fixed.. 0.309568 0.309568
-INFO: diffusion fixed.. 0.421046 0.421046
-INFO: diffusion fixed.. 0.304712 0.304712
-INFO: diffusion fixed.. 0.423951 0.423951
-INFO: diffusion fixed.. 0.56116 0.56116
-INFO: diffusion fixed.. 0.598702 0.598702
-INFO: diffusion fixed.. 0.712924 0.712924
-INFO: diffusion fixed.. 1.26601 1.26601
-INFO: diffusion fixed.. 1.95666 1.95666
-INFO: diffusion fixed.. 2.13878 2.13878
-INFO: diffusion fixed.. 2.36615 2.36615
-INFO: diffusion fixed.. 3.06224 3.06224
-INFO: diffusion fixed.. 3.75786 3.75786
-INFO: diffusion fixed.. 3.84214 3.84214
-INFO: diffusion fixed.. 3.05633 3.05633
-INFO: diffusion fixed.. 2.43186 2.43186
-INFO: diffusion fixed.. 1.99315 1.99315
-INFO: diffusion fixed.. 2.18598 2.18598
-INFO: diffusion fixed.. 2.44814 2.44814
-ERROR: Aborting because the program is generating too much data (5.60339 MB/s).
-			The current limit is set to 1 MB/s;
-			you can change it by setting max_io=<float> in the input file.
+INFO: COMPILED ON: 28/01/19
+INFO: diffusion fixed.. 0.000114443 0.000114443
+INFO: diffusion fixed.. 0.000277232 0.000277232
+INFO: diffusion fixed.. 0.000452603 0.000452603
+INFO: diffusion fixed.. 0.000819245 0.000819245
+INFO: diffusion fixed.. 0.0014315 0.0014315
+INFO: diffusion fixed.. 0.00219297 0.00219297
+INFO: diffusion fixed.. 0.00267273 0.00267273
+INFO: diffusion fixed.. 0.00333846 0.00333846
+INFO: diffusion fixed.. 0.00440879 0.00440879
+INFO: diffusion fixed.. 0.00576045 0.00576045
+INFO: diffusion fixed.. 0.0067539 0.0067539
+INFO: diffusion fixed.. 0.00764488 0.00764488
+INFO: diffusion fixed.. 0.00899842 0.00899842
+INFO: diffusion fixed.. 0.0108149 0.0108149
+INFO: diffusion fixed.. 0.0125019 0.0125019
+INFO: diffusion fixed.. 0.0137321 0.0137321
+INFO: diffusion fixed.. 0.0152374 0.0152374
+INFO: diffusion fixed.. 0.0172691 0.0172691
+INFO: diffusion fixed.. 0.0195949 0.0195949
+INFO: diffusion fixed.. 0.0215172 0.0215172
+INFO: diffusion fixed.. 0.0231403 0.0231403
+INFO: diffusion fixed.. 0.0251811 0.0251811
+INFO: diffusion fixed.. 0.0278405 0.0278405
+INFO: diffusion fixed.. 0.0305778 0.0305778
+INFO: diffusion fixed.. 0.0326682 0.0326682
+INFO: diffusion fixed.. 0.0346205 0.0346205
+INFO: diffusion fixed.. 0.0373253 0.0373253
+INFO: diffusion fixed.. 0.0406326 0.0406326
+INFO: diffusion fixed.. 0.0433915 0.0433915
+INFO: diffusion fixed.. 0.0454688 0.0454688
+INFO: diffusion fixed.. 0.0481657 0.0481657
+INFO: diffusion fixed.. 0.0517185 0.0517185
+INFO: diffusion fixed.. 0.0550563 0.0550563
+INFO: diffusion fixed.. 0.0574131 0.0574131
+INFO: diffusion fixed.. 0.0601071 0.0601071
+INFO: diffusion fixed.. 0.0638167 0.0638167
+INFO: diffusion fixed.. 0.0675455 0.0675455
+INFO: diffusion fixed.. 0.0703953 0.0703953
+INFO: diffusion fixed.. 0.0731145 0.0731145
+INFO: diffusion fixed.. 0.0766554 0.0766554
+INFO: diffusion fixed.. 0.0804648 0.0804648
+INFO: diffusion fixed.. 0.084016 0.084016
+INFO: diffusion fixed.. 0.0872935 0.0872935
+INFO: diffusion fixed.. 0.0905748 0.0905748
+INFO: diffusion fixed.. 0.0938495 0.0938495
+INFO: diffusion fixed.. 0.097486 0.097486
+INFO: diffusion fixed.. 0.101714 0.101714
+INFO: diffusion fixed.. 0.105488 0.105488
+INFO: diffusion fixed.. 0.108388 0.108388
+INFO: diffusion fixed.. 0.111478 0.111478
+INFO: diffusion fixed.. 0.115584 0.115584
+INFO: diffusion fixed.. 0.119864 0.119864
+INFO: diffusion fixed.. 0.123329 0.123329
+INFO: diffusion fixed.. 0.126594 0.126594
+INFO: diffusion fixed.. 0.130097 0.130097
+INFO: diffusion fixed.. 0.133596 0.133596

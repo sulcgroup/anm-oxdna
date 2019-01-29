@@ -1,37 +1,36 @@
-INFO: seeding the RNG with 407380428
+INFO: seeding the RNG with -1434796208
 INFO: Initializing backend 
 INFO: Backend precision: double
 INFO: Simulation type: MD
-INFO: pid: 31658
+INFO: pid: 11519
 INFO: (Cells.cpp) N_cells_side: 3, 3, 3; rcut=2.9, IS_MC: 0
 INFO: N: 2
 INFO: Using randomly distributed velocities
-INFO: Initial kinetic energy: 0.007973
+INFO: Initial kinetic energy: 0.000005
 INFO: SVN CODE VERSION: Unversioned directory
-INFO: COMPILED ON: 10/01/19
-INFO: diffusion fixed.. 0.00217577 0.00217577
-INFO: diffusion fixed.. 0.00133866 0.00133866
-INFO: diffusion fixed.. 0.000670679 0.000670679
-INFO: diffusion fixed.. 0.000217854 0.000217854
-INFO: diffusion fixed.. 1.1342e-05 1.1342e-05
-INFO: diffusion fixed.. 6.53088e-05 6.53088e-05
-INFO: diffusion fixed.. 0.000375945 0.000375945
-INFO: diffusion fixed.. 0.000921734 0.000921734
-INFO: diffusion fixed.. 0.00166493 0.00166493
-INFO: diffusion fixed.. 0.00255418 0.00255418
+INFO: COMPILED ON: 28/01/19
+INFO: diffusion fixed.. 5.69839e-07 5.69839e-07
+INFO: diffusion fixed.. 1.24118e-06 1.24118e-06
+INFO: diffusion fixed.. 1.79244e-07 1.79244e-07
+INFO: diffusion fixed.. 1.5925e-06 1.5925e-06
+INFO: diffusion fixed.. 1.97456e-10 1.97456e-10
+INFO: diffusion fixed.. 1.56367e-06 1.56367e-06
+INFO: diffusion fixed.. 1.29583e-07 1.29583e-07
+INFO: diffusion fixed.. 1.33192e-06 1.33192e-06
+INFO: diffusion fixed.. 5.41207e-07 5.41207e-07
+INFO: diffusion fixed.. 8.2602e-07 8.2602e-07
 
-INFO: Total Running Time: 3.69825 s, per step: 0.00369825 ms
+INFO: Total Running Time: 2.72821 s, per step: 0.00272821 ms
 INFO: Timings, in seconds, by Timer (total, own, spent in children)
-> SimBackend                          3.698 (100.0%)        1.947 ( 52.6%)        1.752 ( 47.4%)
-***> Lists                            0.391 ( 10.6%)        0.391 ( 10.6%)        0.000 (  0.0%)
-***> Thermostat                       0.398 ( 10.8%)        0.398 ( 10.8%)        0.000 (  0.0%)
-***> Forces                           0.515 ( 13.9%)        0.515 ( 13.9%)        0.000 (  0.0%)
-***> First Step                       0.448 ( 12.1%)        0.448 ( 12.1%)        0.000 (  0.0%)
+> SimBackend                          2.728 (100.0%)        1.433 ( 52.5%)        1.295 ( 47.5%)
+***> Lists                            0.291 ( 10.7%)        0.291 ( 10.7%)        0.000 (  0.0%)
+***> Thermostat                       0.291 ( 10.6%)        0.291 ( 10.6%)        0.000 (  0.0%)
+***> Forces                           0.377 ( 13.8%)        0.377 ( 13.8%)        0.000 (  0.0%)
+***> First Step                       0.336 ( 12.3%)        0.336 ( 12.3%)        0.000 (  0.0%)
 
 INFO: END OF THE SIMULATION, everything went OK!
-INFO: Lists updated 229 times (every ~4366.812227 steps)
 INFO: Aggregated I/O statistics (set debug=1 for file-wise information)
-	  9.992 MB written to files
+	 10.532 MB written to files
 	605.529 KB written to stdout/stderr
-	For a total of     2.86 MB/s
+	For a total of     4.08 MB/s
 

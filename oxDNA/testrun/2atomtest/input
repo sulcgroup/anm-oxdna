@@ -13,13 +13,13 @@ interaction_type = GC
 ####    SIM PARAMETERS    ####
 ##############################
 ### Universal Params ###
-T = 0.001
+T = 0.000001
 verlet_skin = 0.20
 sim_type = MD
 steps = 1000000 
 
 ### MD PARAMS ###
-dt = 0.001
+dt = 0.00001
 newtonian_steps=51
 diff_coeff=1.25
 thermostat=no

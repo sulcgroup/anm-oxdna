@@ -13,7 +13,7 @@ interaction_type = GC
 ####    SIM PARAMETERS    ####
 ##############################
 ### Universal Params ###
-T = 0.01
+T = 0.00001
 verlet_skin = 0.20
 sim_type = MD
 steps = 200000000 

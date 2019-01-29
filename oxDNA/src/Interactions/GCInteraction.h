@@ -74,15 +74,13 @@ number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 			number rmod = sqrt(rnorm);
 			number rrc = rmod - _rcut;
 			energy = EXCL_EPS * _b * SQR(rrc);
-			if (energy > 10.0) energy = 10.0;
-			if(update_forces) force = -r/rmod * (2 * EXCL_EPS * _b * rrc);
+			if(update_forces) force = -r * (2 * EXCL_EPS * _b * rrc/ rmod);
 		}
 		else {
 			number tmp = SQR(_sigma) / rnorm;
-			number rmod = sqrt(rnorm);
 			number lj_part = tmp * tmp * tmp;
 			energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
-			if(update_forces) force = -r/rmod * (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rmod);
+			if(update_forces) force = -r* (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rnorm);
 		}
 	}
 
@@ -130,8 +128,7 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 		}
 		eqdist = _rknot[keys];
 		interactiontype = _potential[keys].first;
-		// interaction is
-		if (eqdist != 0.0){
+		if (eqdist != 0.0){ //only returns number is eqdist is in .par file
 			switch (interactiontype){
 				case 's':
 					{
@@ -173,7 +170,7 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 			return (number) 0.f; //returns 0 if no rknot value in parameter value aka they aren't bonded
 		}
 	} else {
-		return (number) 0.f; //returns 0 if particle pair is a particle and itself
+		return (number) 0.f; //returns 0 if particle pair consists of particle and itself
 	}
 }
 
