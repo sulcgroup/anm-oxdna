@@ -23,9 +23,9 @@ void GCParticle<number>::add_bonded_neighbor(GCParticle<number> *nn) {
 		bonded_neighs.insert(nn);
 		nn->bonded_neighs.insert(this);
 
-		//ParticlePair<number> new_pair(this, nn);
-		//this->affected.push_back(new_pair);
-		//nn->affected.push_back(new_pair);
+		ParticlePair<number> new_pair(this, nn);
+		this->affected.push_back(new_pair);
+		nn->affected.push_back(new_pair);
 	}
 }
 
