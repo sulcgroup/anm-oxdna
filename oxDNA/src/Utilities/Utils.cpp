@@ -63,34 +63,6 @@ char Utils::encode_base(int b) {
 	}
 }
 
-
-// Encode and Decode Amino Acid Added 10/30/2018
-int Utils::decode_aminoacid(char c) {
-	c = toupper(c);
-	switch(c) {
-	case 'A':
-		return A_A;
-	case 'X':
-		return A_DUMMY;
-	default:
-		return P_INVALID;
-	}
-}
-// TODO: What is it doing with these numbers!
-
-char Utils::encode_aminoacid(int b) {
-	switch(b) {
-	case A_A:
-		return 'A';
-	case A_DUMMY:
-		return 'X';
-	default:
-		return P_INVALID;
-	}
-}
-
-
-
 std::vector<std::string> Utils::split(const string &s, char delim) {
 	string s_copy(s);
 	if(delim == ' ') Utils::trim(s_copy);

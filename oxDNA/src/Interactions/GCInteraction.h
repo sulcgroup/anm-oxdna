@@ -28,7 +28,7 @@ protected:
 
 	number _r; //radius of alpha carbon of amino acid
 	map<pair<int, int>, double> _rknot; //eqdist of each bond of psuedobond
-	map<pair<int, int>, pair<char, double> > _potential; //switch to tell lj or spring as well as strength for each pair of particles
+	map<pair<int, int>, pair<char, double> > _potential; //switch to tell lj, FENE or spring as well as strength for each pair of particles
 	number _sigma, _rstar, _b, _rcut;
 
 
@@ -128,10 +128,11 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 		}
 		eqdist = _rknot[keys];
 		interactiontype = _potential[keys].first;
-		if (eqdist != 0.0){ //only returns number is eqdist is in .par file
+		if (eqdist != 0.0){ //only returns number if eqdist is in .par file
 			switch (interactiontype){
 				case 's':
 					{
+						//Harmonic Spring Potential
 						if ((eqdist < 0.0) || (eqdist > 0.8217))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
 						{
 							if (keys.first+1 != keys.second){
@@ -148,17 +149,41 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 
 						if (update_forces)
 						{
-						LR_vector<number> force(*r) ;
-						force *= (-1.0f * _k * (rinsta-eqdist))/rinsta;
+						LR_vector<number> force(*r ) ;
+						force *= (-1.0f * _k ) * (rinsta-eqdist)/rinsta;
 						p->force -= force;
 						q->force += force;
+						//printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, prefactor = %f, force = %f,%f,%f \n",p->index,q->index,rinsta,eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z);
+						//printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
 						}
 						return energy;
-						break;
-					}
+					} break;
 					case 'l':
 						{
 							return (number) 0.f;
+						}
+						break;
+					case 'f':
+						{
+							//FENE Potential
+							number sqr_r = r->norm();
+							//number sqr_rfene = (anchor && !_only_chains) ? _sqr_rfene_anchor : _sqr_rfene;
+							number sqr_rfene = SQR(eqdist);
+							if(sqr_r > sqr_rfene) {
+								if(update_forces) throw oxDNAException("The distance between particles %d and %d (%lf) exceeds the FENE distance (%lf)\n", p->index, q->index, sqrt(sqr_r), sqrt(sqr_rfene));
+								this->set_is_infinite(true);
+								return 10e10;
+							}
+							number energy = -15*sqr_rfene*log(1. - sqr_r/sqr_rfene);
+
+							if(update_forces) {
+								// this number is the module of the force over r, so we don't have to divide the distance
+								// vector by its module
+								number force_mod = -30*sqr_rfene/(sqr_rfene - sqr_r);
+								p->force -= *r * force_mod;
+								q->force += *r * force_mod;
+							}
+							return energy;
 						}
 						break;
 					default:

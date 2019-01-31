@@ -15,6 +15,7 @@ template<typename number>
 GCInteraction<number>::GCInteraction() : BaseInteraction<number, GCInteraction<number> >() {
 	this->_int_map[SPRING_POTENTIAL] = &GCInteraction<number>::_spring;
 	this->_int_map[EXC_VOL] = &GCInteraction<number>::_exc_volume;
+
 }
 
 template<typename number>
@@ -116,25 +117,22 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		//int res = sscanf(line, "%d %s %d %d", &strand, base, &tmpn3, &tmpn5);
 		std::stringstream ss(line);
 		ss >> strand >> aminoacid >> nside >> cside;
-		if(!ss.good())
-		{
-			throw oxDNAException(
-								"Line %d of the topology file has an invalid syntax",
-								i + 2);
-		}
 
 		int x;
 		std::set<int> myneighs;
-		ss >> x;
+
 		while(ss.good())
 		{
+			ss >> x;
 			if(x < 0 || x >= N)
 			{
 				throw oxDNAException(
 									"Line %d of the topology file has an invalid syntax, neighbor has invalid id",
 									i + 2);
 			}
+
 			myneighs.insert(x);
+			//printf("NEIGHBOR INSERTED %d",x);
 			ss >> x;
 		}
 
@@ -166,7 +164,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 		//THIS is from DNAInteraction.cpp... How much of it do I really need?
 		// the base can be either a char or an integer
-		if (strlen(aminoacid) == 1) {
+		/*if (strlen(aminoacid) == 1) {
 			p->type = Utils::decode_aminoacid(aminoacid[0]);
 			p->btype = Utils::decode_aminoacid(aminoacid[0]);
 		} else {
@@ -175,16 +173,16 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 			else
 				p->type = 3 - ((3 - atoi(aminoacid)) % 4);
 			p->btype = atoi(aminoacid);
-		}
+		}*/
 
 		// until here replacem after here is fine
 
-
+		/*
 		if (p->type == P_INVALID)
 			throw oxDNAException(
 					"Particle #%d in strand #%d contains a non valid aminoacid '%c'. Aborting",
 					i, strand, aminoacid);
-
+		*/
 		p->index = i;
 		i++;
 
@@ -193,6 +191,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 			p->affected.push_back(ParticlePair<number>(p->n3, p));
 		if (p->n5 != P_VIRTUAL)
 			p->affected.push_back(ParticlePair<number>(p, p->n5));
+
 	}
 
 	if (i < my_N)
@@ -239,7 +238,6 @@ number GCInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 	}
 
 	return (number) this->_exc_volume(p, q, r, update_forces);
-	//return 0.0f;
 }
 
 template<typename number>
