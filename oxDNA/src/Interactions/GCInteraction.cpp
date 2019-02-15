@@ -221,9 +221,9 @@ number GCInteraction<number>::pair_interaction(BaseParticle<number> *p, BasePart
 template<typename number>
 number GCInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 	LR_vector<number> computed_r(0, 0, 0);
-		if(r == NULL) {
-			computed_r = this->_box->min_image(p->pos, q->pos);
-			r = &computed_r;
+	if(r == NULL) {
+		computed_r = this->_box->min_image(p->pos, q->pos);
+		r = &computed_r;
 	}
 
 	return (number) this->_spring(p,q,r,update_forces);
@@ -236,7 +236,7 @@ number GCInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 		computed_r = this->_box->min_image(p->pos, q->pos);
 		r = &computed_r;
 	}
-
+	//return (number) 0.f;
 	return (number) this->_exc_volume(p, q, r, update_forces);
 }
 

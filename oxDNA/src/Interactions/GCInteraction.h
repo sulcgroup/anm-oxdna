@@ -68,7 +68,6 @@ number GCInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 	// this is a bit faster than calling r.norm()
 	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
 	number energy = (number) 0;
-
 	if(rnorm < SQR(_rcut)) {
 		if(rnorm > SQR(_rstar)) {
 			number rmod = sqrt(rnorm);
@@ -133,7 +132,7 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 				case 's':
 					{
 						//Harmonic Spring Potential
-						if ((eqdist < 0.0) || (eqdist > 0.8217))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
+						if ((eqdist < 0.0) || (eqdist > 0.821789))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
 						{
 							if (keys.first+1 != keys.second){
 								throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
@@ -149,11 +148,11 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 
 						if (update_forces)
 						{
-						LR_vector<number> force(*r ) ;
-						force *= (-1.0f * _k ) * (rinsta-eqdist)/rinsta;
-						p->force -= force;
-						q->force += force;
-						//printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, prefactor = %f, force = %f,%f,%f \n",p->index,q->index,rinsta,eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z);
+							LR_vector<number> force(*r );
+							force *= (-1.0f * _k ) * (rinsta-eqdist)/rinsta;
+							p->force -= force;
+							q->force += force;
+						//printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
 						//printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
 						}
 						return energy;
@@ -161,29 +160,6 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 					case 'l':
 						{
 							return (number) 0.f;
-						}
-						break;
-					case 'f':
-						{
-							//FENE Potential
-							number sqr_r = r->norm();
-							//number sqr_rfene = (anchor && !_only_chains) ? _sqr_rfene_anchor : _sqr_rfene;
-							number sqr_rfene = SQR(eqdist);
-							if(sqr_r > sqr_rfene) {
-								if(update_forces) throw oxDNAException("The distance between particles %d and %d (%lf) exceeds the FENE distance (%lf)\n", p->index, q->index, sqrt(sqr_r), sqrt(sqr_rfene));
-								this->set_is_infinite(true);
-								return 10e10;
-							}
-							number energy = -15*sqr_rfene*log(1. - sqr_r/sqr_rfene);
-
-							if(update_forces) {
-								// this number is the module of the force over r, so we don't have to divide the distance
-								// vector by its module
-								number force_mod = -30*sqr_rfene/(sqr_rfene - sqr_r);
-								p->force -= *r * force_mod;
-								q->force += *r * force_mod;
-							}
-							return energy;
 						}
 						break;
 					default:
@@ -197,6 +173,7 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 	} else {
 		return (number) 0.f; //returns 0 if particle pair consists of particle and itself
 	}
+
 }
 
 
