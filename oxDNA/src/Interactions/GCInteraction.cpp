@@ -120,7 +120,6 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 		int x;
 		std::set<int> myneighs;
-
 		while(ss.good())
 		{
 			ss >> x;
@@ -132,11 +131,7 @@ void GCInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 			}
 
 			myneighs.insert(x);
-			//printf("NEIGHBOR INSERTED %d",x);
-			ss >> x;
 		}
-
-
 		GCParticle<number> *p = dynamic_cast< GCParticle<number>  * > (particles[i]);
 
 		if (nside < 0)
