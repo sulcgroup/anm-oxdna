@@ -132,7 +132,7 @@ number GCInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 				case 's':
 					{
 						//Harmonic Spring Potential
-						if ((eqdist < 0.0) || (eqdist > 0.821789))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
+						if ((eqdist < 0.0) || (eqdist > 1.5))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
 						{
 							if (keys.first+1 != keys.second){
 								throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
