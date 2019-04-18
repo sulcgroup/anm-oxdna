@@ -91,7 +91,7 @@ SET(interactions_SOURCES
 	Interactions/TEPInteraction.cpp
 	Interactions/TSPInteraction.cpp
 	Interactions/LJInteraction.cpp
-	Interactions/GCInteraction.cpp
+	Interactions/ACInteraction.cpp
 	Interactions/HSInteraction.cpp
 	Interactions/DHSInteraction.cpp
 	Interactions/HardCylinderInteraction.cpp
@@ -162,7 +162,7 @@ SET(common_SOURCES
 	Particles/PatchyParticleDan.cpp
 	Particles/TSPParticle.cpp
 	Particles/SpheroCylinder.cpp
-	Particles/GCParticle.cpp
+	Particles/ACParticle.cpp
 	Particles/CustomParticle.cpp
 	Managers/SimManager.cpp
 	Utilities/OrderParameters.cpp
