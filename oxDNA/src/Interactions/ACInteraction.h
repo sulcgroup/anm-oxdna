@@ -27,7 +27,7 @@ class ACInteraction: public BaseInteraction<number, ACInteraction<number> > {
 protected:
 
 	number _r; //radius of alpha carbon of amino acid
-	map<pair<int, int>, double> _rknot; //eqdist of each bond of psuedobond
+	map<pair<int, int>, double> _rknot; //eqdist of each bond of psuedobonds
 	map<pair<int, int>, pair<char, double> > _potential; //switch to tell lj, FENE or spring as well as strength for each pair of particles
 	number _sigma, _rstar, _b, _rcut;
 
