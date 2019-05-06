@@ -11,13 +11,15 @@
 #include "DNANMInteraction.h"
 #include "DNA2Interaction.h"
 #include "ACInteraction.h"
+#include <sstream>
+#include <fstream>
 
 #include "../Particles/DNANucleotide.h"
 #include "../Particles/ACParticle.h"
 
 template<typename number>
 void DNANMInteraction<number>::get_settings(input_file &inp){
-	DNA2Interaction<number>::get_settings(inp);
+	this->DNA2Interaction<number>::get_settings(inp);
 	char parameterfile[500];
 	getInputString(&inp, "PARFILE", parameterfile, 0);
 
@@ -54,6 +56,12 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
 }
 
 template<typename number>
+void DNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particles, int N){
+	this->DNA2Interaction<number>::check_input_sanity(particles,N);
+}
+
+
+template<typename number>
 void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
 	for(int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
 	for(int i = npro; i < ndna; i++) particles[i] = new DNANucleotide<number>(_grooving);
@@ -62,13 +70,14 @@ void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particl
 template<typename number>
 void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<number> **particles) {
 	*N_strands = N;
+	/*
 	allocate_particles(particles, N); //How/Can I Use This?
 	for (int i = 0; i < N; i ++) {
 	   particles[i]->index = i;
 	   particles[i]->type = 0;
 	   particles[i]->strand_id = -1;
 	}
-
+	*/
 	int my_N, my_N_strands;
 
 	char line[2048];
@@ -93,13 +102,16 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			throw oxDNAException(
 					"Too many particles found in the topology file (should be %d), aborting",
 					N);
-
+		BaseParticle<number> *p = particles[i];
 		std::stringstream ss(line);
 		ss >> strand;
 
 		if (strand<0){
 			int nside, cside;
 			ss >> aminoacid >> nside >> cside;
+			if(strlen(base) == 1) {
+				p->btype = Utils::decode_aa(base[0]);
+			}
 			int x;
 			std::set<int> myneighs;
 			while(ss.good())
@@ -196,85 +208,136 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 template<typename number>
 number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
-	if (p->is_rigid_body() && q->is_rigid_body()){ //DNA-DNA Interaction
-		number energy=DNA2Interaction<number>::pair_interaction_bonded(p,q,r,update_forces);
-
-	} else if ((p->is_rigid_body() && !q->is_rigid_body()) ||(!p->is_rigid_body() && q->is_rigid_body())){ //DNA,Protein Interaction
+	if (p->btype >= 0 && q->btype >=0){ //DNA-DNA Interaction
+		number energy= this->DNA2Interaction<number>::pair_interaction_bonded(p,q,r,update_forces);
+		return energy;
+	} else if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)){ //DNA,Protein Interaction
 		// Not Yet Supported
 		number energy=0.0;
-
-	} else if (!p->is_rigid_body() && !q->is_rigid_body()){ //Protein,Protein Interaction
-		number energy=ACInteraction<number>::pair_interaction_bonded(p,q,r,update_forces);
+		return energy;
+	} else if ((p->btype <0 && q->btype <0)){ //Protein,Protein Interaction
+		number energy= ACInteraction<number>::pair_interaction_bonded(p,q,r,update_forces);
+		return energy;
+	} else{
+		number energy=0.0;
+		return energy;
 	}
-
-	return energy;
 }
 
 template<typename number>
 number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
-	if (p->is_rigid_body() && q->is_rigid_body()){ //DNA-DNA Interaction
-		number energy=DNA2Interaction<number>::pair_interaction_nonbonded(p,q,r,update_forces);
-
-	} else if ((p->is_rigid_body() && !q->is_rigid_body()) ||(!p->is_rigid_body() && q->is_rigid_body())){ //DNA,Protein Interaction
-		// Need to Implement a Lennard Jones Potential b/t the two
-
-	} else if (!p->is_rigid_body() && !q->is_rigid_body()){ //Protein,Protein Interaction
-		number energy=ACInteraction<number>::pair_interaction_nonbonded(p,q,r,update_forces);
+	if (p->btype >= 0 && q->btype >=0){ //DNA-DNA Interaction
+		number energy= this->DNA2Interaction<number>::pair_interaction_nonbonded(p,q,r,update_forces);
+		return energy;
+	} else if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)){ //DNA,Protein Interaction
+		number energy= _protein_dna_exc_volume(p,q,r,update_forces);
+		return energy;
+	} else if ((p->btype <0 && q->btype <0)){ //Protein,Protein Interaction
+		number energy= ACInteraction<number>::pair_interaction_nonbonded(p,q,r,update_forces);
+		return energy;
+	} else{
+		number energy=0.0;
+		return energy;
 	}
+}
 
-	return energy;
+
+
+template<typename number>
+number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)
+{
+	 //printf("Calling crodwer DNA on %d %d \n",p->index,q->index);
+	 BaseParticle<number> *protein;
+	 BaseParticle<number> *nuc;
+
+	 LR_vector<number> force(0, 0, 0);
+     LR_vector<number> rcenter = *r;
+
+	 if(p->btype >= 0 && q->btype < 0)
+     {
+		 //rcenter = -rcenter;
+		 protein = q;
+		 nuc = p;
+	 }
+	 else if (p->btype < 0 && q->btype >= 0 )
+	 {
+		 rcenter = -rcenter;
+		 protein = p;
+		 nuc = q;
+	 }
+	 else
+	 {
+		 return 0.f;
+	 }
+
+	 LR_vector<number> r_to_back = rcenter  - nuc->int_centers[DNANucleotide<number>::BACK];
+	 LR_vector<number> r_to_base = rcenter  - nuc->int_centers[DNANucleotide<number>::BASE];
+
+	 LR_vector<number> torquenuc(0,0,0);
+
+	 number energy = this->_protein_dna_repulsive_lj(r_to_back, force, update_forces);
+	 if (update_forces) {
+		    torquenuc  -= nuc->int_centers[DNANucleotide<number>::BACK].cross(force);
+	 		nuc->force -= force;
+		 	protein->force += force;
+	 }
+
+
+	 energy += this->_protein_dna_repulsive_lj(r_to_base, force, update_forces);
+
+	 if(update_forces) {
+
+		    torquenuc  -= nuc->int_centers[DNANucleotide<number>::BASE].cross(force);
+		    nuc->torque += nuc->orientationT * torquenuc;
+
+		    //crowder->torque -= crowder->orientationT * torquenuc;
+	 		nuc->force -= force;
+	 		protein->force += force;
+	 }
+
+
+	 return energy;
 }
 
 template<typename number>
-number DNANMInteraction<number>::_exlcudedvolume(BaseParticle<number> *p,BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
+number DNANMInteraction<number>::_protein_dna_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
 	// this is a bit faster than calling r.norm()
 	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
 	number energy = (number) 0;
-	if(rnorm < SQR(_rcut)) {
-		if(rnorm > SQR(_rstar)) {
+
+	if(rnorm < SQR(_pro_dna_rcut)) {
+		if(rnorm > SQR(_pro_dna_rstar)) {
 			number rmod = sqrt(rnorm);
-			number rrc = rmod - _rcut;
-			energy = EXCL_EPS * _b * SQR(rrc);
-			if(update_forces) force = -r * (2 * EXCL_EPS * _b * rrc/ rmod);
+			number rrc = rmod - _pro_dna_rcut;
+			energy = _pro_dna_stiffness * _pro_dna_b * SQR(rrc);
+			if(update_forces) force = -r * (2 * _pro_dna_stiffness * _pro_dna_b * rrc / rmod);
 		}
 		else {
-			number tmp = SQR(_sigma) / rnorm;
+			number tmp = SQR(_pro_dna_sigma) / rnorm;
 			number lj_part = tmp * tmp * tmp;
-			energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
-			if(update_forces) force = -r* (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rnorm);
+			energy = 4 * this->_pro_dna_stiffness * (SQR(lj_part) - lj_part);
+			if(update_forces) force = -r * (24 * _pro_dna_stiffness * (lj_part - 2*SQR(lj_part)) / rnorm);
 		}
 	}
 
 	if(update_forces && energy == (number) 0) force.x = force.y = force.z = (number) 0;
 
 	return energy;
-
-	if (p->index != q->index){
-			LR_vector<number> force(0,0,0);
-
-			number energy =  ACInteraction<number>::_repulsive_lj(*r, force, update_forces);
-
-			if(update_forces)
-			{
-				p->force -= force;
-				q->force += force;
-			}
-
-			return energy;
-		} else {
-			return (number) 0.f;
-		}
 }
+
+
+
+
 
 template<typename number>
 void DNANMInteraction<number>::init() {
-	DNA2Interaction<number>::init();
+	this->DNA2Interaction<number>::init();
 //TODO: Figure out these values
-	_sigma = 0.0786f;
-	_rstar= 0.0746f;
-	_b = 72471.9f;
-	_rcut = 0.0798717f;
+	_pro_dna_sigma = 0.0786f;
+	_pro_dna_rstar= 0.0746f;
+	_pro_dna_b = 72471.9f;
+	_pro_dna_rcut = 0.0798717f;
 }
 
 template class DNAInteraction<float>;

@@ -92,6 +92,7 @@ SET(interactions_SOURCES
 	Interactions/TSPInteraction.cpp
 	Interactions/LJInteraction.cpp
 	Interactions/ACInteraction.cpp
+	Interactions/DNANMInteraction.cpp
 	Interactions/HSInteraction.cpp
 	Interactions/DHSInteraction.cpp
 	Interactions/HardCylinderInteraction.cpp

@@ -33,6 +33,8 @@ public:
 
 	static int decode_base(char c);
 	static char encode_base(int b);
+	static int decode_aa(char c);
+	static char encode_aa(int b);
 
 	template<typename number> static number gaussian();
 	template<typename number> static number gamma(number alpha, number beta);
