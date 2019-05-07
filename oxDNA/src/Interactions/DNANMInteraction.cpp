@@ -5,6 +5,8 @@
  *      Author: jonah
  *  Inherits from the DNA2Interaction Class
  *  Uses DNA2 Model and ACProtein Model
+ *  ACProtein Functions are implemented here as to avoid a multitude of multiple inheritance
+ *  problems of which I am unsure are truly solvable
  */
 
 
@@ -16,6 +18,30 @@
 
 #include "../Particles/DNANucleotide.h"
 #include "../Particles/ACParticle.h"
+
+template<typename number>
+DNANMInteraction<number>::DNANMInteraction() : DNA2Interaction<number>() { // @suppress("Class members should be properly initialized")
+	//GOING TO HAVE TO FIGURE THIS OUT
+	//TWO INT MAPS NEED TO JOIN THEM (One from DNA2, other from AC)
+	//typedef std::map<int, number (child::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)> interaction_map;
+
+	//Protein Methods Function Pointers
+	this->_int_map[SPRING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_protein_spring;
+	this->_int_map[EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_protein_exc_volume;
+
+	//DNA Methods Function Pointers
+	this->_int_map[this->BACKBONE] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_backbone;
+	this->_int_map[this->COAXIAL_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_coaxial_stacking;
+	this->_int_map[this->CROSS_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_cross_stacking;
+	this->_int_map[this->BONDED_EXCLUDED_VOLUME] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_bonded_excluded_volume;
+	this->_int_map[this->STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_stacking;
+	this->_int_map[this->HYDROGEN_BONDING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_hydrogen_bonding;
+	this->_int_map[this->NONBONDED_EXCLUDED_VOLUME] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_nonbonded_excluded_volume;
+	this->_int_map[this->DEBYE_HUCKEL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_debye_huckel;
+
+
+	//no compile errors though the presence of more than one _int_map is most likely a bad thing
+}
 
 template<typename number>
 void DNANMInteraction<number>::get_settings(input_file &inp){
@@ -57,27 +83,20 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
 
 template<typename number>
 void DNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particles, int N){
-	this->DNA2Interaction<number>::check_input_sanity(particles,N);
+	//this->DNA2Interaction<number>::check_input_sanity(particles,N);
+	//Need to make own function that checks the input sanity
 }
-
 
 template<typename number>
 void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
-	for(int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
-	for(int i = npro; i < ndna; i++) particles[i] = new DNANucleotide<number>(_grooving);
+	if (ndna==0 || npro==0 || ndnas==0) throw oxDNAException("Missing Protein or DNA particles");
+	for(int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
+	for(int i = ndna; i < N; i++) particles[i] = new ACParticle<number>();
 }
 
 template<typename number>
 void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<number> **particles) {
 	*N_strands = N;
-	/*
-	allocate_particles(particles, N); //How/Can I Use This?
-	for (int i = 0; i < N; i ++) {
-	   particles[i]->index = i;
-	   particles[i]->type = 0;
-	   particles[i]->strand_id = -1;
-	}
-	*/
 	int my_N, my_N_strands;
 
 	char line[2048];
@@ -89,7 +108,14 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 				this->_topology_filename);
 
 	topology.getline(line, 2040);
-	sscanf(line, "%d %d %d %d\n", &my_N, &my_N_strands,&ndna,&npro);
+	sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
+
+	allocate_particles(particles, N); //How/Can I Use This?
+	for (int i = 0; i < N; i ++) {
+	   particles[i]->index = i;
+	   particles[i]->type = 0;
+	   particles[i]->strand_id = 0;
+	}
 
 	char aminoacid[256];
 	char base[256];
@@ -102,16 +128,14 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			throw oxDNAException(
 					"Too many particles found in the topology file (should be %d), aborting",
 					N);
-		BaseParticle<number> *p = particles[i];
+		//BaseParticle<number> *p = particles[i];
 		std::stringstream ss(line);
 		ss >> strand;
 
 		if (strand<0){
 			int nside, cside;
 			ss >> aminoacid >> nside >> cside;
-			if(strlen(base) == 1) {
-				p->btype = Utils::decode_aa(base[0]);
-			}
+
 			int x;
 			std::set<int> myneighs;
 			while(ss.good())
@@ -126,6 +150,9 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			}
 			ACParticle<number> *p = dynamic_cast< ACParticle<number>  * > (particles[i]);
 
+			if(strlen(base) == 1) {
+				p->btype = Utils::decode_aa(base[0]);
+			}
 			if (nside < 0)
 				p->n3 = P_VIRTUAL;
 			else
@@ -135,6 +162,8 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			else
 				p->n5 = particles[cside];
 
+			p->strand_id = abs(strand)+ndnas-1;
+			p->index = i;
 			for(std::set<int>::iterator k = myneighs.begin(); k != myneighs.end(); ++k )
 			{
 				if(p->index < *k)
@@ -142,10 +171,8 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 				  p->add_bonded_neighbor(dynamic_cast<ACParticle<number>  *> (particles[*k]) );
 				}
 			}
-			p->strand_id = strand - 1;
-			p->index = i;
-			i++;
 
+			i++;
 			// here we fill the affected vector
 			if (p->n3 != P_VIRTUAL)
 				p->affected.push_back(ParticlePair<number>(p->n3, p));
@@ -156,7 +183,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			int tmpn3, tmpn5;
 			ss>>base>>tmpn3>>tmpn5;
 
-			BaseParticle<number> *p = particles[i];
+			DNANucleotide<number> *p = dynamic_cast< DNANucleotide<number>  * > (particles[i]);
 
 			if(tmpn3 < 0) p->n3 = P_VIRTUAL;
 			else p->n3 = particles[tmpn3];
@@ -206,6 +233,14 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 };
 
 template<typename number>
+number DNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
+	number energy = pair_interaction_nonbonded(p, q, r, update_forces);
+		energy += pair_interaction_bonded(p, q, r, update_forces);
+
+		return energy;
+}
+
+template<typename number>
 number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
 	if (p->btype >= 0 && q->btype >=0){ //DNA-DNA Interaction
@@ -216,7 +251,14 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 		number energy=0.0;
 		return energy;
 	} else if ((p->btype <0 && q->btype <0)){ //Protein,Protein Interaction
-		number energy= ACInteraction<number>::pair_interaction_bonded(p,q,r,update_forces);
+		LR_vector<number> computed_r(0, 0, 0);
+		if(r == NULL) {
+			if (q != P_VIRTUAL && p != P_VIRTUAL) {
+				computed_r = q->pos - p->pos;
+				r = &computed_r;
+			}
+		}
+		number energy= this->_protein_spring(p,q,r,update_forces);
 		return energy;
 	} else{
 		number energy=0.0;
@@ -231,18 +273,30 @@ number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number>
 		number energy= this->DNA2Interaction<number>::pair_interaction_nonbonded(p,q,r,update_forces);
 		return energy;
 	} else if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)){ //DNA,Protein Interaction
-		number energy= _protein_dna_exc_volume(p,q,r,update_forces);
+		LR_vector<number> computed_r(0, 0, 0);
+		if(r == NULL) {
+			if (q != P_VIRTUAL && p != P_VIRTUAL) {
+				computed_r = q->pos - p->pos;
+				r = &computed_r;
+			}
+		}
+		number energy= this->_protein_dna_exc_volume(p,q,r,update_forces);
 		return energy;
 	} else if ((p->btype <0 && q->btype <0)){ //Protein,Protein Interaction
-		number energy= ACInteraction<number>::pair_interaction_nonbonded(p,q,r,update_forces);
+		LR_vector<number> computed_r(0, 0, 0);
+		if(r == NULL) {
+			if (q != P_VIRTUAL && p != P_VIRTUAL) {
+				computed_r = q->pos - p->pos;
+				r = &computed_r;
+			}
+		}
+		number energy= this->_protein_exc_volume(p,q,r,update_forces);
 		return energy;
 	} else{
 		number energy=0.0;
 		return energy;
 	}
 }
-
-
 
 template<typename number>
 number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)
@@ -326,10 +380,6 @@ number DNANMInteraction<number>::_protein_dna_repulsive_lj(const LR_vector<numbe
 	return energy;
 }
 
-
-
-
-
 template<typename number>
 void DNANMInteraction<number>::init() {
 	this->DNA2Interaction<number>::init();
@@ -338,7 +388,174 @@ void DNANMInteraction<number>::init() {
 	_pro_dna_rstar= 0.0746f;
 	_pro_dna_b = 72471.9f;
 	_pro_dna_rcut = 0.0798717f;
+	_pro_sigma = 0.0786f;
+	_pro_rstar= 0.0746f;
+	_pro_b = 72471.9f;
+	_pro_rcut = 0.0798717f;
+	ndna=0;
+	npro=0;
+	ndnas=0;
+	printf("Initialized these values");
 }
 
-template class DNAInteraction<float>;
-template class DNAInteraction<double>;
+//Functions from ACInteraction.h
+//Stolen due to inheritance issues
+
+template<typename number>
+number DNANMInteraction<number>::_protein_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
+	// this is a bit faster than calling r.norm()
+	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
+	number energy = (number) 0;
+	if(rnorm < SQR(_pro_rcut)) {
+		if(rnorm > SQR(_pro_rstar)) {
+			number rmod = sqrt(rnorm);
+			number rrc = rmod - _pro_rcut;
+			energy = EXCL_EPS * _pro_b * SQR(rrc);
+			if(update_forces) force = -r * (2 * EXCL_EPS * _pro_b * rrc/ rmod);
+		}
+		else {
+			number tmp = SQR(_pro_sigma) / rnorm;
+			number lj_part = tmp * tmp * tmp;
+			energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
+			if(update_forces) force = -r* (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rnorm);
+		}
+	}
+
+	if(update_forces && energy == (number) 0) force.x = force.y = force.z = (number) 0;
+
+	return energy;
+}
+
+template<typename number>
+number DNANMInteraction<number>::_protein_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+	if (p->index != q->index){
+		LR_vector<number> force(0,0,0);
+
+		number energy =  DNANMInteraction<number>::_protein_repulsive_lj(*r, force, update_forces);
+
+		if(update_forces)
+		{
+			p->force -= force;
+			q->force += force;
+		}
+
+		return energy;
+	} else {
+		return (number) 0.f;
+	}
+}
+
+template<typename number>
+number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+	pair <int,int> keys;
+	number eqdist;
+	char interactiontype;
+	if (p->index != q->index)
+	{
+		if (p->index > q->index)
+		{
+			keys.first=q->index;
+			keys.second=p->index;
+		} else {
+			keys.first=p->index;
+			keys.second=q->index;
+		}
+		eqdist = _rknot[keys];
+		interactiontype = _potential[keys].first;
+		if (eqdist != 0.0){ //only returns number if eqdist is in .par file
+			switch (interactiontype){
+				case 's':
+					{
+						//Harmonic Spring Potential
+						if ((eqdist < 0.0) || (eqdist > 2.0))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
+						{
+							if (keys.first+1 != keys.second){
+								throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
+							}
+						}
+						number _k = _potential[keys].second; //stiffness of the spring
+						if ((_k == 0) || (_k < 0)){
+							throw oxDNAException("No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f", p->index, q->index, _k);
+						}
+						number rnorm = r->norm();
+						number rinsta = sqrt(rnorm);
+						number energy = 0.5 * _k * SQR(rinsta-eqdist);
+
+						if (update_forces)
+						{
+							LR_vector<number> force(*r );
+							force *= (-1.0f * _k ) * (rinsta-eqdist)/rinsta;
+							p->force -= force;
+							q->force += force;
+						//printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
+						//printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
+						}
+						return energy;
+					} break;
+				case 'i':
+					{
+						//Every Possible Pair of Particles Needs to be Calculated
+						number _k = _potential[keys].second; //stiffness of the spring
+						if ((_k == 0) || (_k < 0)){
+							throw oxDNAException("No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f", p->index, q->index, _k);
+						}
+						number rnorm = r->norm();
+						number rinsta = sqrt(rnorm);
+						number energy = 0.5 * _k * SQR(rinsta-eqdist)*(1/eqdist);
+
+						if (update_forces)
+						{
+							LR_vector<number> force(*r );
+							force *= (-1.0f * _k ) * ((rinsta-eqdist)/rinsta) * (1/eqdist);
+							p->force -= force;
+							q->force += force;
+						//printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
+						//printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
+						}
+						return energy;
+					} break;
+				case 'e':
+					{
+						//Every Possible Pair of Particles Needs to be Calculated
+						number _k = _potential[keys].second; //stiffness of the spring
+						if ((_k == 0) || (_k < 0)){
+							throw oxDNAException("No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f", p->index, q->index, _k);
+						}
+						number rnorm = r->norm();
+						number rinsta = sqrt(rnorm);
+						number energy = 0.5 * _k * SQR(rinsta-eqdist)*(1/(eqdist*eqdist));
+
+						if (update_forces)
+						{
+							LR_vector<number> force(*r );
+							force *= (-1.0f * _k ) * ((rinsta-eqdist)/rinsta) * (1/(eqdist*eqdist));
+							p->force -= force;
+							q->force += force;
+						//printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
+						//printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
+						}
+						return energy;
+					} break;
+				default:
+					{
+						throw oxDNAException("Interaction type specified in .par file is Invalid, particles %d and %d, switch %c",p->index,q->index,interactiontype);
+					}
+			}
+		} else {
+			return (number) 0.f; //returns 0 if no rknot value in parameter value aka they aren't bonded
+		}
+	} else {
+		return (number) 0.f; //returns 0 if particle pair consists of particle and itself
+	}
+
+}
+
+template<typename number>
+DNANMInteraction<number>::~DNANMInteraction() {
+
+}
+
+
+
+
+

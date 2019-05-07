@@ -23,7 +23,7 @@
  * none
  */
 template <typename number>
-class ACInteraction: public BaseInteraction<number, ACInteraction<number> > {
+class ACInteraction: virtual public BaseInteraction<number, ACInteraction<number> > {
 protected:
 
 	number _r; //radius of alpha carbon of amino acid
