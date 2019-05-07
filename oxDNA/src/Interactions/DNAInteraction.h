@@ -21,7 +21,7 @@
 @endverbatim
  */
 template <typename number>
-class DNAInteraction : public BaseInteraction<number, DNAInteraction<number> > {
+class DNAInteraction : virtual public BaseInteraction<number, DNAInteraction<number> > {
 protected:
 	bool _average;
 	std::string _seq_filename;

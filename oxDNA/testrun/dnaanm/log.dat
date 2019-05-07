@@ -1,0 +1,54 @@
+DEBUG: Initializing
+INFO: seeding the RNG with 507535193
+INFO: Initializing backend 
+INFO: Backend precision: double
+INFO: Simulation type: MD
+DEBUG: Adding new timer with description SimBackend and no parent
+INFO: The generator will try to take into account bonded interactions by choosing distances between bonded neighbours no larger than 2.000000
+INFO: Running Debye-Huckel at salt concentration =  0.5
+INFO: Using different widths for major and minor grooves
+INFO: Setting the maximum IO limit to 4 MB/s
+INFO: pid: 14628
+DEBUG: Debye-Huckel parameters: Q=0.054300, lambda_0=0.361646, lambda=0.511444, r_high=1.534332, cutoff=3.264295
+DEBUG: Debye-Huckel parameters: debye_huckel_RC=2.301498e+00, debye_huckel_B=2.993770e-03
+INFO: The Debye length at this temperature and salt concentration is 0.511444
+INFO: (Cells.cpp) N_cells_side: 3, 3, 3; rcut=3.6643, IS_MC: 0
+INFO: N: 4
+INFO: Using randomly distributed velocities
+INFO: Initial kinetic energy: 1.700678
+DEBUG: Adding new timer with description First Step and parent SimBackend
+DEBUG: Adding new timer with description Forces and parent SimBackend
+DEBUG: Adding new timer with description Thermostat and parent SimBackend
+DEBUG: Adding new timer with description Lists and parent SimBackend
+INFO: SVN CODE VERSION: Unversioned directory
+INFO: COMPILED ON: 07/05/19
+DEBUG: Running
+
+INFO: Total Running Time: 9.8e-05 s, per step: 0.0098 ms
+INFO: Timings, in seconds, by Timer (total, own, spent in children)
+> SimBackend                          0.000 (100.0%)        0.000 ( 14.3%)        0.000 ( 85.7%)
+***> Lists                            0.000 (  2.0%)        0.000 (  2.0%)        0.000 (  0.0%)
+***> Thermostat                       0.000 (  6.1%)        0.000 (  6.1%)        0.000 (  0.0%)
+***> Forces                           0.000 ( 40.8%)        0.000 ( 40.8%)        0.000 (  0.0%)
+***> First Step                       0.000 ( 36.7%)        0.000 ( 36.7%)        0.000 (  0.0%)
+
+INFO: END OF THE SIMULATION, everything went OK!
+INFO: Aggregated I/O statistics (set debug=1 for file-wise information)
+DEBUG:   on trajectory.dat:   1.015 KB
+DEBUG:   on last_conf.dat:   2.029 KB
+DEBUG:   on energy.dat: 539.000  B
+DEBUG:   on stdout: 682.000  B
+	  3.570 KB written to files
+	682.000  B written to stdout/stderr
+	For a total of     42.2 MB/s
+
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc SimBackend deleted
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc First Step deleted
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc Forces deleted
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc Thermostat deleted
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc Lists deleted

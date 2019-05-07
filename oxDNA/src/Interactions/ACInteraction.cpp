@@ -12,7 +12,7 @@
 
 
 template<typename number>
-ACInteraction<number>::ACInteraction() : BaseInteraction<number, ACInteraction<number> >() {
+ACInteraction<number>::ACInteraction(){
 	this->_int_map[SPRING_POTENTIAL] = &ACInteraction<number>::_spring;
 	this->_int_map[EXC_VOL] = &ACInteraction<number>::_exc_volume;
 
