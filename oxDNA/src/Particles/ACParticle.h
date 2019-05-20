@@ -26,7 +26,6 @@ public:
 
 	virtual bool is_bonded(BaseParticle<number> *q);
 	virtual void add_bonded_neighbor(ACParticle<number> *nn);
-
 	std::set<ACParticle<number> *> bonded_neighs;
 };
 
