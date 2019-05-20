@@ -66,10 +66,10 @@ void ACInteraction<number>::init() {
 
 
 //TODO: Figure out these values
-	_sigma = 0.0786f;
-	_rstar= 0.0746f;
-	_b = 72471.9f;
-	_rcut = 0.0798717f;
+	_sigma = 0.3480514f;
+	_rstar= 0.348f;
+	_b = 336800.0f;
+	_rcut = 0.348103f;
 }
 
 template<typename number>
