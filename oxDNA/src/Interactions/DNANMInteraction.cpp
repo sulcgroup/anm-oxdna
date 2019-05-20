@@ -330,7 +330,7 @@ number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p
 
 	 LR_vector<number> torquenuc(0,0,0);
 
-	 number energy = this->_protein_dna_repulsive_lj(r_to_back, force, update_forces);
+	 number energy = this->_protein_dna_repulsive_lj(r_to_back, force, update_forces, _pro_backbone_sigma, _pro_backbone_b, _pro_backbone_rstar,_pro_backbone_rcut,_pro_backbone_stiffness);
 	 if (update_forces) {
 		    torquenuc  -= nuc->int_centers[DNANucleotide<number>::BACK].cross(force);
 	 		nuc->force -= force;
@@ -338,7 +338,7 @@ number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p
 	 }
 
 
-	 energy += this->_protein_dna_repulsive_lj(r_to_base, force, update_forces);
+	 energy += this->_protein_dna_repulsive_lj(r_to_base, force, update_forces, _pro_base_sigma, _pro_base_b, _pro_base_rstar, _pro_base_rcut, _pro_base_stiffness);
 
 	 if(update_forces) {
 
@@ -355,23 +355,23 @@ number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p
 }
 
 template<typename number>
-number DNANMInteraction<number>::_protein_dna_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
+number DNANMInteraction<number>::_protein_dna_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, number &sigma, number &b, number &rstar, number &rcut, number &stiffness) {
 	// this is a bit faster than calling r.norm()
 	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
 	number energy = (number) 0;
 
-	if(rnorm < SQR(_pro_dna_rcut)) {
-		if(rnorm > SQR(_pro_dna_rstar)) {
+	if(rnorm < SQR(rcut)) {
+		if(rnorm > SQR(rstar)) {
 			number rmod = sqrt(rnorm);
-			number rrc = rmod - _pro_dna_rcut;
-			energy = _pro_dna_stiffness * _pro_dna_b * SQR(rrc);
-			if(update_forces) force = -r * (2 * _pro_dna_stiffness * _pro_dna_b * rrc / rmod);
+			number rrc = rmod - rcut;
+			energy = stiffness * b * SQR(rrc);
+			if(update_forces) force = -r * (2 * stiffness * b * rrc / rmod);
 		}
 		else {
-			number tmp = SQR(_pro_dna_sigma) / rnorm;
+			number tmp = SQR(sigma) / rnorm;
 			number lj_part = tmp * tmp * tmp;
-			energy = 4 * this->_pro_dna_stiffness * (SQR(lj_part) - lj_part);
-			if(update_forces) force = -r * (24 * _pro_dna_stiffness * (lj_part - 2*SQR(lj_part)) / rnorm);
+			energy = 4 * stiffness * (SQR(lj_part) - lj_part);
+			if(update_forces) force = -r * (24 * stiffness * (lj_part - 2*SQR(lj_part)) / rnorm);
 		}
 	}
 
@@ -384,10 +384,19 @@ template<typename number>
 void DNANMInteraction<number>::init() {
 	this->DNA2Interaction<number>::init();
 //TODO: Figure out these values
-	_pro_dna_sigma = 0.0786f;
-	_pro_dna_rstar= 0.0746f;
-	_pro_dna_b = 72471.9f;
-	_pro_dna_rcut = 0.0798717f;
+    //Backbone-Protein Excluded Volume Parameters
+	_pro_backbone_sigma = 0.0786f;
+	_pro_backbone_rstar= 0.0746f;
+	_pro_backbone_b = 72471.9f;
+	_pro_backbone_rcut = 0.0798717f;
+    _pro_backbone_stiffness = 1.0f;
+    //Base-Protein Excluded Volume Parameters
+    _pro_base_sigma = 0.0786f;
+	_pro_base_rstar= 0.0746f;
+	_pro_base_b = 72471.9f;
+	_pro_base_rcut = 0.0798717f;
+    _pro_base_stiffness = 1.0f;
+    //Protein-Protein Excluded Volume Parameters
 	_pro_sigma = 0.0786f;
 	_pro_rstar= 0.0746f;
 	_pro_b = 72471.9f;

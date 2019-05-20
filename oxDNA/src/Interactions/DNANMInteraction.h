@@ -19,7 +19,8 @@ protected:
 	int ndna;//How many particles of DNA type: Used in allocate_particles
 	int npro;//How many particles of AC type: Used in allocate_particles
 	int ndnas;//Number of Strands that are dna
-	number _pro_dna_sigma, _pro_dna_rstar, _pro_dna_b, _pro_dna_rcut, _pro_dna_stiffness;
+	number _pro_backbone_sigma, _pro_backbone_rstar, _pro_backbone_b, _pro_backbone_rcut, _pro_backbone_stiffness;
+    number _pro_base_sigma,_pro_base_rstar, _pro_base_b, _pro_base_rcut, _pro_base_stiffness;
 	map<pair<int, int>, double> _rknot; //Both maps used just as they are in ACInteraction
 	map<pair<int, int>, pair<char, double> > _potential;
 	//number _pro_r; //radius of alpha carbon of amino acid
@@ -42,7 +43,7 @@ public:
 	virtual number pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r=NULL, bool update_forces=false);
 	virtual number pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r=NULL, bool update_forces=false);
 	number _protein_dna_exc_volume(BaseParticle<number> *p,BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
-	number _protein_dna_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
+	number _protein_dna_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, number &sigma, number &b, number &rstar, number &rcut, number &stiffness);
 	virtual void check_input_sanity(BaseParticle<number> **particles, int N);
 	virtual void init();
 	number _protein_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
