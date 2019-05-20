@@ -29,6 +29,7 @@ void ACParticle<number>::add_bonded_neighbor(ACParticle<number> *nn) {
 	}
 }
 
+
 template<typename number>
 bool ACParticle<number>::is_bonded(BaseParticle<number> *q) {
 	ACParticle<number> *Cq = static_cast<ACParticle<number> *>(q);

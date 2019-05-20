@@ -63,9 +63,6 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 
 template<typename number>
 void ACInteraction<number>::init() {
-
-
-//TODO: Figure out these values
 	_sigma = 0.3480514f;
 	_rstar= 0.348f;
 	_b = 336800.0f;

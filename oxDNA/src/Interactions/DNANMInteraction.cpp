@@ -21,8 +21,6 @@
 
 template<typename number>
 DNANMInteraction<number>::DNANMInteraction() : DNA2Interaction<number>() { // @suppress("Class members should be properly initialized")
-	//GOING TO HAVE TO FIGURE THIS OUT
-	//TWO INT MAPS NEED TO JOIN THEM (One from DNA2, other from AC)
 	//typedef std::map<int, number (child::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)> interaction_map;
 
 	//Protein Methods Function Pointers
@@ -38,9 +36,6 @@ DNANMInteraction<number>::DNANMInteraction() : DNA2Interaction<number>() { // @s
 	this->_int_map[this->HYDROGEN_BONDING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_hydrogen_bonding;
 	this->_int_map[this->NONBONDED_EXCLUDED_VOLUME] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_nonbonded_excluded_volume;
 	this->_int_map[this->DEBYE_HUCKEL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_debye_huckel;
-
-
-	//no compile errors though the presence of more than one _int_map is most likely a bad thing
 }
 
 template<typename number>
@@ -89,7 +84,7 @@ void DNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particl
 
 template<typename number>
 void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
-	if (ndna==0 || npro==0 || ndnas==0) throw oxDNAException("Missing Protein or DNA particles");
+	if (ndna==0 || ndnas==0) throw oxDNAException("Missing DNA particles");
 	for(int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
 	for(int i = ndna; i < N; i++) particles[i] = new ACParticle<number>();
 }
@@ -108,7 +103,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 				this->_topology_filename);
 
 	topology.getline(line, 2040);
-	sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
+	sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npairs, &ndnas);
 
 	allocate_particles(particles, N); //How/Can I Use This?
 	for (int i = 0; i < N; i ++) {
@@ -124,7 +119,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 		topology.getline(line, 2040);
 		if (strlen(line) == 0 || line[0] == '#')
 			continue;
-		if (i == N)
+		if (i == N+npairs)
 			throw oxDNAException(
 					"Too many particles found in the topology file (should be %d), aborting",
 					N);
@@ -179,7 +174,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			if (p->n5 != P_VIRTUAL)
 				p->affected.push_back(ParticlePair<number>(p, p->n5));
 
-		} else {
+		} if(strand>0) {
 			int tmpn3, tmpn5;
 			ss>>base>>tmpn3>>tmpn5;
 
@@ -213,6 +208,13 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			// here we fill the affected vector
 			if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
 			if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
+		} if (strand == 0){
+			int pro, dna;
+			ss>>base>>dna>>pro; //Currently base is completely arbitrary but could be used in the future
+			std::pair <int,int> pdpair;
+			pdpair.first=dna;
+			pdpair.second=pro;
+			_ippairs.push_back(pdpair);
 		}
 
 	}
@@ -235,9 +237,9 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 template<typename number>
 number DNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
 	number energy = pair_interaction_nonbonded(p, q, r, update_forces);
-		energy += pair_interaction_bonded(p, q, r, update_forces);
+	energy += pair_interaction_bonded(p, q, r, update_forces);
 
-		return energy;
+	return energy;
 }
 
 template<typename number>
@@ -247,9 +249,30 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 		number energy= this->DNA2Interaction<number>::pair_interaction_bonded(p,q,r,update_forces);
 		return energy;
 	} else if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)){ //DNA,Protein Interaction
-		// Not Yet Supported
-		number energy=0.0;
-		return energy;
+		LR_vector<number> computed_r(0, 0, 0);
+		if(r == NULL) {
+			if (q != P_VIRTUAL && p != P_VIRTUAL) {
+				computed_r = q->pos - p->pos;
+				r = &computed_r;
+			}
+		}
+
+		std::pair<int,int> lookup;
+		if (p->index>q->index){ //the higher index will always be the protein particle
+			lookup.first=p->index;
+			lookup.second=q->index;
+		} else{
+			lookup.second=p->index;
+			lookup.first=q->index;
+		}
+
+		if ( std::find(this->_ippairs.begin(), this->_ippairs.end(), lookup) != this->_ippairs.end() ){
+			number energy=_protein_spring(p,q,r,update_forces);
+			return energy;
+		}else{
+			number energy=0.0;
+			return energy;
+		}
 	} else if ((p->btype <0 && q->btype <0)){ //Protein,Protein Interaction
 		LR_vector<number> computed_r(0, 0, 0);
 		if(r == NULL) {
@@ -385,26 +408,25 @@ void DNANMInteraction<number>::init() {
 	this->DNA2Interaction<number>::init();
 //TODO: Figure out these values
     //Backbone-Protein Excluded Volume Parameters
-	_pro_backbone_sigma = 0.0786f;
-	_pro_backbone_rstar= 0.0746f;
-	_pro_backbone_b = 72471.9f;
-	_pro_backbone_rcut = 0.0798717f;
+	_pro_backbone_sigma = 1.05;
+	_pro_backbone_rstar= 0.97285f;
+	_pro_backbone_b = 483.718f;
+	_pro_backbone_rcut = 1.05998f;
     _pro_backbone_stiffness = 1.0f;
     //Base-Protein Excluded Volume Parameters
-    _pro_base_sigma = 0.0786f;
-	_pro_base_rstar= 0.0746f;
-	_pro_base_b = 72471.9f;
-	_pro_base_rcut = 0.0798717f;
+    _pro_base_sigma = 0.68f;
+	_pro_base_rstar= 0.62452f;
+	_pro_base_b = 1256.04f;
+	_pro_base_rcut = 0.683987f;
     _pro_base_stiffness = 1.0f;
     //Protein-Protein Excluded Volume Parameters
-	_pro_sigma = 0.0786f;
-	_pro_rstar= 0.0746f;
-	_pro_b = 72471.9f;
-	_pro_rcut = 0.0798717f;
+	_pro_sigma = 0.3480514f;
+	_pro_rstar= 0.348f;
+	_pro_b = 336800.0f;
+	_pro_rcut = 0.348103f;
 	ndna=0;
-	npro=0;
+	npairs=0;
 	ndnas=0;
-	printf("Initialized these values");
 }
 
 //Functions from ACInteraction.h
