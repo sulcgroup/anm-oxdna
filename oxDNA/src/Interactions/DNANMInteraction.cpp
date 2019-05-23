@@ -168,7 +168,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			}
 
 			i++;
-			// here we fill the affected vector
+
 			if (p->n3 != P_VIRTUAL)
 				p->affected.push_back(ParticlePair<number>(p->n3, p));
 			if (p->n5 != P_VIRTUAL)
@@ -238,7 +238,7 @@ template<typename number>
 number DNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
 	number energy = pair_interaction_nonbonded(p, q, r, update_forces);
 	energy += pair_interaction_bonded(p, q, r, update_forces);
-
+	//printf("p %d - q %d, energy = %f \n",p->index,q->index,energy);
 	return energy;
 }
 
@@ -247,6 +247,7 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 
 	if (p->btype >= 0 && q->btype >=0){ //DNA-DNA Interaction
 		number energy= this->DNA2Interaction<number>::pair_interaction_bonded(p,q,r,update_forces);
+		//printf("DNA-DNA Interaction energy=%f \n",energy);
 		return energy;
 	} else if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)){ //DNA,Protein Interaction
 		LR_vector<number> computed_r(0, 0, 0);
@@ -258,16 +259,17 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 		}
 
 		std::pair<int,int> lookup;
-		if (p->index>q->index){ //the higher index will always be the protein particle
-			lookup.first=p->index;
-			lookup.second=q->index;
-		} else{
-			lookup.second=p->index;
+		if (p->index > q->index){ //the higher index will always be the protein particle
 			lookup.first=q->index;
+			lookup.second=p->index;
+		} else{
+			lookup.second=q->index;
+			lookup.first=p->index;
 		}
 
 		if ( std::find(this->_ippairs.begin(), this->_ippairs.end(), lookup) != this->_ippairs.end() ){
 			number energy=_protein_spring(p,q,r,update_forces);
+			printf("p %d q %d PD bonded Interaction energy=%f \n",p->index,q->index,energy);
 			return energy;
 		}else{
 			number energy=0.0;
@@ -281,7 +283,8 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 				r = &computed_r;
 			}
 		}
-		number energy= this->_protein_spring(p,q,r,update_forces);
+		number energy= _protein_spring(p,q,r,update_forces);
+		//printf("Pro %d -Pro %d Interaction energy=%f \n",p->index,q->index,energy);
 		return energy;
 	} else{
 		number energy=0.0;
@@ -304,6 +307,7 @@ number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number>
 			}
 		}
 		number energy= this->_protein_dna_exc_volume(p,q,r,update_forces);
+		printf("p %d q %d PD nonbonded Interaction energy=%f \n",p->index,q->index,energy);
 		return energy;
 	} else if ((p->btype <0 && q->btype <0)){ //Protein,Protein Interaction
 		LR_vector<number> computed_r(0, 0, 0);
@@ -408,16 +412,16 @@ void DNANMInteraction<number>::init() {
 	this->DNA2Interaction<number>::init();
 //TODO: Figure out these values
     //Backbone-Protein Excluded Volume Parameters
-	_pro_backbone_sigma = 1.05;
-	_pro_backbone_rstar= 0.97285f;
-	_pro_backbone_b = 483.718f;
-	_pro_backbone_rcut = 1.05998f;
+	_pro_backbone_sigma = 0.748103f;;
+	_pro_backbone_rstar= 0.698103f;
+	_pro_backbone_b = 895.144f;
+	_pro_backbone_rcut = 0.757106f;
     _pro_backbone_stiffness = 1.0f;
     //Base-Protein Excluded Volume Parameters
-    _pro_base_sigma = 0.68f;
-	_pro_base_rstar= 0.62452f;
-	_pro_base_b = 1256.04f;
-	_pro_base_rcut = 0.683987f;
+    _pro_base_sigma = 0.563103f;
+	_pro_base_rstar= 0.513103f;
+	_pro_base_b = 1989.15f;
+	_pro_base_rcut = 0.564332f;
     _pro_base_stiffness = 1.0f;
     //Protein-Protein Excluded Volume Parameters
 	_pro_sigma = 0.3480514f;
