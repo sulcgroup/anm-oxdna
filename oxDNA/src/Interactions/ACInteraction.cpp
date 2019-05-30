@@ -63,10 +63,10 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 
 template<typename number>
 void ACInteraction<number>::init() {
-	_sigma = 0.3480514f;
-	_rstar= 0.348f;
-	_b = 336800.0f;
-	_rcut = 0.348103f;
+	_sigma = 0.398103f;
+    __rstar= 0.348103f;
+    _b = 6485.58f;
+    _rcut = 0.389423f;
 }
 
 template<typename number>

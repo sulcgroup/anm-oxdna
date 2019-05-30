@@ -103,7 +103,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 				this->_topology_filename);
 
 	topology.getline(line, 2040);
-	sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npairs, &ndnas);
+	sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
 
 	allocate_particles(particles, N); //How/Can I Use This?
 	for (int i = 0; i < N; i ++) {
@@ -119,7 +119,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 		topology.getline(line, 2040);
 		if (strlen(line) == 0 || line[0] == '#')
 			continue;
-		if (i == N+npairs)
+		if (i == N)
 			throw oxDNAException(
 					"Too many particles found in the topology file (should be %d), aborting",
 					N);
@@ -208,17 +208,8 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			// here we fill the affected vector
 			if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
 			if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
-		} if (strand == 0){
-			int pro, dna;
-			ss>>base>>dna>>pro; //Currently base is completely arbitrary but could be used in the future
-			std::pair <int,int> pdpair;
-			pdpair.first=dna;
-			pdpair.second=pro;
-			_ippairs.push_back(pdpair);
 		}
-
 	}
-
 	if (i < my_N)
 		throw oxDNAException(
 				"Not enough particles found in the topology file (should be %d). Aborting",
@@ -238,7 +229,7 @@ template<typename number>
 number DNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
 	number energy = pair_interaction_nonbonded(p, q, r, update_forces);
 	energy += pair_interaction_bonded(p, q, r, update_forces);
-	//printf("p %d - q %d, energy = %f \n",p->index,q->index,energy);
+	printf("p %d - q %d, energy = %f \n",p->index,q->index,energy);
 	return energy;
 }
 
@@ -247,34 +238,11 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 
 	if (p->btype >= 0 && q->btype >=0){ //DNA-DNA Interaction
 		number energy= this->DNA2Interaction<number>::pair_interaction_bonded(p,q,r,update_forces);
-		//printf("DNA-DNA Interaction energy=%f \n",energy);
+		printf("DNA-DNA Interaction energy=%f \n",energy);
 		return energy;
 	} else if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)){ //DNA,Protein Interaction
-		LR_vector<number> computed_r(0, 0, 0);
-		if(r == NULL) {
-			if (q != P_VIRTUAL && p != P_VIRTUAL) {
-				computed_r = q->pos - p->pos;
-				r = &computed_r;
-			}
-		}
-
-		std::pair<int,int> lookup;
-		if (p->index > q->index){ //the higher index will always be the protein particle
-			lookup.first=q->index;
-			lookup.second=p->index;
-		} else{
-			lookup.second=q->index;
-			lookup.first=p->index;
-		}
-
-		if ( std::find(this->_ippairs.begin(), this->_ippairs.end(), lookup) != this->_ippairs.end() ){
-			number energy=_protein_spring(p,q,r,update_forces);
-			printf("p %d q %d PD bonded Interaction energy=%f \n",p->index,q->index,energy);
-			return energy;
-		}else{
-			number energy=0.0;
-			return energy;
-		}
+		number energy=0.0;
+		return energy;
 	} else if ((p->btype <0 && q->btype <0)){ //Protein,Protein Interaction
 		LR_vector<number> computed_r(0, 0, 0);
 		if(r == NULL) {
@@ -284,7 +252,7 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 			}
 		}
 		number energy= _protein_spring(p,q,r,update_forces);
-		//printf("Pro %d -Pro %d Interaction energy=%f \n",p->index,q->index,energy);
+		printf("Pro %d -Pro %d Interaction energy=%f \n",p->index,q->index,energy);
 		return energy;
 	} else{
 		number energy=0.0;
@@ -358,6 +326,7 @@ number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p
 	 LR_vector<number> torquenuc(0,0,0);
 
 	 number energy = this->_protein_dna_repulsive_lj(r_to_back, force, update_forces, _pro_backbone_sigma, _pro_backbone_b, _pro_backbone_rstar,_pro_backbone_rcut,_pro_backbone_stiffness);
+	 //printf("back-pro %d %d %f\n",p->index,q->index,energy);
 	 if (update_forces) {
 		    torquenuc  -= nuc->int_centers[DNANucleotide<number>::BACK].cross(force);
 	 		nuc->force -= force;
@@ -366,7 +335,6 @@ number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p
 
 
 	 energy += this->_protein_dna_repulsive_lj(r_to_base, force, update_forces, _pro_base_sigma, _pro_base_b, _pro_base_rstar, _pro_base_rcut, _pro_base_stiffness);
-
 	 if(update_forces) {
 
 		    torquenuc  -= nuc->int_centers[DNANucleotide<number>::BASE].cross(force);
@@ -410,9 +378,8 @@ number DNANMInteraction<number>::_protein_dna_repulsive_lj(const LR_vector<numbe
 template<typename number>
 void DNANMInteraction<number>::init() {
 	this->DNA2Interaction<number>::init();
-//TODO: Figure out these values
     //Backbone-Protein Excluded Volume Parameters
-	_pro_backbone_sigma = 0.748103f;;
+	_pro_backbone_sigma = 0.748103f;
 	_pro_backbone_rstar= 0.698103f;
 	_pro_backbone_b = 895.144f;
 	_pro_backbone_rcut = 0.757106f;
@@ -424,12 +391,13 @@ void DNANMInteraction<number>::init() {
 	_pro_base_rcut = 0.564332f;
     _pro_base_stiffness = 1.0f;
     //Protein-Protein Excluded Volume Parameters
-	_pro_sigma = 0.3480514f;
-	_pro_rstar= 0.348f;
-	_pro_b = 336800.0f;
-	_pro_rcut = 0.348103f;
+	_pro_sigma = 0.398103f;
+	_pro_rstar= 0.348103f;
+	_pro_b = 6485.58f;
+	_pro_rcut = 0.389423f;
+	//Topology File Parameters
 	ndna=0;
-	npairs=0;
+	npro=0;
 	ndnas=0;
 }
 
