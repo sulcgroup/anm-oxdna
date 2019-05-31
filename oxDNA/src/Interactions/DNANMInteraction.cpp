@@ -84,9 +84,13 @@ void DNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particl
 
 template<typename number>
 void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
-	if (ndna==0 || ndnas==0) throw oxDNAException("Missing DNA particles");
-	for(int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
-	for(int i = ndna; i < N; i++) particles[i] = new ACParticle<number>();
+	if (ndna==0 || ndnas==0){
+        OX_LOG(Logger::LOG_INFO,"No DNA Particles Specified, Continuing with just Protein Particles");
+        for(int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
+	} else {
+        for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
+        for (int i = ndna; i < N; i++) particles[i] = new ACParticle<number>();
+    }
 }
 
 template<typename number>
@@ -112,8 +116,6 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 	   particles[i]->strand_id = 0;
 	}
 
-	char aminoacid[256];
-	char base[256];
 	int strand, i = 0;
 	while (topology.good()) {
 		topology.getline(line, 2040);
@@ -128,6 +130,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 		ss >> strand;
 
 		if (strand<0){
+            char aminoacid[256];
 			int nside, cside;
 			ss >> aminoacid >> nside >> cside;
 
@@ -145,8 +148,9 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			}
 			ACParticle<number> *p = dynamic_cast< ACParticle<number>  * > (particles[i]);
 
-			if(strlen(base) == 1) {
-				p->btype = Utils::decode_aa(base[0]);
+			if(strlen(aminoacid) == 1) {
+				p->btype = Utils::decode_aa(aminoacid[0]);
+				//printf("type = %d", p->btype);
 			}
 			if (nside < 0)
 				p->n3 = P_VIRTUAL;
@@ -175,6 +179,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 				p->affected.push_back(ParticlePair<number>(p, p->n5));
 
 		} if(strand>0) {
+            char base[256];
 			int tmpn3, tmpn5;
 			ss>>base>>tmpn3>>tmpn5;
 
@@ -238,7 +243,7 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 
 	if (p->btype >= 0 && q->btype >=0){ //DNA-DNA Interaction
 		number energy= this->DNA2Interaction<number>::pair_interaction_bonded(p,q,r,update_forces);
-		//printf("DNA-DNA Interaction energy=%f \n",energy);
+		//printf("DNA-DNA Interaction energy=%f \n",energy)
 		return energy;
 	} else if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)){ //DNA,Protein Interaction
 		number energy=0.0;

@@ -1,25 +1,58 @@
 DEBUG: Initializing
-INFO: seeding the RNG with 433255243
+INFO: seeding the RNG with 1346339789
 INFO: Initializing backend 
 INFO: Backend precision: double
 INFO: Simulation type: MD
 DEBUG: Adding new timer with description SimBackend and no parent
 INFO: The generator will try to take into account bonded interactions by choosing distances between bonded neighbours no larger than 2.000000
-INFO: Running Debye-Huckel at salt concentration =  0.5
+INFO: Running Debye-Huckel at salt concentration =  0.1
 INFO: Using different widths for major and minor grooves
 INFO: Setting the maximum IO limit to 4 MB/s
-INFO: pid: 28213
-DEBUG: Debye-Huckel parameters: Q=0.054300, lambda_0=0.361646, lambda=0.051144, r_high=0.153433, cutoff=1.674676
-DEBUG: Debye-Huckel parameters: debye_huckel_RC=2.301498e-01, debye_huckel_B=2.993770e+00
-INFO: The Debye length at this temperature and salt concentration is 0.051144
-INFO: (Cells.cpp) N_cells_side: 3, 3, 3; rcut=2.07468, IS_MC: 0
+INFO: pid: 14498
+DEBUG: Debye-Huckel parameters: Q=0.054300, lambda_0=0.361646, lambda=0.361645, r_high=1.084936, cutoff=2.590202
+DEBUG: Debye-Huckel parameters: debye_huckel_RC=1.627405e+00, debye_huckel_B=8.467660e-03
+INFO: The Debye length at this temperature and salt concentration is 0.361645
+INFO: (Cells.cpp) N_cells_side: 3, 3, 3; rcut=2.9902, IS_MC: 0
 INFO: N: 4
 INFO: Using randomly distributed velocities
-INFO: Initial kinetic energy: 0.013057
+INFO: Initial kinetic energy: 0.096700
 DEBUG: Adding new timer with description First Step and parent SimBackend
 DEBUG: Adding new timer with description Forces and parent SimBackend
 DEBUG: Adding new timer with description Thermostat and parent SimBackend
 DEBUG: Adding new timer with description Lists and parent SimBackend
 INFO: SVN CODE VERSION: Unversioned directory
-INFO: COMPILED ON: 20/05/19
+INFO: COMPILED ON: 31/05/19
 DEBUG: Running
+INFO: diffusion fixed.. -0.927994 -0.927994
+
+INFO: Total Running Time: 0.538868 s, per step: 0.00538868 ms
+INFO: Timings, in seconds, by Timer (total, own, spent in children)
+> SimBackend                          0.539 (100.0%)        0.229 ( 42.6%)        0.309 ( 57.4%)
+***> Lists                            0.044 (  8.1%)        0.044 (  8.1%)        0.000 (  0.0%)
+***> Thermostat                       0.045 (  8.4%)        0.045 (  8.4%)        0.000 (  0.0%)
+***> Forces                           0.130 ( 24.1%)        0.130 ( 24.1%)        0.000 (  0.0%)
+***> First Step                       0.091 ( 16.9%)        0.091 ( 16.9%)        0.000 (  0.0%)
+
+INFO: END OF THE SIMULATION, everything went OK!
+DEBUG: The following keys found in the input file were not used: 
+	diff_coeff
+	newtonian_steps
+INFO: Aggregated I/O statistics (set debug=1 for file-wise information)
+DEBUG:   on trajectory.dat: 101.998 MB
+DEBUG:   on last_conf.dat: 101.999 MB
+DEBUG:   on energy.dat:   4.673 MB
+DEBUG:   on stdout:   5.913 MB
+	208.671 MB written to files
+	  5.913 MB written to stdout/stderr
+	For a total of      398 MB/s
+
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc SimBackend deleted
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc First Step deleted
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc Forces deleted
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc Thermostat deleted
+DEBUG: Trying to delete timer...
+DEBUG: Timer with desc Lists deleted
