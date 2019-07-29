@@ -83,14 +83,19 @@ void DNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particl
 }
 
 template<typename number>
-void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
+void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N, int firststrand) {
 	if (ndna==0 || ndnas==0){
         OX_LOG(Logger::LOG_INFO,"No DNA Particles Specified, Continuing with just Protein Particles");
         for(int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
 	} else {
-        for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
-        for (int i = ndna; i < N; i++) particles[i] = new ACParticle<number>();
-    }
+	    if (firststrand > 0){
+            for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
+            for (int i = ndna; i < N; i++) particles[i] = new ACParticle<number>();
+	    } else {
+            for (int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
+            for (int i = npro; i < N; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
+	    }
+	}
 }
 
 template<typename number>
@@ -109,13 +114,6 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 	topology.getline(line, 2040);
 	sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
 
-	allocate_particles(particles, N); //How/Can I Use This?
-	for (int i = 0; i < N; i ++) {
-	   particles[i]->index = i;
-	   particles[i]->type = 0;
-	   particles[i]->strand_id = 0;
-	}
-
 	int strand, i = 0;
 	while (topology.good()) {
 		topology.getline(line, 2040);
@@ -128,7 +126,15 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 		//BaseParticle<number> *p = particles[i];
 		std::stringstream ss(line);
 		ss >> strand;
-
+		if (i == 0){
+		    allocate_particles(particles, N, strand); //How/Can I Use This?
+            for (int i = 0; i < N; i ++) {
+                particles[i]->index = i;
+                particles[i]->type = 0;
+                particles[i]->strand_id = 0;
+            }
+		}
+		
 		if (strand<0){
             char aminoacid[256];
 			int nside, cside;
