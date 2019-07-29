@@ -128,13 +128,13 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 		ss >> strand;
 		if (i == 0){
 		    allocate_particles(particles, N, strand); //How/Can I Use This?
-            for (int i = 0; i < N; i ++) {
-                particles[i]->index = i;
+            for (int j = 0; j < N; j ++) {
+                particles[i]->index = j;
                 particles[i]->type = 0;
                 particles[i]->strand_id = 0;
             }
 		}
-		
+
 		if (strand<0){
             char aminoacid[256];
 			int nside, cside;
