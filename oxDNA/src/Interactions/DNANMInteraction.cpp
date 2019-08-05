@@ -127,7 +127,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 		std::stringstream ss(line);
 		ss >> strand;
 		if (i == 0){
-		    allocate_particles(particles, N, strand); //How/Can I Use This?
+		    allocate_particles(particles, N, strand);
             for (int j = 0; j < N; j ++) {
                 particles[i]->index = j;
                 particles[i]->type = 0;
@@ -135,6 +135,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
             }
 		}
 
+		// Amino Acid
 		if (strand<0){
             char aminoacid[256];
 			int nside, cside;
@@ -152,16 +153,18 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 				}
 				myneighs.insert(x);
 			}
+
 			ACParticle<number> *p = dynamic_cast< ACParticle<number>  * > (particles[i]);
 
 			if(strlen(aminoacid) == 1) {
 				p->btype = Utils::decode_aa(aminoacid[0]);
-				//printf("type = %d", p->btype);
 			}
+
 			if (nside < 0)
 				p->n3 = P_VIRTUAL;
 			else
 				p->n3 = particles[nside];
+
 			if (cside < 0)
 				p->n5 = P_VIRTUAL;
 			else
@@ -169,22 +172,22 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 
 			p->strand_id = abs(strand)+ndnas-1;
 			p->index = i;
+
 			for(std::set<int>::iterator k = myneighs.begin(); k != myneighs.end(); ++k )
 			{
 				if(p->index < *k)
 				{
-				  p->add_bonded_neighbor(dynamic_cast<ACParticle<number>  *> (particles[*k]) );
+				    p->add_bonded_neighbor(dynamic_cast<ACParticle<number>  *> (particles[*k]) );
 				}
 			}
 
 			i++;
 
-			if (p->n3 != P_VIRTUAL)
-				p->affected.push_back(ParticlePair<number>(p->n3, p));
-			if (p->n5 != P_VIRTUAL)
-				p->affected.push_back(ParticlePair<number>(p, p->n5));
+			if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
+			if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
 
-		} if(strand>0) {
+        // DNA Nucleotide
+		} if(strand > 0) {
             char base[256];
 			int tmpn3, tmpn5;
 			ss>>base>>tmpn3>>tmpn5;
@@ -196,9 +199,6 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			if(tmpn5 < 0) p->n5 = P_VIRTUAL;
 			else p->n5 = particles[tmpn5];
 
-			// store the strand id
-			// for a design inconsistency, in the topology file
-			// strand ids start from 1, not from 0
 			p->strand_id = strand - 1;
 
 			// the base can be either a char or an integer
@@ -213,6 +213,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			}
 
 			if(p->type == P_INVALID) throw oxDNAException ("Particle #%d in strand #%d contains a non valid base '%c'. Aborting", i, strand, base);
+
 			p->index = i;
 			i++;
 
@@ -240,7 +241,7 @@ template<typename number>
 number DNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
 	number energy = pair_interaction_nonbonded(p, q, r, update_forces);
 	energy += pair_interaction_bonded(p, q, r, update_forces);
-	printf("p %d - q %d, energy = %f \n",p->index,q->index,energy);
+	//printf("p %d - q %d, energy = %f \n",p->index,q->index,energy);
 	return energy;
 }
 
@@ -352,7 +353,6 @@ number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p
 		    torquenuc  -= nuc->int_centers[DNANucleotide<number>::BASE].cross(force);
 		    nuc->torque += nuc->orientationT * torquenuc;
 
-		    //crowder->torque -= crowder->orientationT * torquenuc;
 	 		nuc->force -= force;
 	 		protein->force += force;
 	 }
@@ -467,18 +467,6 @@ number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BasePa
 	char interactiontype;
 	keys.first=p->index;
 	keys.second=q->index;
-	/*
-	if (p->index != q->index)
-	{
-		if (p->index > q->index)
-		{
-			keys.first=q->index;
-			keys.second=p->index;
-		} else {
-			keys.first=p->index;
-			keys.second=q->index;
-		}
-	 */
     eqdist = _rknot[keys];
     interactiontype = _potential[keys].first;
     if (eqdist != 0.0) { //only returns number if eqdist is in .par file
@@ -576,7 +564,6 @@ number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BasePa
 
 template<typename number>
 DNANMInteraction<number>::~DNANMInteraction() {
-
 }
 
 
