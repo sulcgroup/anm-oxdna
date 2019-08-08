@@ -148,8 +148,8 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 				ss >> x;
 				if(x < 0 || x >= N)
 				{
-					throw oxDNAException(
-					"Line %d of the topology file has an invalid syntax, neighbor has invalid id",i + 2);
+					throw oxDNAException("Line %d of the topology file has an invalid syntax, neighbor has invalid id",
+					        i + 2);
 				}
 				myneighs.insert(x);
 			}

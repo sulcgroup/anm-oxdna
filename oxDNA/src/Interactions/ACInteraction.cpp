@@ -11,6 +11,9 @@
 #include <fstream>
 
 
+// TODO: Get the files loaded with their strings saved in the init
+
+
 template<typename number>
 ACInteraction<number>::ACInteraction(){
 	this->_int_map[SPRING_POTENTIAL] = &ACInteraction<number>::_spring;
@@ -30,13 +33,9 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 	getInputString(&inp, "PARFILE", parameterfile, 0);
 
 	//Addition of Reading Parameter File for ACInteraction Only!
-	int key1;
-	int key2;
+	int key1, key2;
 	char potswitch;
-	double potential;
-	pair <int, int> lkeys;
-	pair <char, double> pot;
-	double dist;
+	double potential, dist;
 	string carbons;
 	fstream parameters;
 	parameters.open(parameterfile, ios::in);
@@ -46,12 +45,10 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 		while (parameters.good())
 		{
 			parameters >> key1 >> key2 >> dist >> potswitch >> potential;
-			lkeys.first=key1;
-			lkeys.second=key2;
-			pot.first=potswitch;
-			pot.second=potential;
+            pair <int, int> lkeys = {key1, key2};
+            pair <char, double> pot = {potswitch, potential};
 			_rknot[lkeys] = dist;
-			_potential[lkeys]=pot;
+			_potential[lkeys] = pot;
 		}
 	parameters.close();
 	}
@@ -63,10 +60,7 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 
 template<typename number>
 void ACInteraction<number>::init() {
-	_sigma = 0.398103f;
-    _rstar= 0.348103f;
-    _b = 6485.58f;
-    _rcut = 0.389423f;
+    load_protein_protein_parameters();
 }
 
 template<typename number>
@@ -77,6 +71,7 @@ void ACInteraction<number>::allocate_particles(BaseParticle<number> **particles,
 template<typename number>
 void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<number> **particles) {
 	*N_strands = N;
+
 	allocate_particles(particles, N);
 	for (int i = 0; i < N; i ++) {
 	   particles[i]->index = i;
@@ -110,8 +105,6 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 					N);
 
 		int nside, cside;
-
-		//int res = sscanf(line, "%d %s %d %d", &strand, base, &tmpn3, &tmpn5);
 		std::stringstream ss(line);
 		ss >> strand >> aminoacid >> nside >> cside;
 
@@ -122,14 +115,18 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 			ss >> x;
 			if(x < 0 || x >= N)
 			{
-				throw oxDNAException(
-									"Line %d of the topology file has an invalid syntax, neighbor has invalid id",
+				throw oxDNAException("Line %d of the topology file has an invalid syntax, neighbor has invalid id",
 									i + 2);
 			}
 
 			myneighs.insert(x);
 		}
 		ACParticle<number> *p = dynamic_cast< ACParticle<number>  * > (particles[i]);
+
+		if(strlen(aminoacid) == 1) {
+		    p->btype = Utils::decode_aa(aminoacid[0]);
+		}
+
 
 		if (nside < 0)
 			p->n3 = P_VIRTUAL;
@@ -151,15 +148,13 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		// store the strand id
 		// for a design inconsistency, in the topology file
 		// strand ids start from 1, not from 0
-		p->strand_id = strand - 1;
+		p->strand_id = abs(strand) - 1;
 		p->index = i;
 		i++;
 
 		// here we fill the affected vector
-		if (p->n3 != P_VIRTUAL)
-			p->affected.push_back(ParticlePair<number>(p->n3, p));
-		if (p->n5 != P_VIRTUAL)
-			p->affected.push_back(ParticlePair<number>(p, p->n5));
+		if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
+		if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
 
 	}
 
@@ -212,6 +207,29 @@ number ACInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 template<typename number>
 void ACInteraction<number>::check_input_sanity(BaseParticle<number> **particles, int N) {
 
+}
+
+template<typename number>
+void ACInteraction<number>::load_protein_protein_parameters(){
+    fstream parameters;
+    parameters.open("../exc_vol_protein_protein_parameters.txt", ios::in);
+    int p, q;
+    double sigma, rstar, b, rc;
+    if (parameters.is_open())
+    {
+        while (parameters.good())
+        {
+            parameters >> p >> q >> sigma >> rstar >> b >> rc;
+            pair<int, int> keys = {p, q};
+            vector<double> _exc_vol{sigma, rstar, b, rc};
+            _pro_pro_exc_vol[keys] = _exc_vol;
+        }
+        parameters.close();
+    }
+    else
+    {
+        throw oxDNAException("Protein_Protein Excluded Volume ParameterFile Could Not Be Opened");
+    }
 }
 
 template class ACInteraction<float>;

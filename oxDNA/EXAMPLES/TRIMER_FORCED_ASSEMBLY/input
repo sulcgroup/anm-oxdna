@@ -39,3 +39,5 @@ time_scale = linear
 external_forces = 1
 external_forces_file = partial_forces.txt
 
+#############################
+####   Extra Opti
