@@ -34,7 +34,7 @@ protected:
 
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
-	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, vector<double> &params);
+	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, pair<int, int> &lkeys);
 
 public:
 	enum {
@@ -65,24 +65,26 @@ public:
 
 
 template<typename number>
-number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, vector<double> &params) {
+number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, pair<int, int> &lkeys) {
 	// this is a bit faster than calling r.norm()
-	double *_sigma = &params[0];
-	double *_rstar = &params[1];
-	double *_b = &params[2];
-	double *_rcut = &params[3];
+	vector<double> *_params = &_pro_pro_exc_vol[lkeys];
+	if (_params->size() == 0) throw oxDNAException("Parameters for protein protein interaction did not load into map properly");
+	double _sigma = _params->at(0);
+	double _rstar = _params->at(1);
+	double _b = _params->at(2);
+	double _rc = _params->at(3);
 
 	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
 	number energy = (number) 0;
-	if(rnorm < SQR(*_rcut)) {
-		if(rnorm > SQR(*_rstar)) {
+	if(rnorm < SQR(_rc)) {
+		if(rnorm > SQR(_rstar)) {
 			number rmod = sqrt(rnorm);
-			number rrc = rmod - _rcut;
-			energy = EXCL_EPS * *_b * SQR(rrc);
-			if(update_forces) force = -r * (2 * EXCL_EPS * *_b * rrc/ rmod);
+			number rrc = rmod - _rc;
+			energy = EXCL_EPS * _b * SQR(rrc);
+			if(update_forces) force = -r * (2 * EXCL_EPS * _b * rrc/ rmod);
 		}
 		else {
-			number tmp = SQR(*_sigma) / rnorm;
+			number tmp = SQR(_sigma) / rnorm;
 			number lj_part = tmp * tmp * tmp;
 			energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
 			if(update_forces) force = -r* (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rnorm);
@@ -100,8 +102,8 @@ number ACInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<
 	if (p->index != q->index){
 		LR_vector<number> force(0,0,0);
 
-		pair<int, int> lkeys = {std::max(p->btype, q->btype), std::min(p->btype, q->btype)};
-		number energy =  ACInteraction<number>::_repulsive_lj(*r, force, update_forces, _pro_pro_exc_vol[lkeys]);
+		pair<int, int> lkeys (std::max(p->btype, q->btype), std::min(p->btype, q->btype));
+		number energy =  this->_repulsive_lj(*r, force, update_forces, lkeys);
 
 		if(update_forces)
 		{

@@ -9,6 +9,7 @@
 #include "../Particles/ACParticle.h"
 #include <sstream>
 #include <fstream>
+#include <unistd.h>
 
 
 // TODO: Get the files loaded with their strings saved in the init
@@ -201,7 +202,9 @@ number ACInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 		r = &computed_r;
 	}
 	//return (number) 0.f;
-	return (number) this->_exc_volume(p, q, r, update_forces);
+	number energy = this->_exc_volume(p, q, r, update_forces);
+//	number energy =0.f;
+    return energy;
 }
 
 template<typename number>
@@ -211,8 +214,33 @@ void ACInteraction<number>::check_input_sanity(BaseParticle<number> **particles,
 
 template<typename number>
 void ACInteraction<number>::load_protein_protein_parameters(){
+
+    string src_path = "";
+    string path = "";
+    pid_t pid = getpid();
+    char buf[20] = {0};
+    sprintf(buf,"%d",pid);
+    std::string _link = "/proc/";
+    _link.append( buf );
+    _link.append( "/exe");
+    char proc[512];
+    int ch = readlink(_link.c_str(),proc,512);
+    if (ch != -1) {
+        proc[ch] = 0;
+        path = proc;
+        std::string::size_type t = path.find_last_of("/");
+        path = path.substr(0,t);
+    }
+
+    src_path = path;
+    int lastdir = src_path.rfind("oxDNA");
+    src_path.erase(src_path.begin() + lastdir + 6, src_path.end());
+    src_path.append("src");
+    string protein_parameter_file = src_path + "/exc_vol_protein_protein_parameters.txt";
+
+
     fstream parameters;
-    parameters.open("../exc_vol_protein_protein_parameters.txt", ios::in);
+    parameters.open(protein_parameter_file, ios::in);
     int p, q;
     double sigma, rstar, b, rc;
     if (parameters.is_open())
@@ -220,8 +248,8 @@ void ACInteraction<number>::load_protein_protein_parameters(){
         while (parameters.good())
         {
             parameters >> p >> q >> sigma >> rstar >> b >> rc;
-            pair<int, int> keys = {p, q};
-            vector<double> _exc_vol{sigma, rstar, b, rc};
+            pair<int, int> keys (p, q);
+            vector<double> _exc_vol = { sigma, rstar, b, rc };
             _pro_pro_exc_vol[keys] = _exc_vol;
         }
         parameters.close();
