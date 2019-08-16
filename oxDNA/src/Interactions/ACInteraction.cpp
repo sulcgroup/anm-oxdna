@@ -61,7 +61,11 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 
 template<typename number>
 void ACInteraction<number>::init() {
-    load_protein_protein_parameters();
+    _rstar = 0.f;
+    _rc = 0.f;
+    _sigma = 0.f;
+    _b = 0.f;
+
 }
 
 template<typename number>
@@ -201,63 +205,13 @@ number ACInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 		computed_r = this->_box->min_image(p->pos, q->pos);
 		r = &computed_r;
 	}
-	//return (number) 0.f;
+
 	number energy = this->_exc_volume(p, q, r, update_forces);
-//	number energy =0.f;
     return energy;
 }
 
 template<typename number>
 void ACInteraction<number>::check_input_sanity(BaseParticle<number> **particles, int N) {
-
-}
-
-template<typename number>
-void ACInteraction<number>::load_protein_protein_parameters(){
-
-    string src_path = "";
-    string path = "";
-    pid_t pid = getpid();
-    char buf[20] = {0};
-    sprintf(buf,"%d",pid);
-    std::string _link = "/proc/";
-    _link.append( buf );
-    _link.append( "/exe");
-    char proc[512];
-    int ch = readlink(_link.c_str(),proc,512);
-    if (ch != -1) {
-        proc[ch] = 0;
-        path = proc;
-        std::string::size_type t = path.find_last_of("/");
-        path = path.substr(0,t);
-    }
-
-    src_path = path;
-    int lastdir = src_path.rfind("oxDNA");
-    src_path.erase(src_path.begin() + lastdir + 6, src_path.end());
-    src_path.append("src");
-    string protein_parameter_file = src_path + "/exc_vol_protein_protein_parameters.txt";
-
-
-    fstream parameters;
-    parameters.open(protein_parameter_file, ios::in);
-    int p, q;
-    double sigma, rstar, b, rc;
-    if (parameters.is_open())
-    {
-        while (parameters.good())
-        {
-            parameters >> p >> q >> sigma >> rstar >> b >> rc;
-            pair<int, int> keys (p, q);
-            vector<double> _exc_vol = { sigma, rstar, b, rc };
-            _pro_pro_exc_vol[keys] = _exc_vol;
-        }
-        parameters.close();
-    }
-    else
-    {
-        throw oxDNAException("Protein_Protein Excluded Volume ParameterFile Could Not Be Opened");
-    }
 }
 
 template class ACInteraction<float>;

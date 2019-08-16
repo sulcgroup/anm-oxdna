@@ -26,15 +26,14 @@ template <typename number>
 class ACInteraction: virtual public BaseInteraction<number, ACInteraction<number> > {
 protected:
 
-	number _r; //radius of alpha carbon of amino acid
 	map<pair<int, int>, double> _rknot; //eqdist of each bond of psuedobonds
 	map<pair<int, int>, pair<char, double> > _potential; //switch to tell lj, FENE or spring as well as strength for each pair of particles
-	map<pair<int, int>, vector<double> > _pro_pro_exc_vol;
 
+	number _rstar, _rc, _b, _sigma;
 
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
-	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, pair<int, int> &lkeys);
+	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
 
 public:
 	enum {
@@ -60,19 +59,11 @@ public:
 	}
 
 	virtual void check_input_sanity(BaseParticle<number> **particles, int N);
-    void load_protein_protein_parameters();
 };
 
 
 template<typename number>
-number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, pair<int, int> &lkeys) {
-	// this is a bit faster than calling r.norm()
-	vector<double> *_params = &_pro_pro_exc_vol[lkeys];
-	if (_params->size() == 0) throw oxDNAException("Parameters for protein protein interaction did not load into map properly");
-	double _sigma = _params->at(0);
-	double _rstar = _params->at(1);
-	double _b = _params->at(2);
-	double _rc = _params->at(3);
+number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
 
 	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
 	number energy = (number) 0;
@@ -102,8 +93,7 @@ number ACInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<
 	if (p->index != q->index){
 		LR_vector<number> force(0,0,0);
 
-		pair<int, int> lkeys (std::max(p->btype, q->btype), std::min(p->btype, q->btype));
-		number energy =  this->_repulsive_lj(*r, force, update_forces, lkeys);
+		number energy =  this->_repulsive_lj(*r, force, update_forces);
 
 		if(update_forces)
 		{
@@ -121,21 +111,13 @@ number ACInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<
 
 template<typename number>
 number ACInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-	pair <int,int> keys;
 	number eqdist;
 	char interactiontype;
+    pair <int,int> keys = {std::min(p->index, q->index), std::max(p->index, q->index)};
 	if (p->index != q->index)
 	{
-		if (p->index > q->index)
-		{
-			keys.first=q->index;
-			keys.second=p->index;
-		} else {
-			keys.first=p->index;
-			keys.second=q->index;
-		}
-		eqdist = _rknot[keys];
-		interactiontype = _potential[keys].first;
+		eqdist = &_rknot[keys];
+		interactiontype = &_potential[keys].first;
 		if (eqdist != 0.0){ //only returns number if eqdist is in .par file
 			switch (interactiontype){
 				case 's':
