@@ -29,7 +29,6 @@ protected:
 	number _r; //radius of alpha carbon of amino acid
 	map<pair<int, int>, double> _rknot; //eqdist of each bond of psuedobonds
 	map<pair<int, int>, pair<char, double> > _potential; //switch to tell lj, FENE or spring as well as strength for each pair of particles
-	map<pair<int, int>, vector<double> > _pro_pro_exc_vol;
 
 
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
@@ -60,17 +59,12 @@ public:
 	}
 
 	virtual void check_input_sanity(BaseParticle<number> **particles, int N);
-    void load_protein_protein_parameters();
 };
 
 
 template<typename number>
 number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, vector<double> &params) {
 	// this is a bit faster than calling r.norm()
-	double *_sigma = &params[0];
-	double *_rstar = &params[1];
-	double *_b = &params[2];
-	double *_rcut = &params[3];
 
 	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
 	number energy = (number) 0;

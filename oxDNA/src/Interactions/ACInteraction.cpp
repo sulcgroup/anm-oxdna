@@ -60,7 +60,6 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 
 template<typename number>
 void ACInteraction<number>::init() {
-    load_protein_protein_parameters();
 }
 
 template<typename number>
@@ -207,29 +206,6 @@ number ACInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 template<typename number>
 void ACInteraction<number>::check_input_sanity(BaseParticle<number> **particles, int N) {
 
-}
-
-template<typename number>
-void ACInteraction<number>::load_protein_protein_parameters(){
-    fstream parameters;
-    parameters.open("../exc_vol_protein_protein_parameters.txt", ios::in);
-    int p, q;
-    double sigma, rstar, b, rc;
-    if (parameters.is_open())
-    {
-        while (parameters.good())
-        {
-            parameters >> p >> q >> sigma >> rstar >> b >> rc;
-            pair<int, int> keys = {p, q};
-            vector<double> _exc_vol{sigma, rstar, b, rc};
-            _pro_pro_exc_vol[keys] = _exc_vol;
-        }
-        parameters.close();
-    }
-    else
-    {
-        throw oxDNAException("Protein_Protein Excluded Volume ParameterFile Could Not Be Opened");
-    }
 }
 
 template class ACInteraction<float>;
