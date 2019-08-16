@@ -45,35 +45,29 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
 	getInputString(&inp, "PARFILE", parameterfile, 0);
 
 	//Addition of Reading Parameter File
-	int key1;
-	int key2;
-	char potswitch;
-	double potential;
-	pair <int, int> lkeys;
-	pair <char, double> pot;
-	double dist;
-	string carbons;
-	fstream parameters;
-	parameters.open(parameterfile, ios::in);
-	getline (parameters,carbons);
-	if (parameters.is_open())
-	{
-		while (parameters.good())
-		{
-			parameters >> key1 >> key2 >> dist >> potswitch >> potential;
-			lkeys.first=key1;
-			lkeys.second=key2;
-			pot.first=potswitch;
-			pot.second=potential;
-			_rknot[lkeys] = dist;
-			_potential[lkeys]=pot;
-		}
-	parameters.close();
-	}
-	else
-	{
-		throw oxDNAException("ParameterFile Could Not Be Opened");
-	}
+    int key1, key2;
+    char potswitch;
+    double potential, dist;
+    string carbons;
+    fstream parameters;
+    parameters.open(parameterfile, ios::in);
+    getline (parameters,carbons);
+    if (parameters.is_open())
+    {
+        while (parameters.good())
+        {
+            parameters >> key1 >> key2 >> dist >> potswitch >> potential;
+            pair <int, int> lkeys (key1, key2);
+            pair <char, double> pot (potswitch, potential);
+            _rknot[lkeys] = dist;
+            _potential[lkeys] = pot;
+        }
+        parameters.close();
+    }
+    else
+    {
+        throw oxDNAException("ParameterFile Could Not Be Opened");
+    }
 }
 
 template<typename number>
@@ -391,22 +385,34 @@ template<typename number>
 void DNANMInteraction<number>::init() {
 	this->DNA2Interaction<number>::init();
     //Backbone-Protein Excluded Volume Parameters
-	_pro_backbone_sigma = 0.748103f;
-	_pro_backbone_rstar= 0.698103f;
-	_pro_backbone_b = 895.144f;
-	_pro_backbone_rcut = 0.757106f;
+    _pro_backbone_sigma = 0.5534786380000001f;
+    _pro_backbone_rstar= 0.503478638f;
+    _pro_backbone_b = 2097.135160396999f;
+    _pro_backbone_rcut = 0.554221757147497f;
     _pro_backbone_stiffness = 1.0f;
+    //Oldversion
+	//_pro_backbone_sigma = 0.748103f;
+	//_pro_backbone_rstar= 0.698103f;
+	//_pro_backbone_b = 895.144f;
+	//_pro_backbone_rcut = 0.757106f;
+    //_pro_backbone_stiffness = 1.0f;
     //Base-Protein Excluded Volume Parameters
-    _pro_base_sigma = 0.563103f;
-	_pro_base_rstar= 0.513103f;
-	_pro_base_b = 1989.15f;
-	_pro_base_rcut = 0.564332f;
+    _pro_base_sigma = 0.37597863800000003f;
+    _pro_base_rstar= 0.32597863800000004f;
+    _pro_base_b = 8099.521987963835f;
+    _pro_base_rcut = 0.36565798425043045f;
     _pro_base_stiffness = 1.0f;
+    //OldVersion
+    //_pro_base_sigma = 0.563103f;
+    // _pro_base_rstar= 0.513103f;
+	//_pro_base_b = 1989.15f;
+	//_pro_base_rcut = 0.564332f;
+    //_pro_base_stiffness = 1.0f;
     //Protein-Protein Excluded Volume Parameters
-	_pro_sigma = 0.398103f;
-	_pro_rstar= 0.348103f;
-	_pro_b = 6485.58f;
-	_pro_rcut = 0.389423f;
+	_pro_sigma = 0.381957276f;
+	_pro_rstar= 0.331957276f;
+	_pro_b = 7611.11f;
+	_pro_rcut = 0.372089f;
 	//Topology File Parameters
 	ndna=0;
 	npro=0;
@@ -462,11 +468,9 @@ number DNANMInteraction<number>::_protein_exc_volume(BaseParticle<number> *p, Ba
 
 template<typename number>
 number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-	pair <int,int> keys;
 	number eqdist;
 	char interactiontype;
-	keys.first=p->index;
-	keys.second=q->index;
+	pair <int, int> keys (std::min(p->index, q->index), std::max(p->index, q->index));
     eqdist = _rknot[keys];
     interactiontype = _potential[keys].first;
     if (eqdist != 0.0) { //only returns number if eqdist is in .par file

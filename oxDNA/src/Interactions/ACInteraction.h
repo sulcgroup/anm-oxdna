@@ -113,11 +113,11 @@ template<typename number>
 number ACInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 	number eqdist;
 	char interactiontype;
-    pair <int,int> keys = {std::min(p->index, q->index), std::max(p->index, q->index)};
+    pair <int,int> keys (std::min(p->index, q->index), std::max(p->index, q->index));
 	if (p->index != q->index)
 	{
-		eqdist = &_rknot[keys];
-		interactiontype = &_potential[keys].first;
+		eqdist = _rknot[keys];
+		interactiontype = _potential[keys].first;
 		if (eqdist != 0.0){ //only returns number if eqdist is in .par file
 			switch (interactiontype){
 				case 's':

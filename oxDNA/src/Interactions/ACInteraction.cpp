@@ -46,8 +46,8 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 		while (parameters.good())
 		{
 			parameters >> key1 >> key2 >> dist >> potswitch >> potential;
-            pair <int, int> lkeys = {key1, key2};
-            pair <char, double> pot = {potswitch, potential};
+            pair <int, int> lkeys (key1, key2);
+            pair <char, double> pot (potswitch, potential);
 			_rknot[lkeys] = dist;
 			_potential[lkeys] = pot;
 		}
@@ -61,10 +61,10 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 
 template<typename number>
 void ACInteraction<number>::init() {
-    _rstar = 0.f;
-    _rc = 0.f;
-    _sigma = 0.f;
-    _b = 0.f;
+    _rstar = 0.331957276f;
+    _rc = 0.372089f;
+    _sigma = 0.381957276f;
+    _b = 7611.11f;
 
 }
 
