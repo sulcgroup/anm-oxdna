@@ -76,14 +76,6 @@ void DNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particl
 
 
 template<typename number>
-bool DNANMInteraction<number>::check_bonded_neighbour(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r){
-    if (p->btype >= 0 && q->btype >=0) return this->_check_bonded_neighbour(&p, &q, r);
-    if (p->btype < 0 && q->btype < 0) return p->is_bonded(q);
-    return false;
-}
-
-
-template<typename number>
 void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N, int firststrand) {
 	if (ndna==0 || ndnas==0){
         OX_LOG(Logger::LOG_INFO,"No DNA Particles Specified, Continuing with just Protein Particles");
@@ -242,14 +234,21 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 
 template<typename number>
 number DNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
-	if(p->is_bonded(q)) return DNANMInteraction<number>::pair_interaction_bonded(p, q, r, update_forces);
-	else return DNANMInteraction<number>::pair_interaction_nonbonded(p, q, r, update_forces);
+    if ((p->btype >= 0 && q->btype >=0)){
+        if(this->_check_bonded_neighbour(&p, &q, r)) return DNANMInteraction<number>::pair_interaction_bonded(p, q, r, update_forces);
+        else return DNANMInteraction<number>::pair_interaction_nonbonded(p, q, r, update_forces);
+    }
+    if ((p->btype >= 0 && q->btype < 0) || (p->btype < 0 && q->btype >= 0)) return DNANMInteraction<number>::pair_interaction_nonbonded(p, q, r, update_forces);
+
+    if (p->btype <0 && q->btype <0){
+        if (p->is_bonded(q)) return DNANMInteraction<number>::pair_interaction_bonded(p, q, r, update_forces);
+        else return DNANMInteraction<number>::pair_interaction_nonbonded(p, q, r, update_forces);
+    }
+    return 0.f;
 }
 
 template<typename number>
 number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-
-    if (!check_bonded_neighbour(p, q, r)) return 0.;
 
     LR_vector<number> computed_r(0, 0, 0);
     if(r == NULL) {
@@ -259,8 +258,8 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
         }
     }
 
-    if ((p->btype >= 0 && q->btype >=0)){
-
+    if (p->btype >= 0 && q->btype >=0){
+        if (!this->_check_bonded_neighbour(&p, &q, r)) return 0.;
         number energy = _dna_backbone(p,q,r,update_forces);
         energy += _dna_bonded_excluded_volume(p,q,r,update_forces);
         energy += _dna_stacking(p,q,r,update_forces);
@@ -281,7 +280,6 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 
 template<typename number>
 number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-    if (check_bonded_neighbour(p, q, r)) return 0.;
 
     LR_vector<number> computed_r(0, 0, 0);
     if (r == NULL) {
@@ -290,7 +288,7 @@ number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number>
     }
 
     if (p->btype >= 0 && q->btype >= 0) { //DNA-DNA Interaction
-
+        if (this->_check_bonded_neighbour(&p, &q, r)) return 0.;
         number energy = _dna_nonbonded_excluded_volume(p, q, r, update_forces);
         energy += _dna_hydrogen_bonding(p, q, r, update_forces);
         energy += _dna_cross_stacking(p, q, r, update_forces);

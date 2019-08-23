@@ -39,7 +39,6 @@ public:
 	virtual void get_settings(input_file &inp);
 	virtual void allocate_particles(BaseParticle<number> **particles, int N, int firststrand);
 	virtual void read_topology(int N, int *N_strands, BaseParticle<number> **particles);
-	virtual bool check_bonded_neighbour(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r);
 	virtual number pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r=NULL, bool update_forces=false);
 	virtual number pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r=NULL, bool update_forces=false);
 	virtual number pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r=NULL, bool update_forces=false);
