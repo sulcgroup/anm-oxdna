@@ -111,7 +111,6 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 		topology.getline(line, 2040);
 		if (strlen(line) == 0 || line[0] == '#')
 			continue;
-		printf("%s\n",line);
 		if (i == N)
 			throw oxDNAException(
 					"Too many particles found in the topology file (should be %d), aborting",
