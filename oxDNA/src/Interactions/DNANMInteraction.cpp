@@ -74,6 +74,15 @@ void DNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particl
 	//Need to make own function that checks the input sanity
 }
 
+
+template<typename number>
+bool DNANMInteraction<number>::check_bonded_neighbour(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r){
+    if (p->btype >= 0 && q->btype >=0) return this->_check_bonded_neighbour(&p, &q, r);
+    if (p->btype < 0 && q->btype < 0) return p->is_bonded(q);
+    return false;
+}
+
+
 template<typename number>
 void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N, int firststrand) {
 	if (ndna==0 || ndnas==0){
@@ -240,7 +249,7 @@ number DNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseP
 template<typename number>
 number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
-    if (!this->_check_bonded_neighbour(&p, &q, r)) return 0.;
+    if (!check_bonded_neighbour(p, q, r)) return 0.;
 
     LR_vector<number> computed_r(0, 0, 0);
     if(r == NULL) {
@@ -272,7 +281,7 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 
 template<typename number>
 number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-    if (this->_check_bonded_neighbour(&p, &q, r)) return 0.;
+    if (check_bonded_neighbour(p, q, r)) return 0.;
 
     LR_vector<number> computed_r(0, 0, 0);
     if (r == NULL) {
