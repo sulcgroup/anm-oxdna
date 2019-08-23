@@ -11,8 +11,6 @@
 
 
 #include "DNANMInteraction.h"
-#include "DNA2Interaction.h"
-#include "ACInteraction.h"
 #include <sstream>
 #include <fstream>
 
@@ -28,14 +26,14 @@ DNANMInteraction<number>::DNANMInteraction() : DNA2Interaction<number>() { // @s
 	this->_int_map[EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_protein_exc_volume;
 
 	//DNA Methods Function Pointers
-	this->_int_map[this->BACKBONE] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_backbone;
-	this->_int_map[this->COAXIAL_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_coaxial_stacking;
-	this->_int_map[this->CROSS_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_cross_stacking;
-	this->_int_map[this->BONDED_EXCLUDED_VOLUME] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_bonded_excluded_volume;
-	this->_int_map[this->STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_stacking;
-	this->_int_map[this->HYDROGEN_BONDING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_hydrogen_bonding;
-	this->_int_map[this->NONBONDED_EXCLUDED_VOLUME] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_nonbonded_excluded_volume;
-	this->_int_map[this->DEBYE_HUCKEL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_debye_huckel;
+	this->_int_map[this->BACKBONE] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_dna_backbone;
+	this->_int_map[this->COAXIAL_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_dna_coaxial_stacking;
+	this->_int_map[this->CROSS_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_dna_cross_stacking;
+	this->_int_map[this->BONDED_EXCLUDED_VOLUME] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_dna_bonded_excluded_volume;
+	this->_int_map[this->STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_dna_stacking;
+	this->_int_map[this->HYDROGEN_BONDING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_dna_hydrogen_bonding;
+	this->_int_map[this->NONBONDED_EXCLUDED_VOLUME] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_dna_nonbonded_excluded_volume;
+	this->_int_map[this->DEBYE_HUCKEL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNANMInteraction<number>::_dna_debye_huckel;
 }
 
 template<typename number>
@@ -113,19 +111,20 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 		topology.getline(line, 2040);
 		if (strlen(line) == 0 || line[0] == '#')
 			continue;
+		printf("%s\n",line);
 		if (i == N)
 			throw oxDNAException(
 					"Too many particles found in the topology file (should be %d), aborting",
 					N);
-		//BaseParticle<number> *p = particles[i];
+
 		std::stringstream ss(line);
 		ss >> strand;
 		if (i == 0){
 		    allocate_particles(particles, N, strand);
             for (int j = 0; j < N; j ++) {
-                particles[i]->index = j;
-                particles[i]->type = 0;
-                particles[i]->strand_id = 0;
+                particles[j]->index = j;
+                particles[j]->type = 0;
+                particles[j]->strand_id = 0;
             }
 		}
 
@@ -184,9 +183,9 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 		} if(strand > 0) {
             char base[256];
 			int tmpn3, tmpn5;
-			ss>>base>>tmpn3>>tmpn5;
+			ss >> base >> tmpn3 >> tmpn5;
 
-			DNANucleotide<number> *p = dynamic_cast< DNANucleotide<number>  * > (particles[i]);
+			DNANucleotide<number> *p = dynamic_cast<DNANucleotide<number>  *> (particles[i]);
 
 			if(tmpn3 < 0) p->n3 = P_VIRTUAL;
 			else p->n3 = particles[tmpn3];
@@ -199,6 +198,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			if(strlen(base) == 1) {
 				p->type = Utils::decode_base(base[0]);
 				p->btype = Utils::decode_base(base[0]);
+
 			}
 			else {
 				if(atoi (base) > 0) p->type = atoi (base) % 4;
@@ -214,8 +214,9 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 			// here we fill the affected vector
 			if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
 			if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
+            }
 		}
-	}
+
 	if (i < my_N)
 		throw oxDNAException(
 				"Not enough particles found in the topology file (should be %d). Aborting",
@@ -229,76 +230,80 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 
 	*N_strands = my_N_strands;
 
-};
+}
 
 template<typename number>
 number DNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
-	number energy = pair_interaction_nonbonded(p, q, r, update_forces);
-	energy += pair_interaction_bonded(p, q, r, update_forces);
-	//printf("p %d - q %d, energy = %f \n",p->index,q->index,energy);
-	return energy;
+	if(p->is_bonded(q)) return DNANMInteraction<number>::pair_interaction_bonded(p, q, r, update_forces);
+	else return DNANMInteraction<number>::pair_interaction_nonbonded(p, q, r, update_forces);
 }
 
 template<typename number>
 number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
-	if (p->btype >= 0 && q->btype >=0){ //DNA-DNA Interaction
-		number energy= this->DNA2Interaction<number>::pair_interaction_bonded(p,q,r,update_forces);
-		//printf("DNA-DNA Interaction energy=%f \n",energy)
-		return energy;
-	} else if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)){ //DNA,Protein Interaction
-		number energy=0.0;
-		return energy;
-	} else if ((p->btype <0 && q->btype <0)){ //Protein,Protein Interaction
-		LR_vector<number> computed_r(0, 0, 0);
-		if(r == NULL) {
-			if (q != P_VIRTUAL && p != P_VIRTUAL) {
-				computed_r = q->pos - p->pos;
-				r = &computed_r;
-			}
-		}
-		number energy= _protein_spring(p,q,r,update_forces);
-		//printf("Pro %d -Pro %d Interaction energy=%f \n",p->index,q->index,energy);
-		return energy;
-	} else{
-		number energy=0.0;
-		return energy;
-	}
+    if (!this->_check_bonded_neighbour(&p, &q, r)) return 0.;
+
+    LR_vector<number> computed_r(0, 0, 0);
+    if(r == NULL) {
+        if (q != P_VIRTUAL && p != P_VIRTUAL) {
+            computed_r = q->pos - p->pos;
+            r = &computed_r;
+        }
+    }
+
+    if ((p->btype >= 0 && q->btype >=0)){
+
+        number energy = _dna_backbone(p,q,r,update_forces);
+        energy += _dna_bonded_excluded_volume(p,q,r,update_forces);
+        energy += _dna_stacking(p,q,r,update_forces);
+        return energy;
+    }
+
+    if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)) return 0.f;
+
+    if ((p->btype <0 && q->btype <0)){
+        number energy = _protein_spring(p,q,r,update_forces);
+        energy += _protein_exc_volume(p,q,r,update_forces);
+        return energy;
+    }
+
+    return 0.f;
 }
+
 
 template<typename number>
 number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+    if (this->_check_bonded_neighbour(&p, &q, r)) return 0.;
 
-	if (p->btype >= 0 && q->btype >=0){ //DNA-DNA Interaction
-		number energy= this->DNA2Interaction<number>::pair_interaction_nonbonded(p,q,r,update_forces);
-		return energy;
-	} else if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)){ //DNA,Protein Interaction
-		LR_vector<number> computed_r(0, 0, 0);
-		if(r == NULL) {
-			if (q != P_VIRTUAL && p != P_VIRTUAL) {
-				computed_r = q->pos - p->pos;
-				r = &computed_r;
-			}
-		}
-		number energy= this->_protein_dna_exc_volume(p,q,r,update_forces);
-		//printf("p %d q %d PD nonbonded Interaction energy=%f \n",p->index,q->index,energy);
-		return energy;
-	} else if ((p->btype <0 && q->btype <0)){ //Protein,Protein Interaction
-		LR_vector<number> computed_r(0, 0, 0);
-		if(r == NULL) {
-			if (q != P_VIRTUAL && p != P_VIRTUAL) {
-				computed_r = q->pos - p->pos;
-				r = &computed_r;
-			}
-		}
-		number energy= this->_protein_exc_volume(p,q,r,update_forces);
-		//number energy = 0.0;
-		return energy;
-	} else{
-		number energy=0.0;
-		return energy;
-	}
+    LR_vector<number> computed_r(0, 0, 0);
+    if (r == NULL) {
+        computed_r = this->_box->min_image(p->pos, q->pos);
+        r = &computed_r;
+    }
+
+    if (p->btype >= 0 && q->btype >= 0) { //DNA-DNA Interaction
+
+        number energy = _dna_nonbonded_excluded_volume(p, q, r, update_forces);
+        energy += _dna_hydrogen_bonding(p, q, r, update_forces);
+        energy += _dna_cross_stacking(p, q, r, update_forces);
+        energy += _dna_coaxial_stacking(p, q, r, update_forces);
+        energy += _dna_debye_huckel(p, q, r, update_forces);
+        return energy;
+    }
+
+    if ((p->btype >= 0 && q->btype < 0) || (p->btype < 0 && q->btype >= 0)) {
+        number energy = _protein_dna_exc_volume(p, q, r, update_forces);
+        return energy;
+    }
+
+    if (p->btype < 0 && q->btype < 0) {
+        number energy = _protein_exc_volume(p, q, r, update_forces);
+        return energy;
+    }
+
+    return 0.f;
 }
+
 
 template<typename number>
 number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)
@@ -565,6 +570,66 @@ number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BasePa
 	//}
 
 }
+
+
+template<typename number>
+number DNANMInteraction<number>::_dna_backbone(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
+    if(p->btype >= 0 && q->btype >=0){
+        return this->DNA2Interaction<number>::_backbone(p,q,r,update_forces);
+    } else return 0.f;
+}
+
+template<typename number>
+number DNANMInteraction<number>::_dna_bonded_excluded_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+    if(p->btype >= 0 && q->btype >=0){
+        return this->DNA2Interaction<number>::_bonded_excluded_volume(p,q,r,update_forces);
+    } else return 0.f;
+}
+
+template<typename number>
+number DNANMInteraction<number>::_dna_nonbonded_excluded_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+    if(p->btype >= 0 && q->btype >=0){
+        return this->DNA2Interaction<number>::_nonbonded_excluded_volume(p,q,r,update_forces);
+    } else return 0.f;
+}
+
+template<typename number>
+number DNANMInteraction<number>::_dna_stacking(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+    if(p->btype >= 0 && q->btype >=0){
+        return this->DNA2Interaction<number>::_stacking(p,q,r,update_forces);
+    } else return 0.f;
+}
+
+template<typename number>
+number DNANMInteraction<number>::_dna_coaxial_stacking(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+    if(p->btype >= 0 && q->btype >=0){
+        return this->DNA2Interaction<number>::_coaxial_stacking(p,q,r,update_forces);
+    } else return 0.f;
+}
+
+template<typename number>
+number DNANMInteraction<number>::_dna_hydrogen_bonding(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+    if(p->btype >= 0 && q->btype >=0){
+        return this->DNA2Interaction<number>::_hydrogen_bonding(p,q,r,update_forces);
+    } else return 0.f;
+}
+
+template<typename number>
+number DNANMInteraction<number>::_dna_cross_stacking(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+    if(p->btype >= 0 && q->btype >=0){
+        return this->DNA2Interaction<number>::_cross_stacking(p,q,r,update_forces);
+    } else return 0.f;
+}
+
+template<typename number>
+number DNANMInteraction<number>::_dna_debye_huckel(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+    if(p->btype >= 0 && q->btype >=0){
+        return this->DNA2Interaction<number>::_debye_huckel(p,q,r,update_forces);
+    } else return 0.f;
+}
+
+
+
 
 template<typename number>
 DNANMInteraction<number>::~DNANMInteraction() {
