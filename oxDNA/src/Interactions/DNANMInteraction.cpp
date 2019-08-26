@@ -93,156 +93,186 @@ void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particl
 
 template<typename number>
 void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<number> **particles) {
-	*N_strands = N;
-	int my_N, my_N_strands;
+    *N_strands = N;
+    int my_N, my_N_strands;
 
-	char line[2048];
-	std::ifstream topology;
-	topology.open(this->_topology_filename, ios::in);
+    char line[2048];
+    std::ifstream topology;
+    topology.open(this->_topology_filename, ios::in);
 
-	if (!topology.good())
-		throw oxDNAException("Can't read topology file '%s'. Aborting",
-				this->_topology_filename);
+    if (!topology.good())
+        throw oxDNAException("Can't read topology file '%s'. Aborting",
+                             this->_topology_filename);
 
-	topology.getline(line, 2040);
-	sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
+    topology.getline(line, 2040);
+    sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
 
-	int strand, i = 0;
-	while (topology.good()) {
-		topology.getline(line, 2040);
-		if (strlen(line) == 0 || line[0] == '#')
-			continue;
-		if (i == N)
-			throw oxDNAException(
-					"Too many particles found in the topology file (should be %d), aborting",
-					N);
+    int strand, i = 0;
+    while (topology.good()) {
+        topology.getline(line, 2040);
+        if (strlen(line) == 0 || line[0] == '#')
+            continue;
+        if (i == N)
+            throw oxDNAException(
+                    "Too many particles found in the topology file (should be %d), aborting",
+                    N);
 
-		std::stringstream ss(line);
-		ss >> strand;
-		if (i == 0){
-		    allocate_particles(particles, N, strand);
-            for (int j = 0; j < N; j ++) {
+        std::stringstream ss(line);
+        ss >> strand;
+        if (i == 0) {
+            allocate_particles(particles, N, strand);
+            for (int j = 0; j < N; j++) {
                 particles[j]->index = j;
                 particles[j]->type = 0;
                 particles[j]->strand_id = 0;
             }
-		}
+        }
 
-		// Amino Acid
-		if (strand<0){
+        // Amino Acid
+        if (strand < 0) {
             char aminoacid[256];
-			int nside, cside;
-			ss >> aminoacid >> nside >> cside;
+            int nside, cside;
+            ss >> aminoacid >> nside >> cside;
 
-			int x;
-			std::set<int> myneighs;
-			while(ss.good())
-			{
-				ss >> x;
-				if(x < 0 || x >= N)
-				{
-					throw oxDNAException("Line %d of the topology file has an invalid syntax, neighbor has invalid id",
-					        i + 2);
-				}
-				myneighs.insert(x);
-			}
-
-			ACParticle<number> *p = dynamic_cast< ACParticle<number>  * > (particles[i]);
-
-			if(strlen(aminoacid) == 1) {
-				p->btype = Utils::decode_aa(aminoacid[0]);
-			}
-
-			if (nside < 0)
-				p->n3 = P_VIRTUAL;
-			else
-				p->n3 = particles[nside];
-
-			if (cside < 0)
-				p->n5 = P_VIRTUAL;
-			else
-				p->n5 = particles[cside];
-
-			p->strand_id = abs(strand)+ndnas-1;
-			p->index = i;
-
-			for(std::set<int>::iterator k = myneighs.begin(); k != myneighs.end(); ++k )
-			{
-				if(p->index < *k)
-				{
-				    p->add_bonded_neighbor(dynamic_cast<ACParticle<number>  *> (particles[*k]) );
-				}
-			}
-
-			i++;
-
-			if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
-			if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
-
-        // DNA Nucleotide
-		} if(strand > 0) {
-            char base[256];
-			int tmpn3, tmpn5;
-			ss >> base >> tmpn3 >> tmpn5;
-
-			DNANucleotide<number> *p = dynamic_cast<DNANucleotide<number>  *> (particles[i]);
-
-			if(tmpn3 < 0) p->n3 = P_VIRTUAL;
-			else p->n3 = particles[tmpn3];
-			if(tmpn5 < 0) p->n5 = P_VIRTUAL;
-			else p->n5 = particles[tmpn5];
-
-			p->strand_id = strand - 1;
-
-			// the base can be either a char or an integer
-			if(strlen(base) == 1) {
-				p->type = Utils::decode_base(base[0]);
-				p->btype = Utils::decode_base(base[0]);
-
-			}
-			else {
-				if(atoi (base) > 0) p->type = atoi (base) % 4;
-				else p->type = 3 - ((3 - atoi(base)) % 4);
-				p->btype = atoi(base);
-			}
-
-			if(p->type == P_INVALID) throw oxDNAException ("Particle #%d in strand #%d contains a non valid base '%c'. Aborting", i, strand, base);
-
-			p->index = i;
-			i++;
-
-			// here we fill the affected vector
-			if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
-			if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
+            int x;
+            std::set<int> myneighs;
+            if (nside >= 0) myneighs.insert(nside);
+            if (cside >= 0) myneighs.insert(cside);
+            while (ss.good()) {
+                ss >> x;
+                if (x < 0 || x >= N) {
+                    throw oxDNAException("Line %d of the topology file has an invalid syntax, neighbor has invalid id",
+                                         i + 2);
+                }
+                myneighs.insert(x);
             }
-		}
 
-	if (i < my_N)
-		throw oxDNAException(
-				"Not enough particles found in the topology file (should be %d). Aborting",
-				my_N);
+            ACParticle<number> *p = dynamic_cast< ACParticle<number> * > (particles[i]);
 
-	topology.close();
+            if (strlen(aminoacid) == 1) {
+                p->btype = Utils::decode_aa(aminoacid[0]);
+            }
 
-	if (my_N != N)
-		throw oxDNAException(
-				"Number of lines in the configuration file and number of particles in the topology files don't match. Aborting");
+            if (nside < 0)
+                p->n3 = P_VIRTUAL;
+            else
+                p->n3 = particles[nside];
 
-	*N_strands = my_N_strands;
+            if (cside < 0)
+                p->n5 = P_VIRTUAL;
+            else
+                p->n5 = particles[cside];
+
+            p->strand_id = abs(strand) + ndnas - 1;
+            p->index = i;
+
+            for (std::set<int>::iterator k = myneighs.begin(); k != myneighs.end(); ++k) {
+                if (p->index < *k) {
+                    p->add_bonded_neighbor(dynamic_cast<ACParticle<number> *> (particles[*k]));
+                }
+            }
+
+            i++;
+
+            if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
+            if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
+
+            // DNA Nucleotide
+        }
+        if (strand > 0) {
+            char base[256];
+            int tmpn3, tmpn5;
+            ss >> base >> tmpn3 >> tmpn5;
+
+//            BaseParticle<number> *p = particles[i];
+            DNANucleotide<number> *p = dynamic_cast<DNANucleotide<number> *> (particles[i]);
+
+            if (tmpn3 < 0) p->n3 = P_VIRTUAL;
+            else p->n3 = particles[tmpn3];
+            if (tmpn5 < 0) p->n5 = P_VIRTUAL;
+            else p->n5 = particles[tmpn5];
+
+
+            p->strand_id = strand - 1;
+
+            // the base can be either a char or an integer
+            if (strlen(base) == 1) {
+                p->type = Utils::decode_base(base[0]);
+                p->btype = Utils::decode_base(base[0]);
+
+            } else {
+                if (atoi(base) > 0) p->type = atoi(base) % 4;
+                else p->type = 3 - ((3 - atoi(base)) % 4);
+                p->btype = atoi(base);
+            }
+
+            if (p->type == P_INVALID)
+                throw oxDNAException("Particle #%d in strand #%d contains a non valid base '%c'. Aborting", i, strand,
+                                     base);
+
+            p->index = i;
+//            printf("DNA %d %d %d \n", p->index, (p->n3)->index, (p->n5)->index); // (*p).n3->index, (*p).n5->index);
+            i++;
+
+            // here we fill the affected vector
+            if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
+            if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
+
+//            typedef typename std::vector<ParticlePair<number> >::iterator iter;
+//            iter it;
+//            for (it = p->affected.begin(); it != p->affected.end(); ++it) {
+//                printf("Pair %d %d \n", (*it).first->index, (*it).second->index);
+//            }
+
+        }
+        if (strand == 0) throw oxDNAException("No strand 0 should be present please check topology file");
+
+    }
+
+    if (i < my_N)
+        throw oxDNAException(
+                "Not enough particles found in the topology file (should be %d). Aborting",
+                my_N);
+
+    topology.close();
+
+    if (my_N != N)
+        throw oxDNAException(
+                "Number of lines in the configuration file and number of particles in the topology files don't match. Aborting");
+
+    *N_strands = my_N_strands;
 
 }
 
+
 template<typename number>
 number DNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
-    if ((p->btype >= 0 && q->btype >=0)){
-        if(this->_check_bonded_neighbour(&p, &q, r)) return DNANMInteraction<number>::pair_interaction_bonded(p, q, r, update_forces);
-        else return DNANMInteraction<number>::pair_interaction_nonbonded(p, q, r, update_forces);
+    if (p->btype >= 0 && q->btype >=0){
+        if(p->is_bonded(q)) {
+            number energy = this->pair_interaction_bonded(p, q, r, update_forces);
+
+            return energy;
+        }
+        else{
+            number energy = this->pair_interaction_nonbonded(p, q, r, update_forces);
+//            printf("DNA nonbonded %d %d E= %f \n", p->index, q->index, energy);
+            return energy;
+        }
     }
-    if ((p->btype >= 0 && q->btype < 0) || (p->btype < 0 && q->btype >= 0)) return DNANMInteraction<number>::pair_interaction_nonbonded(p, q, r, update_forces);
+    if ((p->btype >= 0 && q->btype < 0) || (p->btype < 0 && q->btype >= 0)) return this->pair_interaction_nonbonded(p, q, r, update_forces);
 
     if (p->btype <0 && q->btype <0){
-        if (p->is_bonded(q)) return DNANMInteraction<number>::pair_interaction_bonded(p, q, r, update_forces);
-        else return DNANMInteraction<number>::pair_interaction_nonbonded(p, q, r, update_forces);
+        ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
+        if ((*cp).ACParticle<number>::is_bonded(q)) {
+            number energy = this->pair_interaction_bonded(p, q, r, update_forces);
+//            printf("Protein bonded %d %d E=%f \n", p->index, q->index, energy);
+            return energy;
+        }
+        else {
+            number energy = this->pair_interaction_nonbonded(p, q, r, update_forces);
+//            printf("Protein nonbonded %d %d E=%f \n", p->index, q->index, energy);
+            return energy;
+        }
     }
     return 0.f;
 }
@@ -259,10 +289,14 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
     }
 
     if (p->btype >= 0 && q->btype >=0){
-        if (!this->_check_bonded_neighbour(&p, &q, r)) return 0.;
+//        printf("%d %d dnabond", p->index, q->index);
         number energy = _dna_backbone(p,q,r,update_forces);
+        printf("%f back \n", energy);
         energy += _dna_bonded_excluded_volume(p,q,r,update_forces);
+        printf("%f excvol \n", energy);
         energy += _dna_stacking(p,q,r,update_forces);
+        printf("%f stack \n", energy);
+        printf("DNA bonded %d %d E= %f \n", p->index, q->index, energy);
         return energy;
     }
 
@@ -277,7 +311,6 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
     return 0.f;
 }
 
-
 template<typename number>
 number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 
@@ -288,7 +321,8 @@ number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number>
     }
 
     if (p->btype >= 0 && q->btype >= 0) { //DNA-DNA Interaction
-        if (this->_check_bonded_neighbour(&p, &q, r)) return 0.;
+//        printf("%d %d dnanonbond", p->index, q->index);
+        if (r->norm() >= this->_sqr_rcut) return (number) 0.f;
         number energy = _dna_nonbonded_excluded_volume(p, q, r, update_forces);
         energy += _dna_hydrogen_bonding(p, q, r, update_forces);
         energy += _dna_cross_stacking(p, q, r, update_forces);
@@ -309,7 +343,6 @@ number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number>
 
     return 0.f;
 }
-
 
 template<typename number>
 number DNANMInteraction<number>::_protein_dna_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)
@@ -577,7 +610,6 @@ number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BasePa
 
 }
 
-
 template<typename number>
 number DNANMInteraction<number>::_dna_backbone(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
     if(p->btype >= 0 && q->btype >=0){
@@ -588,7 +620,7 @@ number DNANMInteraction<number>::_dna_backbone(BaseParticle<number> *p, BasePart
 template<typename number>
 number DNANMInteraction<number>::_dna_bonded_excluded_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
     if(p->btype >= 0 && q->btype >=0){
-        return this->DNA2Interaction<number>::_bonded_excluded_volume(p,q,r,update_forces);
+        return this->DNAInteraction<number>::_bonded_excluded_volume(p,q,r,update_forces);
     } else return 0.f;
 }
 
