@@ -286,9 +286,14 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
     if ((p->btype >= 0 && q->btype <0) ||(p->btype <0 && q->btype >=0)) return 0.f;
 
     if ((p->btype <0 && q->btype <0)){
-        number energy = _protein_spring(p,q,r,update_forces);
-        energy += _protein_exc_volume(p,q,r,update_forces);
-        return energy;
+        ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
+        if ((*cp).ACParticle<number>::is_bonded(q)){
+            number energy = _protein_spring(p,q,r,update_forces);
+            energy += _protein_exc_volume(p,q,r,update_forces);
+            return energy;
+        } else{
+            return 0.f;
+        }
     }
 
     return 0.f;
@@ -435,10 +440,15 @@ void DNANMInteraction<number>::init() {
 	//_pro_base_rcut = 0.564332f;
     //_pro_base_stiffness = 1.0f;
     //Protein-Protein Excluded Volume Parameters
-	_pro_sigma = 0.381957276f;
-	_pro_rstar= 0.331957276f;
-	_pro_b = 7611.11f;
-	_pro_rcut = 0.372089f;
+    _pro_sigma = 0.117f;
+    _pro_rstar= 0.087f;
+    _pro_b = 671492.f;
+    _pro_rcut = 0.100161f;
+    //Oldversion
+	//_pro_sigma = 0.381957276f;
+	//_pro_rstar= 0.331957276f;
+	//_pro_b = 7611.11f;
+	//_pro_rcut = 0.372089f;
 	//Topology File Parameters
 	ndna=0;
 	npro=0;
@@ -522,7 +532,7 @@ number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BasePa
                 }
                 number rnorm = r->norm();
                 number rinsta = sqrt(rnorm);
-                number energy = 0.5 * _k * SQR(rinsta - eqdist);
+                number energy = 0.5 * _k * SQR((rinsta - eqdist));
 
                 if (update_forces) {
                     LR_vector<number> force(*r);
