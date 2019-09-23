@@ -5,12 +5,15 @@
  *      Author: jonah
  */
 
-#ifndef DNANM_INTERACTION_H
-#define DNANM_INTERACTION_H
+#ifndef DNANM_INTERACTION_H_
+#define DNANM_INTERACTION_H_
 
 #include "DNANMInteraction.h"
 #include "DNA2Interaction.h"
 #include "BaseInteraction.h"
+
+#include "../Particles/ACParticle.h"
+#include "../Particles/DNANucleotide.h"
 
 template<typename number>
 class DNANMInteraction: public DNA2Interaction<number> {
@@ -60,7 +63,4 @@ public:
     virtual number _dna_debye_huckel(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 };
 
-
-template class DNANMInteraction<float>;
-template class DNANMInteraction<double>;
 #endif /* SRC_INTERACTIONS_DNANMINTERACTION_H_ */

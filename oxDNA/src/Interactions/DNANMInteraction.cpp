@@ -667,6 +667,8 @@ template<typename number>
 DNANMInteraction<number>::~DNANMInteraction() {
 }
 
+template class DNANMInteraction<float>;
+template class DNANMInteraction<double>;
 
 
 
