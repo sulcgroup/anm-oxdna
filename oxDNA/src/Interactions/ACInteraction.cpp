@@ -61,11 +61,10 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 
 template<typename number>
 void ACInteraction<number>::init() {
-    _rstar = 0.331957276f;
-    _rc = 0.372089f;
-    _sigma = 0.381957276f;
-    _b = 7611.11f;
-
+    _sigma = 0.117f;
+    _rstar= 0.087f;
+    _b = 671492.f;
+    _rc = 0.100161f;
 }
 
 template<typename number>
@@ -195,7 +194,17 @@ number ACInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, B
 		r = &computed_r;
 	}
 
-	return (number) this->_spring(p,q,r,update_forces);
+    ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
+    if ((*cp).ACParticle<number>::is_bonded(q)){
+        number energy = _spring(p,q,r,update_forces);
+        if (abs(p->index - q->index) == 1) return energy;
+        else {
+            energy += _exc_volume(p,q,r,update_forces);
+            return energy;
+        }
+    } else {
+        return 0.f;
+    }
 }
 
 template<typename number>
@@ -206,8 +215,13 @@ number ACInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 		r = &computed_r;
 	}
 
-	number energy = this->_exc_volume(p, q, r, update_forces);
-    return energy;
+    ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
+    if ((*cp).ACParticle<number>::is_bonded(q)){
+        return 0.f;
+    } else {
+        number energy = this->_exc_volume(p, q, r, update_forces);
+        return energy;
+    }
 }
 
 template<typename number>

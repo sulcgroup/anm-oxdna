@@ -289,8 +289,11 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
         ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
         if ((*cp).ACParticle<number>::is_bonded(q)){
             number energy = _protein_spring(p,q,r,update_forces);
-            energy += _protein_exc_volume(p,q,r,update_forces);
-            return energy;
+            if (abs(p->index - q->index) == 1) return energy;
+            else {
+                energy += _protein_exc_volume(p,q,r,update_forces);
+                return energy;
+            }
         } else{
             return 0.f;
         }
@@ -416,10 +419,10 @@ template<typename number>
 void DNANMInteraction<number>::init() {
 	this->DNA2Interaction<number>::init();
     //Backbone-Protein Excluded Volume Parameters
-    _pro_backbone_sigma = 0.5534786380000001f;
-    _pro_backbone_rstar= 0.503478638f;
-    _pro_backbone_b = 2097.135160396999f;
-    _pro_backbone_rcut = 0.554221757147497f;
+    _pro_backbone_sigma = 0.4085f;
+    _pro_backbone_rstar= 0.3585f;
+    _pro_backbone_b = 5883.8f;
+    _pro_backbone_rcut = 0.400561f;
     _pro_backbone_stiffness = 1.0f;
     //Oldversion
 	//_pro_backbone_sigma = 0.748103f;
@@ -428,10 +431,10 @@ void DNANMInteraction<number>::init() {
 	//_pro_backbone_rcut = 0.757106f;
     //_pro_backbone_stiffness = 1.0f;
     //Base-Protein Excluded Volume Parameters
-    _pro_base_sigma = 0.37597863800000003f;
-    _pro_base_rstar= 0.32597863800000004f;
-    _pro_base_b = 8099.521987963835f;
-    _pro_base_rcut = 0.36565798425043045f;
+    _pro_base_sigma = 0.2235f;
+    _pro_base_rstar= 0.1735f;
+    _pro_base_b = 101416.f;
+    _pro_base_rcut = 0.198864f;
     _pro_base_stiffness = 1.0f;
     //OldVersion
     //_pro_base_sigma = 0.563103f;
