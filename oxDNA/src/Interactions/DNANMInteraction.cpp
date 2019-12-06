@@ -123,7 +123,8 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
         std::stringstream ss(line);
         ss >> strand;
         if (i == 0) {
-            allocate_particles(particles, N, strand);
+            _firststrand = strand;
+            allocate_particles(particles, N, _firststrand);
             for (int j = 0; j < N; j++) {
                 particles[j]->index = j;
                 particles[j]->type = 0;
