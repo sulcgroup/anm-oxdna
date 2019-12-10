@@ -40,14 +40,21 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
     fstream parameters;
     parameters.open(parameterfile, ios::in);
     getline (parameters,carbons);
-    int cc = stoi(carbons);
-    pair<char, number>* _spring_params = NULL;
-    _spring_params = new pair<char, number>[cc][cc];
-    pair<char, number> d_fault ('x', 0.f);
-    for(int i = 0; i<cc; i++) {
-        for (int j = 0; j < cc; j++) {
-            if(i > j) break;
-            *_spring_params[i][j] = d_fault;
+    //If Proteins are first in Top file, no offset needed, else offset is needed
+    if(this->firststrand < 0) offset = 0;
+    else if(this->firststrand > 0) offset = this->ndna;
+    else throw oxDNAException("No Strand should have an ID of 0");
+
+    _spring_pottype = new char[this->npro*this->npro];
+    _spring_potential = new number[this->npro*this->npro];
+    _spring_eqdist = new number[this->npro*this->npro];
+
+    //Default Values
+    for(int i = 0; i<this->npro; i++) {
+        for (int j = 0; j < this->npro; j++) {
+            _spring_potential[i*this->npro + j] = 0.f;
+            _spring_eqdist[i*this->npro + j] = 0.f;
+            _spring_pottype[i*this->npro + j] = 'x';
         }
     }
     if (parameters.is_open())
@@ -55,8 +62,12 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
         while (parameters.good())
         {
             parameters >> key1 >> key2 >> dist >> potswitch >> potential;
-            pair <char, double> pot (potswitch, potential);
-            _spring_params[key1][key2] = pot;
+            //adjust by offset
+            key1 -= offset;
+            key2 -= offset;
+            _spring_potential[key1*this->npro + key2] = potential;
+            _spring_eqdist[key1*this->npro + key2] = dist;
+            _spring_pottype[key1*this->npro + key2] = potswitch;
         }
         parameters.close();
     }
@@ -70,14 +81,6 @@ template<typename number, typename number4>
 void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     CUDABaseInteraction<number, number4>::cuda_init(box_side, N);
     DNANMInteraction<number>::init();
-    char* _spring_pottype = new char[this->npro*cc];
-    double* _spring_potential = new double[cc*cc];
-    double* _spring_eqdist = new double[cc*cc];
-    for(std::map<pair<int, int>, double>::iterator it=DNANMInteraction<number>::_rknot.begin(); it!=DNANMInteraction<number>::_rknot.end(); ++it) {
-        map<pair<int, int>, double> _rknot; //Both maps used just as they are in ACInteraction
-        map<pair<int, int>, pair<char, double> > _potential;
-    }
-
 
     float f_copy = this->_hb_multiplier;
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_hb_multi, &f_copy, sizeof(float)) );
@@ -118,6 +121,7 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XC, this->F5_PHI_XC, 4);
     COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XS, this->F5_PHI_XS, 4);
 
+
     if(this->_use_edge) CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_n_forces, &this->_n_forces, sizeof(int)) );
     if (_use_debye_huckel){
         // copied from DNA2Interaction::init() (CPU), the least bad way of doing things
@@ -156,26 +160,28 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_B, &_debye_huckel_B, sizeof(float)) );
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_minus_kappa, &_minus_kappa, sizeof(float)) );
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_half_charged_ends, &_debye_huckel_half_charged_ends, sizeof(bool)) );
-
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_sigma, this->_pro_sigma, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rstar, this->_pro_rstar, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rc, this->_pro_rcut, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_b, this->_pro_b, sizeof(float)) );
-
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_sigma, this->_pro_backbone_sigma, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_rstar, this->_pro_backbone_rstar, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_rc, this->_pro_backbone_rcut, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_b, this->_pro_backbone_b, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_stiffness, this->_pro_backbone_stiffness, sizeof(float)) );
-
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_sigma, this->_pro_base_sigma, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_rstar, this->_pro_base_rstar, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_rc, this->_pro_base_rcut, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_b, this->_pro_base_b, sizeof(float)) );
-        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_stiffness, this->_pro_base_stiffness, sizeof(float)) );
     }
+    //Constants for DNA/Protein Interactions
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_sigma, this->_pro_sigma, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rstar, this->_pro_rstar, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rc, this->_pro_rcut, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_b, this->_pro_b, sizeof(float)) );
+
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_sigma, this->_pro_backbone_sigma, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_rstar, this->_pro_backbone_rstar, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_rc, this->_pro_backbone_rcut, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_b, this->_pro_backbone_b, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_stiffness, this->_pro_backbone_stiffness, sizeof(float)) );
+
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_sigma, this->_pro_base_sigma, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_rstar, this->_pro_base_rstar, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_rc, this->_pro_base_rcut, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_b, this->_pro_base_b, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_stiffness, this->_pro_base_stiffness, sizeof(float)) );
+
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol())
 }
-}
+
 
 template<typename number, typename number4>
 void CUDADNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, number4> *lists, number4 *d_poss, GPU_quat<number> *d_orientations, number4 *d_forces, number4 *d_torques, LR_bonds *d_bonds, CUDABox<number, number4> *d_box) {

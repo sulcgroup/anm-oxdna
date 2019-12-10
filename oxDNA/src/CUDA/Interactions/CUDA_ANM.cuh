@@ -63,6 +63,9 @@ __constant__ float MD_pro_rstar;
 __constant__ float MD_pro_b;
 __constant__ float MD_pro_rc;
 
+__constant__ float spring_potential;
+__constant__ float MD_spring_eqdist;
+
 #include "../cuda_utils/CUDA_lr_common.cuh"
 
 template<typename number, typename number4>
