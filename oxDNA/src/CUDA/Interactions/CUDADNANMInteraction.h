@@ -17,7 +17,7 @@
 template<typename number, typename number4>
 class CUDADNANMINTERACTION: public CUDABaseInteraction<number, number4>, public DNANMInteraction<number> {
 public:
-    char* _spring_pottype;
+    char* _d_spring_pottype, _h_spring_pottype;
     number* _spring_potential;
     number* _spring_eqdist;
     int offset; //Basically will only come into play if proteins are after dna in topology file. Just adjust proteins index for the spring parameter arrays
