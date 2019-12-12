@@ -489,7 +489,7 @@ number DNANMInteraction<number>::_protein_repulsive_lj(const LR_vector<number> &
 
 template<typename number>
 number DNANMInteraction<number>::_protein_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-	if (p->index != q->index && (p->btype <0 && q-> btype < 0 )  ){
+	if (p->index != q->index && (p->btype < 0 && q-> btype < 0 )  ){
 		LR_vector<number> force(0,0,0);
 
 		number energy =  DNANMInteraction<number>::_protein_repulsive_lj(*r, force, update_forces);

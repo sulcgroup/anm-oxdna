@@ -94,6 +94,21 @@ __forceinline__ __device__ void _excluded_volume(const number4 &r, number4 &F, n
     }
 }
 
+template<typename number, typename number4>
+__forceinline__ __device__ number _spring(const number4 &r, number4 &F, int ind){
+    number eqdist = _d_spring_eqdist[ind];
+    number gamma = _d_spring_potential[ind];
+    if(eqdist != 0.f && gamma != 0.f){
+        number cdist = sqrtf(r.x*r.x + r.y*r.y +r.z*r.z);
+        number fmod = (-1.0f * eqdist) * (cdist - eqdist) / cdist;
+        F.x = r.x*fmod;
+        F.y = r.y*fmod;
+        F.z = r.z*fmod;
+        F.w = 0.5f * gamma * powf(cdist-eqdist, 2);
+    }
+}
+
+
 template<typename number>
 __forceinline__ __device__ number _f1(number r, int type, int n3, int n5) {
     number val = (number) 0.f;
@@ -944,12 +959,16 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         //copy over dnanm constants? done!
         number4 r = box->minimum_image(ppos, qpos);
         _excluded_volume(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc)
-
+        dF.w *= (number) 0.5f;
         //Add force to p index
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
         //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
             LR_atomicAddXYZ(&(forces[from_index]), dF);
+
+        dF.x = -dF.x;
+        dF.y = -dF.y;
+        dF.z = -dF.z;
 
         //Add force to q index
         int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
@@ -963,12 +982,16 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         number4 ppos_base = POS_BASE * a1;
         number4 rback = box->minimum_image(ppos_back, qpos);
         number4 rbase = box->minimum_image(ppos_base, qpos);
-        _excluded_volume(rback, dF, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
-        _excluded_volume(rbase, dF, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
-        dF.w *= (number) 0.5f;
+        number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
+        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
+        dF += Ftmp;
+        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
+        dF += Ftmp;
         // NEED TO HANDLE TORQUE ON DNA particles!!!
         dT += _cross<number, number4>(ppos_back, dF); //check the shit out of this
         dT += _cross<number, number4>(ppos_base, dF)
+        dF.w *= (number) 0.5f;
+        dT.w *= (number) 0.5f;
         // Add force AND TORQUE to p index
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
         //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
@@ -992,12 +1015,16 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         number4 qpos_base = POS_BASE * b1;
         number4 rback = box->minimum_image(ppos, qpos_back);
         number4 rbase = box->minimum_image(ppos, qpos_base);
-        _excluded_volume(rback, dF, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
-        _excluded_volume(rbase, dF, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
-        dF.w *= (number) 0.5f;
+        number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
+        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
+        dF += Ftmp;
+        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
+        dF += Ftmp;
         // NEED TO HANDLE TORQUE **SHOULD THIS BE NEGATIVE??
         dT += _cross<number, number4>(qpos_back, dF); //check the shit out of this
         dT += _cross<number, number4>(qpos_base, dF);
+        dF.w *= (number) 0.5f;
+        dT.w *= (number) 0.5f;
         // Add Force to p index
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
         //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
@@ -1080,7 +1107,8 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
     number4 dT = make_number4<number, number4>(0, 0, 0, 0);
     number4 ppos = poss[IND];
     // get btype of p
-    int pbtype = get_particle_btype < number, number4>(ppos);
+    int pbtype = get_particle_btype <number, number4>(ppos);
+    int pindex = get_particle_index <number, number4> (ppos);
     if (pbtype >= 0){
         LR_bonds bs = bonds[IND];
         // particle axes according to Allen's paper
@@ -1114,6 +1142,12 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
         torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
     } else{
         //get bonded neighbors and compute for protein bonded neighs
+        for(int i = this->npro*pindex; i < this->npro*pindex+this->npro; ++i){
+            if(_d_spring_eqdist[i] != 0){
+                _spring()
+            };
+        }
+        _d_spring_eqdist[this->npro]
     }
 }
 
