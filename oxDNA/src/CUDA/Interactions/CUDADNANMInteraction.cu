@@ -203,7 +203,6 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     CUDA_SAFE_CALL( cudaMemcpy(_d_spring_eqdist, _h_spring_eqdist, _spring_param_size, cudaMemcpyHostToDevice));
 }
 
-
 template<typename number, typename number4>
 void CUDADNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, number4> *lists, number4 *d_poss, GPU_quat<number> *d_orientations, number4 *d_forces, number4 *d_torques, LR_bonds *d_bonds, CUDABox<number, number4> *d_box) {
 	CUDASimpleVerletList<number, number4> *_v_lists = dynamic_cast<CUDASimpleVerletList<number, number4> *>(lists);
@@ -223,21 +222,7 @@ void CUDADNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, 
 					<<<this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block>>>
 					(d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf);
 			}
-			else {
-				dna_forces<number, number4>
-					<<<this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block>>>
-					(d_poss, d_orientations, d_forces, d_torques, _v_lists->_d_matrix_neighs, _v_lists->_d_number_neighs, d_bonds, this->_grooving, _use_debye_huckel, _use_oxDNA2_coaxial_stacking, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box);
-				CUT_CHECK_ERROR("forces_second_step simple_lists error");
-			}
-	}
-
-	CUDANoList<number, number4> *_no_lists = dynamic_cast<CUDANoList<number, number4> *>(lists);
-	if(_no_lists != NULL) {
-		dna_forces<number, number4>
-			<<<this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block>>>
-			(d_poss, d_orientations,  d_forces, d_torques, d_bonds, this->_grooving, _use_debye_huckel, _use_oxDNA2_coaxial_stacking, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box);
-		CUT_CHECK_ERROR("forces_second_step no_lists error");
-	}
+	} else throw oxDNAException("Must Use with Lists to run simulation");
 }
 
 template class CUDADNAInteraction<float, float4>;
