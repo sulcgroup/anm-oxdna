@@ -98,13 +98,14 @@ template<typename number, typename number4>
 __forceinline__ __device__ number _spring(const number4 &r, number4 &F, int ind){
     number eqdist = _d_spring_eqdist[ind];
     number gamma = _d_spring_potential[ind];
+    number4 dF = make_number4<number, number4>(0, 0, 0, 0);
     if(eqdist != 0.f && gamma != 0.f){
         number cdist = sqrtf(r.x*r.x + r.y*r.y +r.z*r.z);
         number fmod = (-1.0f * eqdist) * (cdist - eqdist) / cdist;
-        F.x = r.x*fmod;
-        F.y = r.y*fmod;
-        F.z = r.z*fmod;
-        F.w = 0.5f * gamma * powf(cdist-eqdist, 2);
+        F.x += 0.5*f*r.x*fmod;
+        F.y += 0.5f*r.y*fmod;
+        F.z = 0.5f*r.z*fmod;
+        F.w = 0.25f * gamma * powf(cdist-eqdist, 2);
     }
 }
 
@@ -1087,11 +1088,14 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
     } else{
         //get bonded neighbors and compute for protein bonded neighs
         for(int i = this->npro*pindex; i < this->npro*pindex+this->npro; ++i){
-            if(_d_spring_eqdist[i] != 0){
-                _spring()
+            if(_d_spring_eqdist[i] != 0.f){
+                _spring(ppos, F0, i)
             };
         }
         _d_spring_eqdist[this->npro]
+
+
+        forces[IND] = (dF + F0);
     }
 }
 
