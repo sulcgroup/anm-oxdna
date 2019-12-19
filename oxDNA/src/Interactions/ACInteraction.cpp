@@ -9,6 +9,7 @@
 #include "../Particles/ACParticle.h"
 #include <sstream>
 #include <fstream>
+#include <unistd.h>
 
 
 // TODO: Get the files loaded with their strings saved in the init
@@ -45,8 +46,8 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 		while (parameters.good())
 		{
 			parameters >> key1 >> key2 >> dist >> potswitch >> potential;
-            pair <int, int> lkeys = {key1, key2};
-            pair <char, double> pot = {potswitch, potential};
+            pair <int, int> lkeys (key1, key2);
+            pair <char, double> pot (potswitch, potential);
 			_rknot[lkeys] = dist;
 			_potential[lkeys] = pot;
 		}
@@ -60,6 +61,10 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 
 template<typename number>
 void ACInteraction<number>::init() {
+    _sigma = 0.117f;
+    _rstar= 0.087f;
+    _b = 671492.f;
+    _rc = 0.100161f;
 }
 
 template<typename number>
@@ -189,7 +194,17 @@ number ACInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, B
 		r = &computed_r;
 	}
 
-	return (number) this->_spring(p,q,r,update_forces);
+    ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
+    if ((*cp).ACParticle<number>::is_bonded(q)){
+        number energy = _spring(p,q,r,update_forces);
+        if (abs(p->index - q->index) == 1) return energy;
+        else {
+            energy += _exc_volume(p,q,r,update_forces);
+            return energy;
+        }
+    } else {
+        return 0.f;
+    }
 }
 
 template<typename number>
@@ -199,13 +214,18 @@ number ACInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p
 		computed_r = this->_box->min_image(p->pos, q->pos);
 		r = &computed_r;
 	}
-	//return (number) 0.f;
-	return (number) this->_exc_volume(p, q, r, update_forces);
+
+    ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
+    if ((*cp).ACParticle<number>::is_bonded(q)){
+        return 0.f;
+    } else {
+        number energy = this->_exc_volume(p, q, r, update_forces);
+        return energy;
+    }
 }
 
 template<typename number>
 void ACInteraction<number>::check_input_sanity(BaseParticle<number> **particles, int N) {
-
 }
 
 template class ACInteraction<float>;

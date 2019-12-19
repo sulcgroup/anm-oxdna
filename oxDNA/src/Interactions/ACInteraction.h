@@ -26,14 +26,14 @@ template <typename number>
 class ACInteraction: virtual public BaseInteraction<number, ACInteraction<number> > {
 protected:
 
-	number _r; //radius of alpha carbon of amino acid
 	map<pair<int, int>, double> _rknot; //eqdist of each bond of psuedobonds
 	map<pair<int, int>, pair<char, double> > _potential; //switch to tell lj, FENE or spring as well as strength for each pair of particles
 
+	number _rstar, _rc, _b, _sigma;
 
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
-	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, vector<double> &params);
+	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
 
 public:
 	enum {
@@ -63,20 +63,19 @@ public:
 
 
 template<typename number>
-number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces, vector<double> &params) {
-	// this is a bit faster than calling r.norm()
+number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
 
 	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
 	number energy = (number) 0;
-	if(rnorm < SQR(*_rcut)) {
-		if(rnorm > SQR(*_rstar)) {
+	if(rnorm < SQR(_rc)) {
+		if(rnorm > SQR(_rstar)) {
 			number rmod = sqrt(rnorm);
-			number rrc = rmod - _rcut;
-			energy = EXCL_EPS * *_b * SQR(rrc);
-			if(update_forces) force = -r * (2 * EXCL_EPS * *_b * rrc/ rmod);
+			number rrc = rmod - _rc;
+			energy = EXCL_EPS * _b * SQR(rrc);
+			if(update_forces) force = -r * (2 * EXCL_EPS * _b * rrc/ rmod);
 		}
 		else {
-			number tmp = SQR(*_sigma) / rnorm;
+			number tmp = SQR(_sigma) / rnorm;
 			number lj_part = tmp * tmp * tmp;
 			energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
 			if(update_forces) force = -r* (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rnorm);
@@ -94,8 +93,7 @@ number ACInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<
 	if (p->index != q->index){
 		LR_vector<number> force(0,0,0);
 
-		pair<int, int> lkeys = {std::max(p->btype, q->btype), std::min(p->btype, q->btype)};
-		number energy =  ACInteraction<number>::_repulsive_lj(*r, force, update_forces, _pro_pro_exc_vol[lkeys]);
+		number energy =  this->_repulsive_lj(*r, force, update_forces);
 
 		if(update_forces)
 		{
@@ -113,19 +111,11 @@ number ACInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<
 
 template<typename number>
 number ACInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-	pair <int,int> keys;
 	number eqdist;
 	char interactiontype;
+    pair <int,int> keys (std::min(p->index, q->index), std::max(p->index, q->index));
 	if (p->index != q->index)
 	{
-		if (p->index > q->index)
-		{
-			keys.first=q->index;
-			keys.second=p->index;
-		} else {
-			keys.first=p->index;
-			keys.second=q->index;
-		}
 		eqdist = _rknot[keys];
 		interactiontype = _potential[keys].first;
 		if (eqdist != 0.0){ //only returns number if eqdist is in .par file

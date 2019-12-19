@@ -17,6 +17,7 @@
 #include "CUDATSPInteraction.h"
 #include "CUDATEPInteraction.h"
 #include "CUDARNAInteraction.h"
+#include "CUDADNANMInteraction.h"
 
 #include "../../Utilities/Utils.h"
 
@@ -40,6 +41,7 @@ CUDABaseInteraction<number, number4> *CUDAInteractionFactory::make_interaction(i
 	else if(!inter_type.compare("patchy")) return new CUDAPatchyInteraction<number, number4>();
 	else if(!inter_type.compare("TSP")) return new CUDATSPInteraction<number, number4>();
 	else if(inter_type.compare("TEP") == 0) return new CUDATEPInteraction<number, number4>();
+	else if(!inter_type.compare("DNANM")) return new CUDADNANMInteraction<number, number4>();
 	else {
 		std::string cuda_name(inter_type);
 		cuda_name = "CUDA" + cuda_name;

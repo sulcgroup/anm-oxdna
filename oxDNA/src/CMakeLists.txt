@@ -217,6 +217,7 @@ IF(CUDA)
 		CUDA/Interactions/CUDAPatchyInteraction.cu
 		CUDA/Interactions/CUDATSPInteraction.cu
 		CUDA/Interactions/CUDATEPInteraction.cu
+		CUDA/Interactions/CUDADNANMInteraction.cu
 		CUDA/Interactions/CUDAInteractionFactory.cu
 		CUDA/Lists/CUDANoList.cu
 		CUDA/Lists/CUDASimpleVerletList.cu
