@@ -1088,7 +1088,9 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
         torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
     } else{
         //get bonded neighbors and compute for protein bonded neighs
-        for(int i = this->npro*(pindex - offset); i < this->npro*(pindex - offset)+this->npro; ++i){
+        for(int i = this->npro*(pindex - this->offset); i < this->npro*(pindex - this->offset)+this->npro; ++i){
+            int bonded_index = 0;
+
             if(_d_spring_eqdist[i] != 0.f){
                 number4 dF = _spring(ppos, i);
                 dF.w *= 0.5f;
@@ -1097,8 +1099,9 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
                 dF.y = -dF.y;
                 dF.z = -dF.z;
                 // HOW DO I ACCESS THE OTHER PARTICLES INDEX!!
-
+                forces[bonded_index + this->offset] = (dF + F0)
             };
+            bonded_index += 1;
         }
     }
 }
