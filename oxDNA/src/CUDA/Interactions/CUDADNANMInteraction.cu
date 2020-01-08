@@ -88,8 +88,8 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
     parameters.open(parameterfile, ios::in);
     getline (parameters,carbons);
     //If Proteins are first in Top file, no offset needed, else offset is needed
-    if(this->firststrand < 0) offset = 0;
-    else if(this->firststrand > 0) offset = this->ndna;
+    if(this->_firststrand < 0) offset = 0;
+    else if(this->_firststrand > 0) offset = this->ndna;
     else throw oxDNAException("No Strand should have an ID of 0");
 
     //Initalizing Host and Device Arrays for Spring Parameters
@@ -258,7 +258,7 @@ void CUDADNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, 
 
 				dnanm_forces_edge_bonded<number, number4>
 					<<<this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block>>>
-					(d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf);
+					(d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, this->_d_spring_eqdist, this->_d_spring_potential);
 			}
 	} else throw oxDNAException("Must Use with Lists to run simulation");
 }

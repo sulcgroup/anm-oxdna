@@ -96,7 +96,7 @@ __forceinline__ __device__ void _excluded_volume(const number4 &r, number4 &F, n
 */
 
 template<typename number, typename number4>
-__forceinline__ __device__ number4 _spring(number4 &r, int ind){
+__forceinline__ __device__ number4 _spring(number4 &r, int ind, number *_d_spring_eqdist, number *_d_spring_potential){
     number eqdist = _d_spring_eqdist[ind];
     number gamma = _d_spring_potential[ind];
     number4 dF = make_number4<number, number4>(0, 0, 0, 0);
@@ -1036,7 +1036,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
 
 // bonded interactions for edge-based approach
 template <typename number, typename number4>
-__global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf) {
+__global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_spring_eqdist, number *_d_spring_potential) {
     if(IND >= MD_N[0]) return;
 
     number4 F0, T0;
@@ -1095,7 +1095,7 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             if(_d_spring_eqdist[i] != 0.f){
                 number4 qpos = poss[bonded_index + _offset];
                 number4 r = box->minimum_image(ppos, qpos);
-                number4 dF = _spring(&r, i);
+                number4 dF = _spring(r, i, _d_spring_eqdist, _d_spring_potential);
                 dF.w *= 0.5f;
                 forces[IND] = (dF + F0);
 
