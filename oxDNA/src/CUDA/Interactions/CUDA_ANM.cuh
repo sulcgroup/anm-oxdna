@@ -1,4 +1,5 @@
 /* System constants */
+/*
 __constant__ int MD_N[1];
 __constant__ int MD_n_forces[1];
 
@@ -37,7 +38,7 @@ __constant__ float MD_dh_prefactor[1];
 __constant__ float MD_dh_B[1];
 __constant__ float MD_dh_minus_kappa[1];
 __constant__ bool MD_dh_half_charged_ends[1];
-
+*/
 
 //added constants for DNANM
 __constant__ float MD_pro_backbone_sigma;
@@ -45,12 +46,6 @@ __constant__ float MD_pro_backbone_rstar;
 __constant__ float MD_pro_backbone_b;
 __constant__ float MD_pro_backbone_rc;
 __constant__ float MD_pro_backbone_stiffness;
-
-__constant__ float MD_pro_base_sigma;
-__constant__ float MD_pro_base_rstar;
-__constant__ float MD_pro_base_b;
-__constant__ float MD_pro_base_rc;
-__constant__ float MD_pro_base_stiffness;
 
 __constant__ float MD_pro_base_sigma;
 __constant__ float MD_pro_base_rstar;
@@ -66,8 +61,13 @@ __constant__ float MD_pro_rc;
 __constant__ float spring_potential;
 __constant__ float MD_spring_eqdist;
 
+__constant__ int _npro;
+__constant__ int _ndna;
+__constant__ int _offset;
+
 #include "../cuda_utils/CUDA_lr_common.cuh"
 
+/*
 template<typename number, typename number4>
 __forceinline__ __device__ void _excluded_volume(const number4 &r, number4 &F, number sigma, number rstar, number b, number rc) {
     number rsqr = CUDA_DOT(r, r);
@@ -93,9 +93,10 @@ __forceinline__ __device__ void _excluded_volume(const number4 &r, number4 &F, n
         }
     }
 }
+*/
 
 template<typename number, typename number4>
-__forceinline__ __device__ number4 _spring(const number4 &r, int ind){
+__forceinline__ __device__ number4 _spring(number4 &r, int ind, number *_d_spring_eqdist, number *_d_spring_potential){
     number eqdist = _d_spring_eqdist[ind];
     number gamma = _d_spring_potential[ind];
     number4 dF = make_number4<number, number4>(0, 0, 0, 0);
@@ -110,7 +111,7 @@ __forceinline__ __device__ number4 _spring(const number4 &r, int ind){
     return dF;
 }
 
-
+/*
 template<typename number>
 __forceinline__ __device__ number _f1(number r, int type, int n3, int n5) {
     number val = (number) 0.f;
@@ -877,7 +878,7 @@ __device__ void _particle_particle_interaction(number4 ppos, number4 a1, number4
     // this component stores the energy due to hydrogen bonding
     T.w = old_Tw + hb_energy;
 }
-
+*/
 template <typename number, typename number4>
 __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *orientations, number4 *forces, number4 *torques, edge_bond *edge_list, int n_edges, LR_bonds *bonds, bool grooving, bool use_debye_huckel, bool use_oxDNA2_coaxial_stacking, CUDABox<number, number4> *box) {
     if (IND >= n_edges) return;
@@ -904,7 +905,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         //Protein-Protein Excluded Volume **NONBONDED
         //copy over dnanm constants? done!
         number4 r = box->minimum_image(ppos, qpos);
-        _excluded_volume(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc)
+        _excluded_volume(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
         dF.w *= (number) 0.5f;
         //Add force to p index
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
@@ -924,7 +925,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
 
     } else if (pbtype >= 0 && qbtype < 0) {
         //Protein-DNA Excluded Volume **NONBONDED
-        numer4 ppos_back = POS_BACK * a1;
+        number4 ppos_back = POS_BACK * a1;
         number4 ppos_base = POS_BASE * a1;
         number4 rback = box->minimum_image(ppos_back, qpos);
         number4 rbase = box->minimum_image(ppos_base, qpos);
@@ -935,7 +936,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         dF += Ftmp;
         // NEED TO HANDLE TORQUE ON DNA particles!!!
         dT += _cross<number, number4>(ppos_back, dF); //check the shit out of this
-        dT += _cross<number, number4>(ppos_base, dF)
+        dT += _cross<number, number4>(ppos_base, dF); //same here
         dF.w *= (number) 0.5f;
         dT.w *= (number) 0.5f;
         // Add force AND TORQUE to p index
@@ -957,7 +958,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
             LR_atomicAddXYZ(&(forces[to_index]), dF);
 
     } else if(pbtype < 0 && qbtype >= 0) {
-        numer4 qpos_back = POS_BACK * b1;
+        number4 qpos_back = POS_BACK * b1;
         number4 qpos_base = POS_BASE * b1;
         number4 rback = box->minimum_image(ppos, qpos_back);
         number4 rbase = box->minimum_image(ppos, qpos_base);
@@ -1035,7 +1036,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
 
 // bonded interactions for edge-based approach
 template <typename number, typename number4>
-__global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf) {
+__global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_spring_eqdist, number *_d_spring_potential) {
     if(IND >= MD_N[0]) return;
 
     number4 F0, T0;
@@ -1088,17 +1089,30 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
         torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
     } else{
         //get bonded neighbors and compute for protein bonded neighs
-        for(int i = this->npro*(pindex - offset); i < this->npro*(pindex - offset)+this->npro; ++i){
+        for(int i = _npro*(pindex - _offset); i < _npro*(pindex - _offset)+_npro; ++i){
+            int bonded_index = 0;
+
             if(_d_spring_eqdist[i] != 0.f){
-                number4 dF = _spring(ppos, i);
+                number4 qpos = poss[bonded_index + _offset];
+                number4 r = box->minimum_image(ppos, qpos);
+                number4 dF = _spring(r, i, _d_spring_eqdist, _d_spring_potential);
                 dF.w *= 0.5f;
                 forces[IND] = (dF + F0);
+
                 dF.x = -dF.x;
                 dF.y = -dF.y;
                 dF.z = -dF.z;
-                // HOW DO I ACCESS THE OTHER PARTICLES INDEX!!
 
+                //update Q's forces and energy
+                number4 F1;
+                F1.x = forces[bonded_index + _offset].x;
+                F1.y = forces[bonded_index + _offset].y;
+                F1.z = forces[bonded_index + _offset].z;
+                F1.w = forces[bonded_index + _offset].w;
+                // HOW DO I ACCESS THE OTHER PARTICLES INDEX!!
+                forces[bonded_index + _offset] = (dF + F1);
             };
+            bonded_index += 1;
         }
     }
 }

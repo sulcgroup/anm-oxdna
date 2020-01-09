@@ -79,12 +79,12 @@ void DNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particl
 
 
 template<typename number>
-void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N, int firststrand) {
+void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
 	if (ndna==0 || ndnas==0){
         OX_LOG(Logger::LOG_INFO,"No DNA Particles Specified, Continuing with just Protein Particles");
         for(int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
 	} else {
-	    if (firststrand > 0){
+	    if (this->_firststrand > 0){
             for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
             for (int i = ndna; i < N; i++) particles[i] = new ACParticle<number>();
 	    } else {
@@ -123,8 +123,8 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
         std::stringstream ss(line);
         ss >> strand;
         if (i == 0) {
-            _firststrand = strand;
-            allocate_particles(particles, N, _firststrand);
+            _firststrand = strand; //Must be set prior to allocation of particles
+            allocate_particles(particles, N);
             for (int j = 0; j < N; j++) {
                 particles[j]->index = j;
                 particles[j]->type = 0;
