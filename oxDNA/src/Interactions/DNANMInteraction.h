@@ -8,7 +8,6 @@
 #ifndef DNANM_INTERACTION_H_
 #define DNANM_INTERACTION_H_
 
-#include "DNANMInteraction.h"
 #include "DNA2Interaction.h"
 #include "BaseInteraction.h"
 
@@ -64,4 +63,4 @@ public:
     virtual number _dna_debye_huckel(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 };
 
-#endif /* SRC_INTERACTIONS_DNANMINTERACTION_H_ */
+#endif /* DNANM_INTERACTION_H_ */
