@@ -52,6 +52,9 @@ SET(observables_SOURCES
 	Observables/UnstackedList.cpp
 	Observables/PlectonemePosition.cpp
 	Observables/TEPPlectonemePosition.cpp
+	Observables/AverageEnergy.cpp
+	Observables/ContactMap.cpp
+	Observables/AllVectors.cpp
 )
 
 SET(backends_SOURCES
@@ -91,8 +94,6 @@ SET(interactions_SOURCES
 	Interactions/TEPInteraction.cpp
 	Interactions/TSPInteraction.cpp
 	Interactions/LJInteraction.cpp
-	Interactions/ACInteraction.cpp
-	Interactions/DNANMInteraction.cpp
 	Interactions/HSInteraction.cpp
 	Interactions/DHSInteraction.cpp
 	Interactions/HardCylinderInteraction.cpp
@@ -109,6 +110,8 @@ SET(interactions_SOURCES
 	Interactions/DNAInteraction_nomesh.cpp
 	Interactions/DNAInteraction_relax.cpp
 	Interactions/DNAInteraction_relax2.cpp
+	Interactions/DNANMInteraction.cpp
+	Interactions/ACInteraction.cpp
 	Interactions/CustomInteraction.cpp
 	Interactions/InteractionFactory.cpp
 )
@@ -159,11 +162,11 @@ SET(common_SOURCES
 	Particles/RNANucleotide.cpp
 	Particles/BaseParticle.cpp
 	Particles/DNANucleotide.cpp
+	Particles/ACParticle.cpp
 	Particles/PatchyParticle.cpp
 	Particles/PatchyParticleDan.cpp
 	Particles/TSPParticle.cpp
 	Particles/SpheroCylinder.cpp
-	Particles/ACParticle.cpp
 	Particles/CustomParticle.cpp
 	Managers/SimManager.cpp
 	Utilities/OrderParameters.cpp
@@ -212,12 +215,12 @@ IF(CUDA)
 		CUDA/Backends/FFS_MD_CUDAMixedBackend.cu
 		CUDA/Interactions/CUDABaseInteraction.cu
 		CUDA/Interactions/CUDADNAInteraction.cu
+		CUDA/Interactions/CUDADNANMInteraction.cu
 		CUDA/Interactions/CUDALJInteraction.cu
 		CUDA/Interactions/CUDARNAInteraction.cu
 		CUDA/Interactions/CUDAPatchyInteraction.cu
 		CUDA/Interactions/CUDATSPInteraction.cu
 		CUDA/Interactions/CUDATEPInteraction.cu
-		CUDA/Interactions/CUDADNANMInteraction.cu
 		CUDA/Interactions/CUDAInteractionFactory.cu
 		CUDA/Lists/CUDANoList.cu
 		CUDA/Lists/CUDASimpleVerletList.cu

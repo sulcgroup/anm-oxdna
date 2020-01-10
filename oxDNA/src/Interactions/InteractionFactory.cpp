@@ -25,11 +25,11 @@
 #include "HardSpheroCylinderInteraction.h"
 #include "CustomInteraction.h"
 #include "DNA2Interaction.h"
-#include "ACInteraction.h"
 #include "RNAInteraction2.h"
 #include "RNAInteraction_relax.h"
 #include "TEPInteraction.h"
 #include "JordanInteraction.h"
+#include "ACInteraction.h"
 #include "DNANMInteraction.h"
 
 InteractionFactory::InteractionFactory() {
@@ -47,7 +47,7 @@ IBaseInteraction<number> *InteractionFactory::make_interaction(input_file &inp) 
 	getInputString(&inp, "interaction_type", inter_type, 0);
 
 	if(inter_type.compare("DNA") == 0) {
-		// in order to avoid small mismatches between potential energies computed on the GPU and 
+		// in order to avoid small mismatches between potential energies computed on the GPU and
 		// on the CPU we enforce the DNAInteraction_nomesh interaction class
 		std::string backend ("");
 		getInputString(&inp, "backend", backend, 0);
@@ -63,7 +63,6 @@ IBaseInteraction<number> *InteractionFactory::make_interaction(input_file &inp) 
 	else if(inter_type.compare("DNA_nomesh") == 0) return new DNAInteraction_nomesh<number>();
 	else if(inter_type.compare("DNA2_nomesh") == 0) return new DNA2Interaction_nomesh<number>();
 	else if(inter_type.compare("LJ") == 0) return new LJInteraction<number>();
-	else if(inter_type.compare("AC") == 0) return new ACInteraction<number>();
 	else if(inter_type.compare("DNA_relax") == 0) return new DNAInteraction_relax<number>();
 	else if(inter_type.compare("RNA") == 0) return new RNAInteraction<number>();
 	else if(inter_type.compare("patchy") == 0) return new PatchyInteraction<number>();
@@ -81,7 +80,8 @@ IBaseInteraction<number> *InteractionFactory::make_interaction(input_file &inp) 
 	else if(inter_type.compare("RNA_relax") == 0) return new RNAInteraction_relax<number>();
 	else if(inter_type.compare("TEP") == 0) return new TEPInteraction<number>();
 	else if(inter_type.compare("Jordan") == 0) return new JordanInteraction<number>();
-	else if(inter_type.compare("DNANM" ) == 0) return new DNANMInteraction<number>();
+	else if(inter_type.compare("AC") == 0) return new ACInteraction<number>();
+	else if(inter_type.compare("DNANM") == 0) return new DNANMInteraction<number>();
 	else {
 		IBaseInteraction<number> *res = PluginManager::instance()->get_interaction<number>(inter_type);
 		if(res == NULL) throw oxDNAException ("Interaction '%s' not found. Aborting", inter_type.c_str());

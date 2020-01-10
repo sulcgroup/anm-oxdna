@@ -62,12 +62,16 @@
 #define A_DUMMY (-21)
 
 #include <cmath>
-#include <strings.h>
+#include <string>
 #include <iostream>
 
 #include "model.h"
 #include "Utilities/Logger.h"
 #include "Utilities/parse_input/parse_input.h"
+
+#if __cplusplus < 201103L
+typedef unsigned int uint32_t;
+#endif
 
 typedef long long int llint;
 template<typename number> class LR_vector;

@@ -1,7 +1,7 @@
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 ADD_CUSTOM_TARGET(rovigatti
-	DEPENDS PolydisperseLTInteraction ConstructwisePressure MicrogelElasticity MGAnalysis AOInteraction RadialDensityProfile MGInteraction GenericGrByInsertion YasutakaAnalysis VoidPercolation Remoteness CPAnalysis Widom LevyDelta LevyInteraction CPMixtureInteraction StarrInteraction NathanInteraction mWInteraction ManfredoInteraction GraftedInteraction FSInteraction TSPAnalysis StarrConf SPBAnalysis PatchyToMgl Diblock ConstructwiseBonds DiblockComs EmptyVolume FSConf GrByInsertion Gyradius PatchyToMgl  
+	DEPENDS MGAssemblyConf PolymerInteraction DensityPressureProfile PolydisperseLTInteraction ConstructwisePressure MicrogelElasticity MGAnalysis AOInteraction RadialDensityProfile MGInteraction GenericGrByInsertion YasutakaAnalysis VoidPercolation Remoteness CPAnalysis Widom LevyDelta LevyInteraction CPMixtureInteraction StarrInteraction NathanInteraction mWInteraction ManfredoInteraction GraftedInteraction FSInteraction TSPAnalysis StarrConf SPBAnalysis PatchyToMgl Diblock ConstructwiseBonds DiblockComs EmptyVolume FSConf GrByInsertion Gyradius PatchyToMgl  
 )
 
 SET(CMAKE_SHARED_LIBRARY_PREFIX "")
@@ -28,9 +28,12 @@ ADD_LIBRARY(GenericGrByInsertion SHARED EXCLUDE_FROM_ALL src/Observables/Generic
 ADD_LIBRARY(RadialDensityProfile SHARED EXCLUDE_FROM_ALL src/Observables/RadialDensityProfile.cpp)
 ADD_LIBRARY(MGAnalysis SHARED EXCLUDE_FROM_ALL src/Observables/MGAnalysis.cpp)
 ADD_LIBRARY(MicrogelElasticity SHARED EXCLUDE_FROM_ALL src/Observables/MicrogelElasticity.cpp)
-ADD_LIBRARY(ConstructwisePressure SHARED EXCLUDE_FROM_ALL src/Observables/ConstructwisePressure)
+ADD_LIBRARY(ConstructwisePressure SHARED EXCLUDE_FROM_ALL src/Observables/ConstructwisePressure.cpp)
+ADD_LIBRARY(DensityPressureProfile SHARED EXCLUDE_FROM_ALL src/Observables/DensityPressureProfile.cpp)
+ADD_LIBRARY(MGAssemblyConf SHARED EXCLUDE_FROM_ALL src/Observables/MGAssemblyConf.cpp)
 
 # Interactions
+ADD_LIBRARY(PolymerInteraction SHARED EXCLUDE_FROM_ALL src/Interactions/PolymerInteraction.cpp)
 ADD_LIBRARY(FSInteraction SHARED EXCLUDE_FROM_ALL src/Interactions/FSInteraction.cpp)
 ADD_LIBRARY(GraftedInteraction SHARED EXCLUDE_FROM_ALL src/Interactions/GraftedInteraction.cpp)
 ADD_LIBRARY(ManfredoInteraction SHARED EXCLUDE_FROM_ALL src/Interactions/ManfredoInteraction.cpp)
@@ -65,8 +68,9 @@ IF(CUDA)
 	CUDA_ADD_LIBRARY(CUDACPMixtureInteraction SHARED EXCLUDE_FROM_ALL src/Interactions/CUDACPMixtureInteraction.cu src/Interactions/CPMixtureInteraction.cpp)
 	CUDA_ADD_LIBRARY(CUDAMGInteraction SHARED EXCLUDE_FROM_ALL src/Interactions/CUDAMGInteraction.cu src/Interactions/MGInteraction.cpp)
 	CUDA_ADD_LIBRARY(CUDAAOInteraction SHARED EXCLUDE_FROM_ALL src/Interactions/CUDAAOInteraction.cu src/Interactions/AOInteraction.cpp)
+	CUDA_ADD_LIBRARY(CUDAPolymerInteraction SHARED EXCLUDE_FROM_ALL src/Interactions/CUDAPolymerInteraction.cu src/Interactions/PolymerInteraction.cpp)
 	
-	ADD_DEPENDENCIES(rovigatti CUDAAOInteraction CUDAMGInteraction CUDACPMixtureInteraction CUDAFSInteraction CUDAmWInteraction CUDAStarrInteraction CUDALevyInteraction)
+	ADD_DEPENDENCIES(rovigatti CUDAPolymerInteraction CUDAAOInteraction CUDAMGInteraction CUDACPMixtureInteraction CUDAFSInteraction CUDAmWInteraction CUDAStarrInteraction CUDALevyInteraction)
 	
 	IF(GSL_FOUND)
 		CUDA_ADD_LIBRARY(CUDANathanStarInteraction SHARED EXCLUDE_FROM_ALL src/Interactions/CUDANathanStarInteraction.cu src/Interactions/NathanStarInteraction.cpp)

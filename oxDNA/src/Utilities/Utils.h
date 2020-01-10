@@ -171,7 +171,7 @@ public:
 
 	/**
 	 * @brief Utility function that returns a string from a number converting to megabytes,
-	 * kilobytes, etc. Examples: 1010813664 --> "963.987 MB", 783989 --> "765.614 kB" 
+	 * kilobytes, etc. Examples: 1010813664 --> "963.987 MB", 783989 --> "765.614 kB"
 	 *
 	 * @param arg number to be coverted, assumed in bytes
 	 */

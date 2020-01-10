@@ -481,4 +481,3 @@ template double Utils::gamma<double>(double alpha, double beta);
 
 template std::vector<int> Utils::getParticlesFromString<float>(BaseParticle<float> ** particles, int N, std::string particle_string, char const * identifier);
 template std::vector<int> Utils::getParticlesFromString<double>(BaseParticle<double> ** particles, int N, std::string particle_string, char const * identifier);
-

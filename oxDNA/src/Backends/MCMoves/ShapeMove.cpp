@@ -23,7 +23,7 @@ template<typename number>
 void ShapeMove<number>::init () {
 	BaseMove<number>::init();
 	_pos_old.resize (*this->_Info->N);
-	if (this->_restrict_to_type > 0) OX_LOG(Logger::LOG_WARNING, "(ShapeMove.cpp) Cant use VMMC with restrict_to_type. Ignoring");
+	if (this->_restrict_to_type > 0) OX_LOG(Logger::LOG_WARNING, "(ShapeMove.cpp) Cant use ShapeMove with restrict_to_type. Ignoring");
 	OX_LOG(Logger::LOG_INFO, "(ShapeMove.cpp) ShapeMove initiated with T %g, delta %g, prob: %g", this->_T, _delta, this->prob);
 }
 
@@ -87,7 +87,7 @@ void ShapeMove<number>::apply (llint curr_step) {
 	number dExt = (number) 0.f;
 	for (int k = 0; k < N; k ++) {
 		BaseParticle<number> *p = particles[k];
-		dExt = -p->ext_potential;
+		dExt -= -p->ext_potential;
 		_pos_old[k] = p->pos;
 		// p->pos *= (1. + dL / box_sides[0]);
 		p->pos.x *= (box_sides.x / old_box_sides.x);
