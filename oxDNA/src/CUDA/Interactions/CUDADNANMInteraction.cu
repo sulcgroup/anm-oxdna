@@ -38,13 +38,13 @@ CUDADNANMInteraction<number, number4>::~CUDADNANMInteraction() {
 
 template<typename number, typename number4>
 void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
-	//CUDADNAInteraction<number, number4>::get_settings(inp); //WILL THIS WORK?? no
+    printf("CUDA DNANM Get Settings\n");
     _use_debye_huckel = false;
     _use_oxDNA2_coaxial_stacking = false;
     _use_oxDNA2_FENE = false;
     std::string inter_type;
     if (getInputString(&inp, "interaction_type", inter_type, 0) == KEY_FOUND){
-        if (inter_type.compare("DNA2") == 0) {
+        if (inter_type.compare("DNANM") == 0) {
             _use_debye_huckel = true;
             _use_oxDNA2_coaxial_stacking = true;
             _use_oxDNA2_FENE = true;
@@ -74,23 +74,13 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
             // End copy from DNA2Interaction
         }
     }
+}
 
-    // get_settings for DNANM
-    char parameterfile[500];
-    getInputString(&inp, "PARFILE", parameterfile, 0);
-
-    //Addition of Reading Parameter File
-    int key1, key2;
-    char potswitch;
-    double potential, dist;
-    string carbons;
-    fstream parameters;
-    parameters.open(parameterfile, ios::in);
-    getline (parameters,carbons);
-    //If Proteins are first in Top file, no offset needed, else offset is needed
-    if(this->_firststrand < 0) offset = 0;
-    else if(this->_firststrand > 0) offset = this->ndna;
-    else throw oxDNAException("No Strand should have an ID of 0");
+template<typename number, typename number4>
+void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
+    printf("CUDA DNANM Init\n");
+    printf("cuda param file: %s \n", DNANMInteraction<number>::_parameterfile);
+    CUDABaseInteraction<number, number4>::cuda_init(box_side, N);
 
     //Initalizing Host and Device Arrays for Spring Parameters
     _spring_param_size = this->npro*this->npro;
@@ -109,6 +99,15 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
             _h_spring_pottype[i*this->npro + j] = 'x';
         }
     }
+    //Addition of Reading Parameter File -> Moved from get_settings due to needed variables that are filled in DNANMInteraction::read_topology
+    int key1, key2;
+    char potswitch;
+    double potential, dist;
+    string carbons;
+    fstream parameters;
+    parameters.open(this->_parameterfile, ios::in);
+    getline (parameters, carbons);
+
     if (parameters.is_open())
     {
         while (parameters.good())
@@ -127,12 +126,21 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
     {
         throw oxDNAException("ParameterFile Could Not Be Opened");
     }
-}
 
-template<typename number, typename number4>
-void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
-    CUDABaseInteraction<number, number4>::cuda_init(box_side, N);
-    DNANMInteraction<number>::init();
+    //If Proteins are first in Top file, no offset needed, else offset is needed
+    printf("firststrand = %d\n", this->_firststrand);
+    printf("npro = %d\n", this->npro);
+    printf("ndna = %d\n", this->ndna);
+    if(this->_firststrand < 0) offset = 0;
+    else if(this->_firststrand > 0) offset = this->ndna;
+    else throw oxDNAException("No Strand should have an ID of 0");
+
+    printf("npro = %d\n", this->npro);
+    printf("ndna = %d\n", this->ndna);
+    printf("firststrand = %d\n", this->_firststrand);
+
+    //Some System Checks
+    if(stoi(carbons) != this->npro) throw oxDNAException("Mismatching number of Protein particles in parameter and topology file");
 
     float f_copy = this->_hb_multiplier;
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_hb_multi, &f_copy, sizeof(float)) );

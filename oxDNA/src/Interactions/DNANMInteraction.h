@@ -22,6 +22,7 @@ protected:
 	int npro;//How many bonds b/t different particle types
 	int ndnas;//Number of Strands that are dna
 	int _firststrand; //+ for dna, - for protein
+
 	number _pro_backbone_sigma, _pro_backbone_rstar, _pro_backbone_b, _pro_backbone_rcut, _pro_backbone_stiffness;
     number _pro_base_sigma,_pro_base_rstar, _pro_base_b, _pro_base_rcut, _pro_base_stiffness;
 	map<pair<int, int>, double> _rknot; //Both maps used just as they are in ACInteraction
@@ -37,6 +38,7 @@ public:
 			PRO_DNA_EXC_VOL = 10
 			//Assigned 8 and 9 so it won't overwrite the already existing DNA function pointers in the _int_map
 	};
+    char _parameterfile[500];
 
 	DNANMInteraction();
 	virtual ~DNANMInteraction();

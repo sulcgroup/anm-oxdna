@@ -41,17 +41,17 @@ DNANMInteraction<number>::DNANMInteraction() : DNA2Interaction<number>() { // @s
 
 template<typename number>
 void DNANMInteraction<number>::get_settings(input_file &inp){
+    printf("DNANM cpu Get Settings\n");
 	this->DNA2Interaction<number>::get_settings(inp);
-	char parameterfile[500];
-	getInputString(&inp, "PARFILE", parameterfile, 0);
-
+	getInputString(&inp, "PARFILE", _parameterfile, 0);
+    printf("cpu param file: %s \n", _parameterfile);
 	//Addition of Reading Parameter File
     int key1, key2;
     char potswitch;
     double potential, dist;
     string carbons;
     fstream parameters;
-    parameters.open(parameterfile, ios::in);
+    parameters.open(_parameterfile, ios::in);
     getline (parameters,carbons);
     if (parameters.is_open())
     {
@@ -63,12 +63,12 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
             _rknot[lkeys] = dist;
             _potential[lkeys] = pot;
         }
-        parameters.close();
     }
     else
     {
-        throw oxDNAException("ParameterFile Could Not Be Opened");
+        throw oxDNAException("ParameterFile Could Not Be Opened on cpu");
     }
+    parameters.close();
 }
 
 template<typename number>
@@ -84,7 +84,7 @@ void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particl
         OX_LOG(Logger::LOG_INFO,"No DNA Particles Specified, Continuing with just Protein Particles");
         for(int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
 	} else {
-	    if (this->_firststrand > 0){
+	    if (_firststrand > 0){
             for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
             for (int i = ndna; i < N; i++) particles[i] = new ACParticle<number>();
 	    } else {
@@ -96,6 +96,7 @@ void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particl
 
 template<typename number>
 void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<number> **particles) {
+    printf("DNANM Read Topology\n");
     *N_strands = N;
     int my_N, my_N_strands;
 
@@ -124,6 +125,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
         ss >> strand;
         if (i == 0) {
             _firststrand = strand; //Must be set prior to allocation of particles
+//            printf("DNANM firststrand = %d", _firststrand);
             allocate_particles(particles, N);
             for (int j = 0; j < N; j++) {
                 particles[j]->index = j;
@@ -418,6 +420,7 @@ number DNANMInteraction<number>::_protein_dna_repulsive_lj(const LR_vector<numbe
 
 template<typename number>
 void DNANMInteraction<number>::init() {
+    printf("DNANM cpu Init\n");
 	this->DNA2Interaction<number>::init();
     //Backbone-Protein Excluded Volume Parameters
     _pro_backbone_sigma = 0.4085f;
