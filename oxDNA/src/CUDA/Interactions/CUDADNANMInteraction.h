@@ -35,7 +35,6 @@ public:
     float _debye_huckel_B; // prefactor of the quadratic cut-off
     float _minus_kappa;
 
-
     char *_d_spring_pottype, *_h_spring_pottype;
     number *_d_spring_potential, *_h_spring_potential;
     number *_d_spring_eqdist, *_h_spring_eqdist;
@@ -44,8 +43,8 @@ public:
 	CUDADNANMInteraction();
 	virtual ~CUDADNANMInteraction();
 
-	virtual void get_settings(input_file &inp);
-	virtual void cuda_init(number box_side, int N);
+	void get_settings(input_file &inp);
+	void cuda_init(number box_side, int N);
 	number get_cuda_rcut() { return this->get_rcut(); }
 
 	virtual void compute_forces(CUDABaseList<number, number4> *lists, number4 *d_poss, GPU_quat<number> *d_qorientations, number4 *d_forces, number4 *d_torques, LR_bonds *d_bonds, CUDABox<number, number4> *d_box);

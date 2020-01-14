@@ -43,6 +43,12 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
     _use_oxDNA2_coaxial_stacking = false;
     _use_oxDNA2_FENE = false;
     std::string inter_type;
+    if (!getInputString(&inp, "PARFILE", this->_parameterfile, 0) == KEY_FOUND){
+        throw oxDNAException("Key 'PARFILE' not found. Necessary for Protein sims.");
+    }
+    if (!getInputString(&inp, "topology", this->_topology_filename, 0) == KEY_FOUND){
+        throw oxDNAException("Key 'topology_file' not found.");
+    }
     if (getInputString(&inp, "interaction_type", inter_type, 0) == KEY_FOUND){
         if (inter_type.compare("DNANM") == 0) {
             _use_debye_huckel = true;
@@ -79,7 +85,8 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
 template<typename number, typename number4>
 void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     printf("CUDA DNANM Init\n");
-    printf("cuda param file: %s \n", DNANMInteraction<number>::_parameterfile);
+    printf("cuda param file: %s \n", this->_parameterfile);
+    printf("cuda top file: %s \n", this->_topology_filename);
     CUDABaseInteraction<number, number4>::cuda_init(box_side, N);
 
     //Initalizing Host and Device Arrays for Spring Parameters
@@ -100,6 +107,17 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
         }
     }
     //Addition of Reading Parameter File -> Moved from get_settings due to needed variables that are filled in DNANMInteraction::read_topology
+    fstream top;
+    int tmp1, tmp2;
+    top.open(this->_topology_filename, ios::in);
+    if (top.is_open()){
+        top >> tmp1 >> tmp2 >> this->npro >> this->ndna >> this->ndnas;
+        top >> this->_firststrand;
+        top.close();
+    } else {
+        throw oxDNAException("Could not open Topology File");
+    }
+
     int key1, key2;
     char potswitch;
     double potential, dist;
@@ -128,19 +146,19 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     }
 
     //If Proteins are first in Top file, no offset needed, else offset is needed
-    printf("firststrand = %d\n", this->_firststrand);
-    printf("npro = %d\n", this->npro);
-    printf("ndna = %d\n", this->ndna);
     if(this->_firststrand < 0) offset = 0;
     else if(this->_firststrand > 0) offset = this->ndna;
     else throw oxDNAException("No Strand should have an ID of 0");
 
-    printf("npro = %d\n", this->npro);
-    printf("ndna = %d\n", this->ndna);
-    printf("firststrand = %d\n", this->_firststrand);
-
+    //Can Probably Delete this chunk of code
+//
+//    printf("npro = %d\n", this->npro);
+//    printf("ndna = %d\n", this->ndna);
+//    printf("firststrand = %d\n", this->_firststrand);
+//
+//    printf("carbons = %s\n", carbons.c_str());
     //Some System Checks
-    if(stoi(carbons) != this->npro) throw oxDNAException("Mismatching number of Protein particles in parameter and topology file");
+    if(stoi(carbons) != (this->npro + this->ndna)) throw oxDNAException("Mismatching number of particles in parameter and topology file");
 
     float f_copy = this->_hb_multiplier;
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_hb_multi, &f_copy, sizeof(float)) );

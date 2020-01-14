@@ -38,6 +38,7 @@ public:
 			PRO_DNA_EXC_VOL = 10
 			//Assigned 8 and 9 so it won't overwrite the already existing DNA function pointers in the _int_map
 	};
+
     char _parameterfile[500];
 
 	DNANMInteraction();
