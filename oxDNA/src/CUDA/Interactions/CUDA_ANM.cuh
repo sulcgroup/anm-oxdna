@@ -58,9 +58,6 @@ __constant__ float MD_pro_rstar;
 __constant__ float MD_pro_b;
 __constant__ float MD_pro_rc;
 
-__constant__ float spring_potential;
-__constant__ float MD_spring_eqdist;
-
 __constant__ int _npro;
 __constant__ int _ndna;
 __constant__ int _offset;
@@ -94,22 +91,6 @@ __forceinline__ __device__ void _excluded_volume(const number4 &r, number4 &F, n
     }
 }
 */
-
-template<typename number, typename number4>
-__forceinline__ __device__ number4 _spring(number4 &r, int ind, number *_d_spring_eqdist, number *_d_spring_potential){
-    number eqdist = _d_spring_eqdist[ind];
-    number gamma = _d_spring_potential[ind];
-    number4 dF = make_number4<number, number4>(0, 0, 0, 0);
-    if(eqdist != 0.f && gamma != 0.f){
-        number cdist = sqrtf(r.x*r.x + r.y*r.y +r.z*r.z);
-        number fmod = (-1.0f * eqdist) * (cdist - eqdist) / cdist;
-        dF.x += r.x*fmod;
-        dF.y += r.y*fmod;
-        dF.z = r.z*fmod;
-        dF.w = 0.5f * gamma * powf(cdist-eqdist, 2);
-    }
-    return dF;
-}
 
 /*
 template<typename number>
@@ -909,6 +890,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         dF.w *= (number) 0.5f;
         //Add force to p index
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
+        // Should this be a different index?
         //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
             LR_atomicAddXYZ(&(forces[from_index]), dF);
@@ -1055,7 +1037,7 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
     number4 ppos = poss[IND];
     // get btype of p
     int pbtype = get_particle_btype <number, number4>(ppos);
-    int pindex = get_particle_index <number, number4> (ppos);
+    int pindex = get_particle_index <number, number4>(ppos);
     if (pbtype >= 0){
         LR_bonds bs = bonds[IND];
         // particle axes according to Allen's paper
@@ -1089,30 +1071,32 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
         torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
     } else{
         //get bonded neighbors and compute for protein bonded neighs
-        for(int i = _npro*(pindex - _offset); i < _npro*(pindex - _offset)+_npro; ++i){
-            int bonded_index = 0;
-
+//        number4 ddf = make_number4<number, number4>(0, 0, 0, 0);
+        for(int i = _npro*(IND - _offset); i < _npro*(IND - _offset)+_npro; i++){
             if(_d_spring_eqdist[i] != 0.f){
-                number4 qpos = poss[bonded_index + _offset];
+                int qindex = i - _npro*(IND - _offset);
+                number4 qpos = poss[qindex];
                 number4 r = box->minimum_image(ppos, qpos);
-                number4 dF = _spring(r, i, _d_spring_eqdist, _d_spring_potential);
+                number gamma = _d_spring_potential[i];
+                number eqdist = _d_spring_eqdist[i];
+
+                number cdist = sqrtf(r.x*r.x + r.y*r.y +r.z*r.z);
+                number fmod = (-1.0f * eqdist) * (cdist - eqdist) / cdist;
+                dF.x = r.x * fmod;
+                dF.y = r.y * fmod;
+                dF.z = r.z * fmod;
+                dF.w = 0.5f * gamma * powf(cdist-eqdist, 2);
+
                 dF.w *= 0.5f;
-                forces[IND] = (dF + F0);
+                forces[IND] += dF;
+//                printf("i-p-pbtype-q-eqdist: %d %d %d %d %f\n", IND, pindex, pbtype, qindex, _d_spring_eqdist[i]);
 
                 dF.x = -dF.x;
                 dF.y = -dF.y;
                 dF.z = -dF.z;
-
+                forces[qindex] += dF;
                 //update Q's forces and energy
-                number4 F1;
-                F1.x = forces[bonded_index + _offset].x;
-                F1.y = forces[bonded_index + _offset].y;
-                F1.z = forces[bonded_index + _offset].z;
-                F1.w = forces[bonded_index + _offset].w;
-                // HOW DO I ACCESS THE OTHER PARTICLES INDEX!!
-                forces[bonded_index + _offset] = (dF + F1);
             };
-            bonded_index += 1;
         }
     }
 }

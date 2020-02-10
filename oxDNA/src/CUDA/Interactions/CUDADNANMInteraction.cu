@@ -22,7 +22,8 @@ CUDADNANMInteraction<number, number4>::CUDADNANMInteraction() {
     _h_spring_potential = NULL;
     _h_spring_eqdist = NULL;
 
-    _spring_param_size = 0;
+    _spring_param_size_double = 0;
+    _spring_param_size_char = 0;
 }
 
 template<typename number, typename number4>
@@ -78,49 +79,47 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
             _debye_huckel_prefactor = 0.0543f;
             getInputFloat(&inp, "dh_strength", &_debye_huckel_prefactor, 0);
             // End copy from DNA2Interaction
+
         }
     }
+    DNANMInteraction<number>::get_settings(inp);
 }
 
 template<typename number, typename number4>
 void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
-    printf("CUDA DNANM Init\n");
-    printf("cuda param file: %s \n", this->_parameterfile);
-    printf("cuda top file: %s \n", this->_topology_filename);
     CUDABaseInteraction<number, number4>::cuda_init(box_side, N);
 
-    //Initalizing Host and Device Arrays for Spring Parameters
-    _spring_param_size = this->npro*this->npro;
-    _h_spring_pottype = new char[_spring_param_size];
-    CUDA_SAFE_CALL( cudaMalloc(&_d_spring_pottype, _spring_param_size));
-    _h_spring_potential = new number[_spring_param_size];
-    CUDA_SAFE_CALL(cudaMalloc(&_d_spring_potential, _spring_param_size));
-    _h_spring_eqdist = new number[_spring_param_size];
-    CUDA_SAFE_CALL(cudaMalloc(&_d_spring_eqdist, _spring_param_size));
-
-    //Default Values
-    for(int i = 0; i<this->npro; i++) {
-        for (int j = 0; j < this->npro; j++) {
-            _h_spring_potential[i*this->npro + j] = 0.f;
-            _h_spring_eqdist[i*this->npro + j] = 0.f;
-            _h_spring_pottype[i*this->npro + j] = 'x';
-        }
-    }
-    //Addition of Reading Parameter File -> Moved from get_settings due to needed variables that are filled in DNANMInteraction::read_topology
+//    Addition of Reading Parameter File -> Moved from get_settings due to needed variables that are filled in DNANMInteraction::read_topology
     fstream top;
     int tmp1, tmp2;
     top.open(this->_topology_filename, ios::in);
     if (top.is_open()){
-        top >> tmp1 >> tmp2 >> this->npro >> this->ndna >> this->ndnas;
+        top >> tmp1 >> tmp2 >> this->ndna >> this->npro >> this->ndnas;
         top >> this->_firststrand;
         top.close();
     } else {
         throw oxDNAException("Could not open Topology File");
     }
 
-    int key1, key2;
-    char potswitch;
-    double potential, dist;
+
+    if(this->_firststrand < 0) offset = 0;
+    else if(this->_firststrand > 0) offset = this->ndna;
+    else throw oxDNAException("No Strand should have an ID of 0");
+
+
+//    //Initalizing Host and Device Arrays for Spring Parameters
+    _spring_param_size_double = sizeof(double) * (this->npro*this->npro);
+    _spring_param_size_char = sizeof(char) * (this->npro*this->npro);
+    _h_spring_pottype = new char[this->npro*this->npro]();
+    CUDA_SAFE_CALL( cudaMalloc(&_d_spring_pottype, _spring_param_size_char));
+    _h_spring_potential = new number[this->npro*this->npro]();
+    CUDA_SAFE_CALL(cudaMalloc(&_d_spring_potential, _spring_param_size_double));
+    _h_spring_eqdist = new number[this->npro*this->npro]();
+    CUDA_SAFE_CALL(cudaMalloc(&_d_spring_eqdist, _spring_param_size_double));
+
+    int key1, key2 = 0;
+    char potswitch = 'x';
+    double potential, dist = 0.f;
     string carbons;
     fstream parameters;
     parameters.open(this->_parameterfile, ios::in);
@@ -145,29 +144,20 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
         throw oxDNAException("ParameterFile Could Not Be Opened");
     }
 
-    //If Proteins are first in Top file, no offset needed, else offset is needed
-    if(this->_firststrand < 0) offset = 0;
-    else if(this->_firststrand > 0) offset = this->ndna;
-    else throw oxDNAException("No Strand should have an ID of 0");
-
-    //Can Probably Delete this chunk of code
-//
-//    printf("npro = %d\n", this->npro);
-//    printf("ndna = %d\n", this->ndna);
-//    printf("firststrand = %d\n", this->_firststrand);
-//
-//    printf("carbons = %s\n", carbons.c_str());
     //Some System Checks
-    if(stoi(carbons) != (this->npro + this->ndna)) throw oxDNAException("Mismatching number of particles in parameter and topology file");
+    if(stoi(carbons) != (this->npro)) throw oxDNAException("Mismatching number of Protein particles in parameter and topology file");
+
+    // Copied from CUDADNAINTERACTION
+    DNAInteraction<number>::init();
 
     float f_copy = this->_hb_multiplier;
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_hb_multi, &f_copy, sizeof(float)) );
-
+//
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_N, &N, sizeof(int)) );
 
     number tmp[50];
     for(int i = 0; i < 2; i++) for(int j = 0; j < 5; j++) for(int k = 0; k < 5; k++) tmp[i*25 + j*5 + k] = this->F1_EPS[i][j][k];
-
+//
     COPY_ARRAY_TO_CONSTANT(MD_F1_EPS, tmp, 50);
 
     for(int i = 0; i < 2; i++) for(int j = 0; j < 5; j++) for(int k = 0; k < 5; k++) tmp[i*25 + j*5 + k] = this->F1_SHIFT[i][j][k];
@@ -198,16 +188,16 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_B, this->F5_PHI_B, 4);
     COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XC, this->F5_PHI_XC, 4);
     COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XS, this->F5_PHI_XS, 4);
-
-
+//
+//
     if(this->_use_edge) CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_n_forces, &this->_n_forces, sizeof(int)) );
-    if (_use_debye_huckel){
+    if (_use_debye_huckel) {
         // copied from DNA2Interaction::init() (CPU), the least bad way of doing things
         // We wish to normalise with respect to T=300K, I=1M. 300K=0.1 s.u. so divide this->_T by 0.1
         number lambda = _debye_huckel_lambdafactor * sqrt(this->_T / 0.1f) / sqrt(_salt_concentration);
         // RHIGH gives the distance at which the smoothing begins
         _debye_huckel_RHIGH = 3.0 * lambda;
-        _minus_kappa = -1.0/lambda;
+        _minus_kappa = -1.0 / lambda;
 
         // these are just for convenience for the smoothing parameter computation
         number x = _debye_huckel_RHIGH;
@@ -215,16 +205,17 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
         number l = lambda;
 
         // compute the some smoothing parameters
-        _debye_huckel_B = -(exp(-x/l) * q * q * (x + l)*(x+l) )/(-4.*x*x*x * l * l * q );
-        _debye_huckel_RC = x*(q*x + 3. * q* l )/(q * (x+l));
+        _debye_huckel_B = -(exp(-x / l) * q * q * (x + l) * (x + l)) / (-4. * x * x * x * l * l * q);
+        _debye_huckel_RC = x * (q * x + 3. * q * l) / (q * (x + l));
 
         number debyecut;
-        if (this->_grooving){
-            debyecut = 2.0f * sqrt((POS_MM_BACK1)*(POS_MM_BACK1) + (POS_MM_BACK2)*(POS_MM_BACK2)) + _debye_huckel_RC;
+        if (this->_grooving) {
+            debyecut =
+                    2.0f * sqrt((POS_MM_BACK1) * (POS_MM_BACK1) + (POS_MM_BACK2) * (POS_MM_BACK2)) + _debye_huckel_RC;
+        } else {
+            debyecut = 2.0f * sqrt(SQR(POS_BACK)) + _debye_huckel_RC;
         }
-        else{
-            debyecut =  2.0f * sqrt(SQR(POS_BACK)) + _debye_huckel_RC;
-        }
+
         // the cutoff radius for the potential should be the larger of rcut and debyecut
         if (debyecut > this->_rcut){
             this->_rcut = debyecut;
@@ -262,9 +253,9 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_offset, &this->offset, sizeof(float)) );
 
     //Parameters for ANM
-    CUDA_SAFE_CALL( cudaMemcpy(_d_spring_pottype, _h_spring_pottype, _spring_param_size, cudaMemcpyHostToDevice));
-    CUDA_SAFE_CALL( cudaMemcpy(_d_spring_potential, _h_spring_potential, _spring_param_size, cudaMemcpyHostToDevice));
-    CUDA_SAFE_CALL( cudaMemcpy(_d_spring_eqdist, _h_spring_eqdist, _spring_param_size, cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL( cudaMemcpy(_d_spring_pottype, _h_spring_pottype, _spring_param_size_char, cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL( cudaMemcpy(_d_spring_potential, _h_spring_potential, _spring_param_size_double, cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL( cudaMemcpy(_d_spring_eqdist, _h_spring_eqdist, _spring_param_size_double, cudaMemcpyHostToDevice));
 }
 
 template<typename number, typename number4>
