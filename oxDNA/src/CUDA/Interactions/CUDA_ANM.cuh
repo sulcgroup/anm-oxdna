@@ -885,25 +885,25 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
     if (pbtype < 0 && qbtype < 0) {
         //Protein-Protein Excluded Volume **NONBONDED
         //copy over dnanm constants? done!
-        number4 r = box->minimum_image(ppos, qpos);
-        _excluded_volume(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
-        dF.w *= (number) 0.5f;
-        //Add force to p index
-        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
-        // Should this be a different index?
-        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
-        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[from_index]), dF);
-
-        dF.x = -dF.x;
-        dF.y = -dF.y;
-        dF.z = -dF.z;
-
-        //Add force to q index
-        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
-        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
-        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[to_index]), dF);
+//        number4 r = box->minimum_image(ppos, qpos);
+//        _excluded_volume(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
+//        dF.w *= (number) 0.5f;
+//        //Add force to p index
+//        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
+//        // Should this be a different index?
+//        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
+//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(forces[from_index]), dF);
+//
+//        dF.x = -dF.x;
+//        dF.y = -dF.y;
+//        dF.z = -dF.z;
+//
+//        //Add force to q index
+//        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
+//        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
+//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(forces[to_index]), dF);
 
     } else if (pbtype >= 0 && qbtype < 0) {
         //Protein-DNA Excluded Volume **NONBONDED
@@ -1037,7 +1037,7 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
     number4 ppos = poss[IND];
     // get btype of p
     int pbtype = get_particle_btype <number, number4>(ppos);
-    int pindex = get_particle_index <number, number4>(ppos);
+//    int pindex = get_particle_index <number, number4>(ppos);
     if (pbtype >= 0){
         LR_bonds bs = bonds[IND];
         // particle axes according to Allen's paper
@@ -1048,17 +1048,20 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
         if(bs.n3 != P_INVALID) {
             number4 qpos = poss[bs.n3];
 
-            number4 b1,b2,b3;
-            get_vectors_from_quat<number,number4>(orientations[bs.n3], b1, b2, b3);
+            number4 b1, b2, b3;
+            get_vectors_from_quat<number, number4>(orientations[bs.n3], b1, b2, b3);
 
-            _bonded_part<number, number4, true>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving, use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
+            _bonded_part<number, number4, true>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving,
+                                                use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
         }
         if(bs.n5 != P_INVALID) {
             number4 qpos = poss[bs.n5];
 
-            number4 b1,b2,b3;
-            get_vectors_from_quat<number,number4>(orientations[bs.n5], b1, b2, b3);
-            _bonded_part<number, number4, false>(qpos, b1, b2, b3, ppos, a1, a2, a3, dF, dT, grooving, use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
+            number4 b1, b2, b3;
+            get_vectors_from_quat<number, number4>(orientations[bs.n5], b1, b2, b3);
+
+            _bonded_part<number, number4, false>(qpos, b1, b2, b3, ppos, a1, a2, a3, dF, dT, grooving,
+                                                 use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
         }
 
         // the real energy per particle is half of the one computed (because we count each interaction twice)
@@ -1071,31 +1074,38 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
         torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
     } else{
         //get bonded neighbors and compute for protein bonded neighs
-//        number4 ddf = make_number4<number, number4>(0, 0, 0, 0);
-        for(int i = _npro*(IND - _offset); i < _npro*(IND - _offset)+_npro; i++){
+        for(int i = _npro*(IND - _offset); i < _npro*(IND - _offset)+_npro+1; ++i){
+            if(IND != 217) continue;
             if(_d_spring_eqdist[i] != 0.f){
                 int qindex = i - _npro*(IND - _offset);
+                if(qindex != 550) continue;
                 number4 qpos = poss[qindex];
-                number4 r = box->minimum_image(ppos, qpos);
+                number4 r = box->minimum_image(qpos, ppos);
                 number gamma = _d_spring_potential[i];
                 number eqdist = _d_spring_eqdist[i];
+//                if(IND == 217 && qindex == 550){
+//                    printf("F0.x %.3f F0.y %.3f F0.z %.3f\n", F0.x, F0.y, F0.z);
+//                }
 
                 number cdist = sqrtf(r.x*r.x + r.y*r.y +r.z*r.z);
-                number fmod = (-1.0f * eqdist) * (cdist - eqdist) / cdist;
+                number fmod = (-1.0f * gamma) * (cdist - eqdist) / cdist;
                 dF.x = r.x * fmod;
                 dF.y = r.y * fmod;
                 dF.z = r.z * fmod;
                 dF.w = 0.5f * gamma * powf(cdist-eqdist, 2);
 
-                dF.w *= 0.5f;
+//                dF.w *= 0.5f; //cause every interaction is counted twice???
                 forces[IND] += dF;
-//                printf("i-p-pbtype-q-eqdist: %d %d %d %d %f\n", IND, pindex, pbtype, qindex, _d_spring_eqdist[i]);
 
-                dF.x = -dF.x;
-                dF.y = -dF.y;
-                dF.z = -dF.z;
-                forces[qindex] += dF;
+                dF.w = -dF.w;
+                forces[qindex] -= dF;
                 //update Q's forces and energy
+                if(IND == 217 && qindex == 550) {
+                    printf("p %d q %d g %.3f d %.3f ro %.3f p.x %.3f p.y %.3f p.z %.3f q.x %.3f q.y %.3f q.z %.3f\n",
+                           IND, qindex, gamma, cdist, eqdist, forces[IND].x, forces[IND].y, forces[IND].z,
+                           forces[qindex].x,forces[qindex].y, forces[qindex].z);
+                    printf("df.x %.3f, df.y %.3f, df.z %.3f\n", dF.x, dF.y, dF.z);
+                }
             };
         }
     }
