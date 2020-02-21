@@ -1074,17 +1074,17 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
 //        torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
     } else{
 //        printf("p %d btype %d\n", IND, pbtype);
+        number4 ftotal = make_number4<number, number4>(0,0,0,0);
         for(int i = _npro*(IND - _offset); i < _npro*(IND - _offset)+_npro; i++){
             int qindex = i - _npro*(IND - _offset) +_offset;
             number eqdist = _d_spring_eqdist[i];
-            number4 ftotal = make_number4<number, number4>(0,0,0,0);
             if(eqdist > (number) 0){
                 number4 qpos = poss[qindex];
                 number4 r = make_number4<number, number4>(qpos.x - ppos.x, qpos.y - ppos.y, qpos.z - ppos.z, (number) 0);
-                number d = _module(r);
+                number d = _module<number, number4>(r);
                 number gamma = _d_spring_potential[i];
 
-                number fmod = (-1.0f * gamma) * (d - eqdist) / cdist;
+                number fmod = (-1.0f * gamma) * (d - eqdist) / d;
 
                 dF = fmod*r;
                 dF.w = -0.5f * gamma * powf(d-eqdist, 2);
@@ -1096,12 +1096,13 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
 
                 //update Q's forces and energy
     //                if(IND == 217 && qindex == 550) {
-                printf("p %d q %d g %.2f d %.6f ro %.2f df.x %.8f, df.y %.8f, df.z %.8f p.x %.8f p.y %.8f p.z %.8f q.x %.8f q.y %.8f q.z %.8f\n",
-                       IND, qindex, gamma, cdist, eqdist, dF.x, dF.y, dF.z, forces[IND].x, forces[IND].y, forces[IND].z,
-                       forces[qindex].x,forces[qindex].y, forces[qindex].z);
+                //printf("p %d q %d g %.2f d %.6f ro %.2f df.x %.8f, df.y %.8f, df.z %.8f p.x %.8f p.y %.8f p.z %.8f q.x %.8f q.y %.8f q.z %.8f\n",
+                  //     IND, qindex, gamma, d, eqdist, dF.x, dF.y, dF.z, forces[IND].x, forces[IND].y, forces[IND].z,
+                    //   forces[qindex].x,forces[qindex].y, forces[qindex].z);
             };
         }
         LR_atomicAddXYZ(&(forces[IND]), ftotal);
+        //printf("IND %d, f.x %.6f, f.y %.6f, f.z %.6f\n", IND, forces[IND].x, forces[IND].y, forces[IND].z);
     }
 }
 
