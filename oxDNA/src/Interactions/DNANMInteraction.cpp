@@ -179,11 +179,6 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
             }
 
             i++;
-
-            if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
-            if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
-
-            // DNA Nucleotide
         }
         if (strand > 0) {
             char base[256];
@@ -546,7 +541,10 @@ number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BasePa
                     force *= (-1.0f * _k) * (rinsta - eqdist) / rinsta;
                     p->force -= force;
                     q->force += force;
-                    //printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
+                    printf("p %d q %d d=%f ro=%f df.x=%.8f df.y=%.8f  df.z=%.8f p.x=%.8f p.y=%.8f p.z=%.8f q.x=%.8f "
+                           "q.y=%.8f q.z=%.8f\n", p->index, q->index, rinsta, eqdist, force.x, force.y, force.z, p->force.x,
+                           p->force.y, p->force.z, q->force.x, q->force.y, q->force.z);
+                           //"%f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
                     //printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
                 }
                 return energy;

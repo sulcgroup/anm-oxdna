@@ -248,9 +248,9 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_b, &this->_pro_base_b, sizeof(float)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_stiffness, &this->_pro_base_stiffness, sizeof(float)) );
     //Parameters for DNANM book keeping
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_ndna, &this->ndna, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_npro, &this->npro, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_offset, &this->offset, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_ndna, &this->ndna, sizeof(int)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_npro, &this->npro, sizeof(int)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_offset, &this->offset, sizeof(int)) );
 
     //Parameters for ANM
     CUDA_SAFE_CALL( cudaMemcpy(_d_spring_pottype, _h_spring_pottype, _spring_param_size_char, cudaMemcpyHostToDevice));
@@ -263,9 +263,9 @@ void CUDADNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, 
 	CUDASimpleVerletList<number, number4> *_v_lists = dynamic_cast<CUDASimpleVerletList<number, number4> *>(lists);
 	if(_v_lists != NULL) {
 		if(_v_lists->use_edge()) {
-				dnanm_forces_edge_nonbonded<number, number4>
-					<<<(_v_lists->_N_edges - 1)/(this->_launch_cfg.threads_per_block) + 1, this->_launch_cfg.threads_per_block>>>
-					(d_poss, d_orientations, this->_d_edge_forces, this->_d_edge_torques, _v_lists->_d_edge_list, _v_lists->_N_edges, d_bonds, this->_grooving, _use_debye_huckel, _use_oxDNA2_coaxial_stacking, d_box);
+//				dnanm_forces_edge_nonbonded<number, number4>
+//					<<<(_v_lists->_N_edges - 1)/(this->_launch_cfg.threads_per_block) + 1, this->_launch_cfg.threads_per_block>>>
+//					(d_poss, d_orientations, this->_d_edge_forces, this->_d_edge_torques, _v_lists->_d_edge_list, _v_lists->_N_edges, d_bonds, this->_grooving, _use_debye_huckel, _use_oxDNA2_coaxial_stacking, d_box);
 
 				this->_sum_edge_forces_torques(d_forces, d_torques);
 
@@ -275,7 +275,7 @@ void CUDADNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, 
 
 				dnanm_forces_edge_bonded<number, number4>
 					<<<this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block>>>
-					(d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, this->_d_spring_eqdist, this->_d_spring_potential);
+					(d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, _d_spring_eqdist, _d_spring_potential);
 			}
 	} else throw oxDNAException("Must Use with Lists to run simulation");
 }

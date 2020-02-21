@@ -907,112 +907,112 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
 
     } else if (pbtype >= 0 && qbtype < 0) {
         //Protein-DNA Excluded Volume **NONBONDED
-        number4 ppos_back = POS_BACK * a1;
-        number4 ppos_base = POS_BASE * a1;
-        number4 rback = box->minimum_image(ppos_back, qpos);
-        number4 rbase = box->minimum_image(ppos_base, qpos);
-        number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
-        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
-        dF += Ftmp;
-        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
-        dF += Ftmp;
-        // NEED TO HANDLE TORQUE ON DNA particles!!!
-        dT += _cross<number, number4>(ppos_back, dF); //check the shit out of this
-        dT += _cross<number, number4>(ppos_base, dF); //same here
-        dF.w *= (number) 0.5f;
-        dT.w *= (number) 0.5f;
-        // Add force AND TORQUE to p index
-        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
-        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
-        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[from_index]), dF);
-        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(torques[from_index]), dT);
-
-        dF.x = -dF.x;
-        dF.y = -dF.y;
-        dF.z = -dF.z;
-
-        //Add force to q index
-        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
-        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
-        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[to_index]), dF);
+//        number4 ppos_back = POS_BACK * a1;
+//        number4 ppos_base = POS_BASE * a1;
+//        number4 rback = box->minimum_image(ppos_back, qpos);
+//        number4 rbase = box->minimum_image(ppos_base, qpos);
+//        number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
+//        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
+//        dF += Ftmp;
+//        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
+//        dF += Ftmp;
+//        // NEED TO HANDLE TORQUE ON DNA particles!!!
+//        dT += _cross<number, number4>(ppos_back, dF); //check the shit out of this
+//        dT += _cross<number, number4>(ppos_base, dF); //same here
+//        dF.w *= (number) 0.5f;
+//        dT.w *= (number) 0.5f;
+//        // Add force AND TORQUE to p index
+//        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
+//        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
+//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(forces[from_index]), dF);
+//        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(torques[from_index]), dT);
+//
+//        dF.x = -dF.x;
+//        dF.y = -dF.y;
+//        dF.z = -dF.z;
+//
+//        //Add force to q index
+//        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
+//        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
+//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(forces[to_index]), dF);
 
     } else if(pbtype < 0 && qbtype >= 0) {
-        number4 qpos_back = POS_BACK * b1;
-        number4 qpos_base = POS_BASE * b1;
-        number4 rback = box->minimum_image(ppos, qpos_back);
-        number4 rbase = box->minimum_image(ppos, qpos_base);
-        number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
-        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
-        dF += Ftmp;
-        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
-        dF += Ftmp;
-        // NEED TO HANDLE TORQUE **SHOULD THIS BE NEGATIVE??
-        dT += _cross<number, number4>(qpos_back, dF); //check the shit out of this
-        dT += _cross<number, number4>(qpos_base, dF);
-        dF.w *= (number) 0.5f;
-        dT.w *= (number) 0.5f;
-        // Add Force to p index
-        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
-        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
-        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[from_index]), dF);
+//        number4 qpos_back = POS_BACK * b1;
+//        number4 qpos_base = POS_BASE * b1;
+//        number4 rback = box->minimum_image(ppos, qpos_back);
+//        number4 rbase = box->minimum_image(ppos, qpos_base);
+//        number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
+//        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
+//        dF += Ftmp;
+//        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
+//        dF += Ftmp;
+//        // NEED TO HANDLE TORQUE **SHOULD THIS BE NEGATIVE??
+//        dT += _cross<number, number4>(qpos_back, dF); //check the shit out of this
+//        dT += _cross<number, number4>(qpos_base, dF);
+//        dF.w *= (number) 0.5f;
+//        dT.w *= (number) 0.5f;
+//        // Add Force to p index
+//        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
+//        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
+//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(forces[from_index]), dF);
+//
+//        // Allen Eq. 6 pag 3: DO I NEED THIS WITH HOW TORQUE IS CALCULATED HERE
+//        number4 dr = box->minimum_image(ppos, qpos); // returns qpos-ppos
+//        number4 crx = _cross < number, number4> (dr, dF);
+//        dT.x = -dT.x + crx.x;
+//        dT.y = -dT.y + crx.y;
+//        dT.z = -dT.z + crx.z;
+//
+//        dF.x = -dF.x;
+//        dF.y = -dF.y;
+//        dF.z = -dF.z;
+//
+//        //Add Force AND TORQUE to q index
+//        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
+//        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
+//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(forces[to_index]), dF);
+//        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(torques[to_index]), dT);
 
-        // Allen Eq. 6 pag 3: DO I NEED THIS WITH HOW TORQUE IS CALCULATED HERE
-        number4 dr = box->minimum_image(ppos, qpos); // returns qpos-ppos
-        number4 crx = _cross < number, number4> (dr, dF);
-        dT.x = -dT.x + crx.x;
-        dT.y = -dT.y + crx.y;
-        dT.z = -dT.z + crx.z;
-
-        dF.x = -dF.x;
-        dF.y = -dF.y;
-        dF.z = -dF.z;
-
-        //Add Force AND TORQUE to q index
-        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
-        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
-        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[to_index]), dF);
-        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(torques[to_index]), dT);
-
-    } else {
-        LR_bonds pbonds = bonds[b.from];
-        LR_bonds qbonds = bonds[b.to];
-        _particle_particle_interaction<number, number4>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving,
-                                                        use_debye_huckel, use_oxDNA2_coaxial_stacking, pbonds, qbonds,
-                                                        b.from, b.to, box);
-
-        dF.w *= (number) 0.5f;
-        dT.w *= (number) 0.5f;
-
-        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
-        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
-        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[from_index]), dF);
-        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(torques[from_index]), dT);
-
-        // Allen Eq. 6 pag 3:
-        number4 dr = box->minimum_image(ppos, qpos); // returns qpos-ppos
-        number4 crx = _cross < number, number4> (dr, dF);
-        dT.x = -dT.x + crx.x;
-        dT.y = -dT.y + crx.y;
-        dT.z = -dT.z + crx.z;
-
-        dF.x = -dF.x;
-        dF.y = -dF.y;
-        dF.z = -dF.z;
-
-        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
-        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
-        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[to_index]), dF);
-        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(torques[to_index]), dT);
+    } else if(pbtype >= 0 && qbtype >= 0){
+//        LR_bonds pbonds = bonds[b.from];
+//        LR_bonds qbonds = bonds[b.to];
+//        _particle_particle_interaction<number, number4>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving,
+//                                                        use_debye_huckel, use_oxDNA2_coaxial_stacking, pbonds, qbonds,
+//                                                        b.from, b.to, box);
+//
+//        dF.w *= (number) 0.5f;
+//        dT.w *= (number) 0.5f;
+//
+//        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
+//        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
+//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(forces[from_index]), dF);
+//        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(torques[from_index]), dT);
+//
+//        // Allen Eq. 6 pag 3:
+//        number4 dr = box->minimum_image(ppos, qpos); // returns qpos-ppos
+//        number4 crx = _cross < number, number4> (dr, dF);
+//        dT.x = -dT.x + crx.x;
+//        dT.y = -dT.y + crx.y;
+//        dT.z = -dT.z + crx.z;
+//
+//        dF.x = -dF.x;
+//        dF.y = -dF.y;
+//        dF.z = -dF.z;
+//
+//        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
+//        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
+//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(forces[to_index]), dF);
+//        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
+//            LR_atomicAddXYZ(&(torques[to_index]), dT);
     }
 }
 
@@ -1039,73 +1039,77 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
     int pbtype = get_particle_btype <number, number4>(ppos);
 //    int pindex = get_particle_index <number, number4>(ppos);
     if (pbtype >= 0){
-        LR_bonds bs = bonds[IND];
-        // particle axes according to Allen's paper
-
-        number4 a1, a2, a3;
-        get_vectors_from_quat<number,number4>(orientations[IND], a1, a2, a3);
-
-        if(bs.n3 != P_INVALID) {
-            number4 qpos = poss[bs.n3];
-
-            number4 b1, b2, b3;
-            get_vectors_from_quat<number, number4>(orientations[bs.n3], b1, b2, b3);
-
-            _bonded_part<number, number4, true>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving,
-                                                use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
-        }
-        if(bs.n5 != P_INVALID) {
-            number4 qpos = poss[bs.n5];
-
-            number4 b1, b2, b3;
-            get_vectors_from_quat<number, number4>(orientations[bs.n5], b1, b2, b3);
-
-            _bonded_part<number, number4, false>(qpos, b1, b2, b3, ppos, a1, a2, a3, dF, dT, grooving,
-                                                 use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
-        }
-
-        // the real energy per particle is half of the one computed (because we count each interaction twice)
-        dF.w *= (number) 0.5f;
-        dT.w *= (number) 0.5f;
-
-        forces[IND] = (dF + F0);
-        torques[IND] = (dT + T0);
-
-        torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
+//        LR_bonds bs = bonds[IND];
+//        // particle axes according to Allen's paper
+//
+//        number4 a1, a2, a3;
+//        get_vectors_from_quat<number,number4>(orientations[IND], a1, a2, a3);
+//
+//        if(bs.n3 != P_INVALID) {
+//            number4 qpos = poss[bs.n3];
+//
+//            number4 b1, b2, b3;
+//            get_vectors_from_quat<number, number4>(orientations[bs.n3], b1, b2, b3);
+//
+//            _bonded_part<number, number4, true>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving,
+//                                                use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
+//        }
+//        if(bs.n5 != P_INVALID) {
+//            number4 qpos = poss[bs.n5];
+//
+//            number4 b1, b2, b3;
+//            get_vectors_from_quat<number, number4>(orientations[bs.n5], b1, b2, b3);
+//
+//            _bonded_part<number, number4, false>(qpos, b1, b2, b3, ppos, a1, a2, a3, dF, dT, grooving,
+//                                                 use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
+//        }
+//
+//        // the real energy per particle is half of the one computed (because we count each interaction twice)
+//        dF.w *= (number) 0.5f;
+//        dT.w *= (number) 0.5f;
+//
+//        forces[IND] = (dF + F0);
+//        torques[IND] = (dT + T0);
+//
+//        torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
     } else{
-        //get bonded neighbors and compute for protein bonded neighs
-        for(int i = _npro*(IND - _offset); i < _npro*(IND - _offset)+_npro+1; ++i){
-            if(IND != 217) continue;
-            if(_d_spring_eqdist[i] != 0.f){
-                int qindex = i - _npro*(IND - _offset);
-                if(qindex != 550) continue;
-                number4 qpos = poss[qindex];
-                number4 r = box->minimum_image(qpos, ppos);
-                number gamma = _d_spring_potential[i];
-                number eqdist = _d_spring_eqdist[i];
-//                if(IND == 217 && qindex == 550){
-//                    printf("F0.x %.3f F0.y %.3f F0.z %.3f\n", F0.x, F0.y, F0.z);
-//                }
+//        printf("p %d btype %d\n", IND, pbtype);
+        for(int i = _npro*(IND - _offset); i < _npro*(IND - _offset)+_npro; i++){
 
+            int qindex = i - _npro*(IND - _offset) +_offset;
+            number eqdist = _d_spring_eqdist[i];
+
+            if(eqdist > (number) 0){
+                number4 qpos = poss[qindex];
+                number4 r = make_number4<number, number4>(qpos.x - ppos.x, qpos.y - ppos.y, qpos.z - ppos.z, (number) 0);
                 number cdist = sqrtf(r.x*r.x + r.y*r.y +r.z*r.z);
+                number gamma = _d_spring_potential[i];
+
                 number fmod = (-1.0f * gamma) * (cdist - eqdist) / cdist;
                 dF.x = r.x * fmod;
                 dF.y = r.y * fmod;
                 dF.z = r.z * fmod;
                 dF.w = 0.5f * gamma * powf(cdist-eqdist, 2);
-
-//                dF.w *= 0.5f; //cause every interaction is counted twice???
-                forces[IND] += dF;
+    //                dF.w *= 0.5f; //cause every interaction is counted twice???
+                forces[IND] -= dF;
+                torques[IND] = make_number4<number, number4>(0, 0, 0, 0);
+                torques[qindex] = make_number4<number, number4>(0, 0, 0, 0);
 
                 dF.w = -dF.w;
-                forces[qindex] -= dF;
+                forces[qindex] += dF;
+
                 //update Q's forces and energy
-                if(IND == 217 && qindex == 550) {
-                    printf("p %d q %d g %.3f d %.3f ro %.3f p.x %.3f p.y %.3f p.z %.3f q.x %.3f q.y %.3f q.z %.3f\n",
-                           IND, qindex, gamma, cdist, eqdist, forces[IND].x, forces[IND].y, forces[IND].z,
-                           forces[qindex].x,forces[qindex].y, forces[qindex].z);
-                    printf("df.x %.3f, df.y %.3f, df.z %.3f\n", dF.x, dF.y, dF.z);
-                }
+    //                if(IND == 217 && qindex == 550) {
+                printf("p %d q %d g %.2f d %.6f ro %.2f df.x %.8f, df.y %.8f, df.z %.8f p.x %.8f p.y %.8f p.z %.8f q.x %.8f q.y %.8f q.z %.8f\n",
+                       IND, qindex, gamma, cdist, eqdist, dF.x, dF.y, dF.z, forces[IND].x, forces[IND].y, forces[IND].z,
+                       forces[qindex].x,forces[qindex].y, forces[qindex].z);
+//                printf("p %d q %d\n", IND, qindex);
+
+//                printf("p %d q %d\n", IND, qindex);
+
+
+
+    //                }
             };
         }
     }
