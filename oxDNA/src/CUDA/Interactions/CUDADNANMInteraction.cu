@@ -136,6 +136,10 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
             _h_spring_potential[key1*this->npro + key2] = potential;
             _h_spring_eqdist[key1*this->npro + key2] = dist;
             _h_spring_pottype[key1*this->npro + key2] = potswitch;
+            //added so CUDA will play nice
+            _h_spring_potential[key2*this->npro + key1] = potential;
+            _h_spring_eqdist[key2*this->npro + key1] = dist;
+            _h_spring_pottype[key2*this->npro + key1] = potswitch;
         }
         parameters.close();
     }
