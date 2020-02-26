@@ -141,6 +141,7 @@ number ACInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 						{
 							LR_vector<number> force(*r );
 							force *= (-1.0f * _k ) * (rinsta-eqdist)/rinsta;
+//							printf("p %d, q%d | f.x %.5f f.y %.5f f.z %.5f\n", p->index, q->index, force.x, force.y, force.z);
 							p->force -= force;
 							q->force += force;
 						//printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);

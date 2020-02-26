@@ -135,11 +135,11 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		if (nside < 0)
 			p->n3 = P_VIRTUAL;
 		else
-			p->n3 = particles[nside];
+            p->add_bonded_neighbor(dynamic_cast<ACParticle<number>  *> (particles[nside]) );
 		if (cside < 0)
 			p->n5 = P_VIRTUAL;
 		else
-			p->n5 = particles[cside];
+			p->add_bonded_neighbor(dynamic_cast<ACParticle<number>  *> (particles[cside]) );
 
 		for(std::set<int>::iterator k = myneighs.begin(); k != myneighs.end(); ++k )
 		{
@@ -155,10 +155,6 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		p->strand_id = abs(strand) - 1;
 		p->index = i;
 		i++;
-
-		// here we fill the affected vector
-		if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
-		if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
 
 	}
 
