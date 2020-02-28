@@ -141,6 +141,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
             LR_atomicAddXYZ(&(forces[to_index]), dF);
+        printf("qPRO p %d q %d\n", to_index, from_index);
 
     } else if(pbtype < 0 && qbtype >= 0) {
         number4 qpos_back = POS_BACK * b1;
@@ -178,6 +179,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
             LR_atomicAddXYZ(&(forces[from_index]), dF);
+        printf("pPRO p %d q %d\n", to_index, from_index);
 
     } else if(pbtype >= 0 && qbtype >= 0){
         LR_bonds pbonds = bonds[b.from];
