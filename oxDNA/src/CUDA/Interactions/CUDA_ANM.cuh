@@ -87,14 +87,12 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
     get_vectors_from_quat<number, number4>(orientations[b.to], b1, b2, b3);
 
     if (pbtype < 0 && qbtype < 0) {
-        //Protein-Protein Excluded Volume **NONBONDED
-        //copy over dnanm constants? done!
+        //Protein-Protein Excluded Volume
         number4 r = box->minimum_image(ppos, qpos);
         _excluded_volume(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
         dF.w *= (number) 0.5f;
         //Add force to p index
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
-        // Should this be a different index?
         //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
             LR_atomicAddXYZ(&(forces[from_index]), dF);
@@ -121,7 +119,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         dF += Ftmp;
 
         _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
-        dT += _cross<number, number4>(ppos_base, Ftmp); //same here
+        dT += _cross<number, number4>(ppos_base, Ftmp);
         dF += Ftmp;
 
         dF.w *= (number) 0.5f;
@@ -147,12 +145,12 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
     } else if(pbtype < 0 && qbtype >= 0) {
         number4 qpos_back = POS_BACK * b1;
         number4 qpos_base = POS_BASE * b1;
-        number4 rback = box->minimum_image(ppos, qpos_back);
-        number4 rbase = box->minimum_image(ppos, qpos_base);
+        number4 rback = box->minimum_image(qpos_back, ppos);
+        number4 rbase = box->minimum_image(qpos_base, ppos);
         number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
 
         _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
-        dT += _cross<number, number4>(qpos_back, Ftmp); //check the shit out of this
+        dT += _cross<number, number4>(qpos_back, Ftmp);
         dF += Ftmp;
 
         //Ftmp is set to 0 in excluded volume function
@@ -163,31 +161,23 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         // NEED TO HANDLE TORQUE **SHOULD THIS BE NEGATIVE??
         dF.w *= (number) 0.5f;
         dT.w *= (number) 0.5f;
-        // Add Force to p index
-        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
-        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
+        // Add Force and torque to q index
+        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
+        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[from_index]), dF);
-
-        //NO TORQUE ON PROTEIN PARTICLES
-        // Allen Eq. 6 pag 3: DO I NEED THIS WITH HOW TORQUE IS CALCULATED HERE
-        //number4 dr = box->minimum_image(ppos, qpos); // returns qpos-ppos
-        //number4 crx = _cross < number, number4> (dr, dF);
-        //dT.x = -dT.x + crx.x;
-        //dT.y = -dT.y + crx.y;
-        //dT.z = -dT.z + crx.z;
+            LR_atomicAddXYZ(&(forces[to_index]), dF);
+        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
+            LR_atomicAddXYZ(&(torques[to_index]), dT);
 
         dF.x = -dF.x;
         dF.y = -dF.y;
         dF.z = -dF.z;
 
-        //Add Force AND TORQUE to q index
-        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
-        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
+        //add forces to p index
+        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
+        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-            LR_atomicAddXYZ(&(forces[to_index]), dF);
-        //if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
-        //    LR_atomicAddXYZ(&(torques[to_index]), dT);
+            LR_atomicAddXYZ(&(forces[from_index]), dF);
 
     } else if(pbtype >= 0 && qbtype >= 0){
         LR_bonds pbonds = bonds[b.from];
