@@ -35,6 +35,10 @@ public:
     float _debye_huckel_B; // prefactor of the quadratic cut-off
     float _minus_kappa;
 
+    float _pro_backbone_sigma, _pro_backbone_rstar, _pro_backbone_b, _pro_backbone_rcut, _pro_backbone_stiffness;
+    float _pro_base_sigma, _pro_base_rstar, _pro_base_b, _pro_base_rcut, _pro_base_stiffness;
+    float _pro_sigma, _pro_rstar, _pro_b, _pro_rcut;
+
     char *_d_spring_pottype, *_h_spring_pottype;
     number *_d_spring_potential, *_h_spring_potential;
     number *_d_spring_eqdist, *_h_spring_eqdist;

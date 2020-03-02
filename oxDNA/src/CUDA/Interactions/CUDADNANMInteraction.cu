@@ -149,7 +149,7 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     }
 
     //Some System Checks
-    if(stoi(carbons) != (this->npro)) throw oxDNAException("Mismatching number of Protein particles in parameter and topology file");
+//    if(stoi(carbons) != (this->npro)) throw oxDNAException("Mismatching number of Protein particles in parameter and topology file");
 
     // Copied from CUDADNAINTERACTION
     DNAInteraction<number>::init();
@@ -235,22 +235,40 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_half_charged_ends, &_debye_huckel_half_charged_ends, sizeof(bool)) );
     }
     //Constants for DNA/Protein Interactions
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_sigma, &this->_pro_sigma, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rstar, &this->_pro_rstar, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rc, &this->_pro_rcut, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_b, &this->_pro_b, sizeof(float)) );
+    //Backbone-Protein Excluded Volume Parameters
+    _pro_backbone_sigma = 0.4085f;
+    _pro_backbone_rstar= 0.3585f;
+    _pro_backbone_b = 5883.8f;
+    _pro_backbone_rcut = 0.400561f;
+    _pro_backbone_stiffness = 1.0f;
+    //Base-Protein Excluded Volume Parameters
+    _pro_base_sigma = 0.2235f;
+    _pro_base_rstar= 0.1735f;
+    _pro_base_b = 101416.f;
+    _pro_base_rcut = 0.198864f;
+    _pro_base_stiffness = 1.0f;
+    //Protein-Protein Excluded Volume Parameters
+    _pro_sigma = 0.117f;
+    _pro_rstar= 0.087f;
+    _pro_b = 671492.f;
+    _pro_rcut = 0.100161f;
 
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_sigma, &this->_pro_backbone_sigma, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_rstar, &this->_pro_backbone_rstar, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_rc, &this->_pro_backbone_rcut, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_b, &this->_pro_backbone_b, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_stiffness, &this->_pro_backbone_stiffness, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_sigma, &_pro_sigma, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rstar, &_pro_rstar, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rc, &_pro_rcut, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_b, &_pro_b, sizeof(float)) );
 
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_sigma, &this->_pro_base_sigma, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_rstar, &this->_pro_base_rstar, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_rc, &this->_pro_base_rcut, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_b, &this->_pro_base_b, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_stiffness, &this->_pro_base_stiffness, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_sigma, &_pro_backbone_sigma, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_rstar, &_pro_backbone_rstar, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_rc, &_pro_backbone_rcut, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_b, &_pro_backbone_b, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_backbone_stiffness, &_pro_backbone_stiffness, sizeof(float)) );
+
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_sigma, &_pro_base_sigma, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_rstar, &_pro_base_rstar, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_rc, &_pro_base_rcut, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_b, &_pro_base_b, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_stiffness, &_pro_base_stiffness, sizeof(float)) );
     //Parameters for DNANM book keeping
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_ndna, &this->ndna, sizeof(int)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_npro, &this->npro, sizeof(int)) );
