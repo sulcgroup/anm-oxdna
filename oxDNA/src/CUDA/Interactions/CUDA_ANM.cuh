@@ -114,15 +114,15 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
     } else if (pbtype >= 0 && qbtype < 0) {
         //Protein-DNA Excluded Volume **NONBONDED
         number4 ppos_back;
-        if(grooving) ppos_back = ppos + POS_MM_BACK1 * a1 + POS_MM_BACK2 * a2;
-        else ppos_back = ppos + POS_BACK * a1;
-        number4 ppos_base = ppos + POS_BASE * a1;
+        if(grooving) ppos_back = POS_MM_BACK1 * a1 + POS_MM_BACK2 * a2;
+        else ppos_back = POS_BACK * a1;
+        number4 ppos_base = POS_BASE * a1;
 
+        number4 pback = ppos + ppos_back;
+        number4 pbase = ppos + ppos_base;
 
-//        number4 ppos_back = POS_BACK * a1;
-//        number4 ppos_base = POS_BASE * a1;
-        number4 rback = box->minimum_image(ppos_back, qpos);
-        number4 rbase = box->minimum_image(ppos_base, qpos);
+        number4 rback = box->minimum_image(pback, qpos);
+        number4 rbase = box->minimum_image(pbase, qpos);
         int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
 
