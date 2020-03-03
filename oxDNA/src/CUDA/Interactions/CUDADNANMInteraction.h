@@ -19,7 +19,10 @@ class CUDADNANMInteraction: public CUDABaseInteraction<number, number4>, public 
 public:
     //COPIED from CUDADNAInteraction
     enum {
-        DEBYE_HUCKEL = 7
+        DEBYE_HUCKEL = 7,
+        SPRING = 8,
+        PRO_EXC_VOL = 9,
+        PRO_DNA_EXC_VOL = 10
     };
     bool _use_debye_huckel;
     bool _use_oxDNA2_coaxial_stacking;
@@ -43,7 +46,7 @@ public:
     number *_d_spring_potential, *_h_spring_potential;
     number *_d_spring_eqdist, *_h_spring_eqdist;
     size_t _spring_param_size_double, _spring_param_size_char;
-    int offset; //Basically will only come into play if proteins are after dna in topology file. Just adjust proteins index for the spring parameter arrays
+    int offset; //Will only come into play if proteins are after dna in topology file (particle id wise). Adjusts proteins index for the spring parameter arrays
 	CUDADNANMInteraction();
 	virtual ~CUDADNANMInteraction();
 

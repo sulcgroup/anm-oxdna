@@ -41,10 +41,8 @@ DNANMInteraction<number>::DNANMInteraction() : DNA2Interaction<number>() { // @s
 
 template<typename number>
 void DNANMInteraction<number>::get_settings(input_file &inp){
-    printf("DNANM cpu Get Settings\n");
 	this->DNA2Interaction<number>::get_settings(inp);
 	getInputString(&inp, "PARFILE", _parameterfile, 0);
-    printf("cpu param file: %s \n", _parameterfile);
 	//Addition of Reading Parameter File
     int key1, key2;
     char potswitch;
@@ -96,7 +94,6 @@ void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particl
 
 template<typename number>
 void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<number> **particles) {
-    printf("DNANM Read Topology\n");
     *N_strands = N;
     int my_N, my_N_strands;
 
@@ -420,7 +417,6 @@ number DNANMInteraction<number>::_protein_dna_repulsive_lj(const LR_vector<numbe
 
 template<typename number>
 void DNANMInteraction<number>::init() {
-    printf("DNANM cpu Init\n");
 	this->DNA2Interaction<number>::init();
     //Backbone-Protein Excluded Volume Parameters
     _pro_backbone_sigma = 0.4085f;

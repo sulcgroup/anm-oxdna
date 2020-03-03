@@ -36,7 +36,7 @@ public:
 			SPRING = 8,
 			PRO_EXC_VOL = 9,
 			PRO_DNA_EXC_VOL = 10
-			//Assigned 8 and 9 so it won't overwrite the already existing DNA function pointers in the _int_map
+			//Assigned 8 9 and 10 so it won't overwrite the already existing DNA function pointers in the _int_map
 	};
 
     char _parameterfile[500];

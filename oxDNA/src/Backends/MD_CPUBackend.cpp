@@ -111,8 +111,7 @@ void MD_CPUBackend<number>::_compute_forces() {
 		for(; it != p->affected.end(); it++) {
 			if(it->first == p) this->_U += this->_interaction->pair_interaction_bonded(it->first, it->second, NULL, true);
 		}
-		//FOR DEBUGGING
-        //printf("ACTUAL: p %d p.x %.5f p.y %.5f p.z %.5f\n", p->index, p->force.x, p->force.y, p->force.z);
+
 		std::vector<BaseParticle<number> *> neighs = this->_lists->get_neigh_list(p);
 		for(unsigned int n = 0; n < neighs.size(); n++) {
 			BaseParticle<number> *q = neighs[n];

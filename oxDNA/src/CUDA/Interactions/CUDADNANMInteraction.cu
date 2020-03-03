@@ -39,7 +39,6 @@ CUDADNANMInteraction<number, number4>::~CUDADNANMInteraction() {
 
 template<typename number, typename number4>
 void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
-    printf("CUDA DNANM Get Settings\n");
     _use_debye_huckel = false;
     _use_oxDNA2_coaxial_stacking = false;
     _use_oxDNA2_FENE = false;
@@ -60,7 +59,11 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
             // I assume these are needed. I think the interaction map is used for when the observables want to print energy
             //this->_int_map[this->BACKBONE] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNAInteraction<number>::_backbone;
             this->_int_map[this->COAXIAL_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNA2Interaction<number>::_coaxial_stacking;
-
+            //Protein Methods Function Pointers
+            this->_int_map[SPRING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_protein_spring;
+            this->_int_map[PRO_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_protein_exc_volume;
+            //Protein-DNA Function Pointers
+            this->_int_map[PRO_DNA_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_protein_dna_exc_volume;
             // we don't need the F4_... terms as the macros are used in the CUDA_DNA.cuh file; this doesn't apply for the F2_K term
             this->F2_K[1] = CXST_K_OXDNA2;
             _debye_huckel_half_charged_ends = true;
@@ -89,7 +92,7 @@ template<typename number, typename number4>
 void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     CUDABaseInteraction<number, number4>::cuda_init(box_side, N);
 
-//    Addition of Reading Parameter File -> Moved from get_settings due to needed variables that are filled in DNANMInteraction::read_topology
+//    Addition of Reading Parameter File -> Moved from get_settings due to needing to fill variables that are filled in the CPU version of DNANMInteraction::read_topology
     fstream top;
     int tmp1, tmp2;
     top.open(this->_topology_filename, ios::in);
@@ -149,19 +152,19 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     }
 
     //Some System Checks
-//    if(stoi(carbons) != (this->npro)) throw oxDNAException("Mismatching number of Protein particles in parameter and topology file");
+    if(stoi(carbons) != (this->npro)) throw oxDNAException("Mismatching number of Protein particles in parameter and topology file");
+    // WHAT ELSE SHOULD I BE DOUBLE CHECKING?
 
     // Copied from CUDADNAINTERACTION
     DNAInteraction<number>::init();
 
     float f_copy = this->_hb_multiplier;
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_hb_multi, &f_copy, sizeof(float)) );
-//
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_N, &N, sizeof(int)) );
 
     number tmp[50];
     for(int i = 0; i < 2; i++) for(int j = 0; j < 5; j++) for(int k = 0; k < 5; k++) tmp[i*25 + j*5 + k] = this->F1_EPS[i][j][k];
-//
+
     COPY_ARRAY_TO_CONSTANT(MD_F1_EPS, tmp, 50);
 
     for(int i = 0; i < 2; i++) for(int j = 0; j < 5; j++) for(int k = 0; k < 5; k++) tmp[i*25 + j*5 + k] = this->F1_SHIFT[i][j][k];
@@ -192,8 +195,8 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_B, this->F5_PHI_B, 4);
     COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XC, this->F5_PHI_XC, 4);
     COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XS, this->F5_PHI_XS, 4);
-//
-//
+
+
     if(this->_use_edge) CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_n_forces, &this->_n_forces, sizeof(int)) );
     if (_use_debye_huckel) {
         // copied from DNA2Interaction::init() (CPU), the least bad way of doing things
