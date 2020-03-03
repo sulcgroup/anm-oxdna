@@ -320,11 +320,11 @@ number DNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number>
     }
 
     if ((p->btype >= 0 && q->btype < 0) || (p->btype < 0 && q->btype >= 0)) {
-        if((p->index == 703 && q->index == 482) || (p->index == 482 && q->index == 703)){
-            printf("r.x %.5f r.y %.5f r.z %.5f\n", r->x, r->y, r->z);
-            printf("p.x %.5f p.y %.5f p.z %.5f\n", p->pos.x, p->pos.y, p->pos.z);
-            printf("q.x %.5f q.y %.5f q.z %.5f\n", q->pos.x, q->pos.y, q->pos.z);
-        }
+//        if((p->index == 703 && q->index == 482) || (p->index == 482 && q->index == 703)){
+//            printf("r.x %.5f r.y %.5f r.z %.5f\n", r->x, r->y, r->z);
+//            printf("p.x %.5f p.y %.5f p.z %.5f\n", p->pos.x, p->pos.y, p->pos.z);
+//            printf("q.x %.5f q.y %.5f q.z %.5f\n", q->pos.x, q->pos.y, q->pos.z);
+//        }
         number energy = _protein_dna_exc_volume(p, q, r, update_forces);
         return energy;
     }

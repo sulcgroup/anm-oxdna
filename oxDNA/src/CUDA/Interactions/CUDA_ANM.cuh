@@ -90,12 +90,11 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         //Protein-Protein Excluded Volume
         number4 r = box->minimum_image(ppos, qpos);
         _excluded_volume(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
-//        printf("sig %.5f rstar %.5f b %.5f rc %.5f\n", MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
 
-        //Forces Calc. only once per unique p and q,  no need to half energy or forces
+        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from; //pindex
+        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to; //qindex
+
         //Add force to p index
-        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
-        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
             LR_atomicAddXYZ(&(forces[from_index]), dF);
 
@@ -104,12 +103,8 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         dF.z = -dF.z;
 
         //Add force to q index
-        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
-        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
             LR_atomicAddXYZ(&(forces[to_index]), dF);
-//        printf("p %d q %d df.x %.5f df.y %.5f df.z %.5f\n", from_index, to_index, dF.x, dF.y, dF.z);
-//        printf("PRO ONLY p %d q%d\n", from_index, to_index);
 
     } else if (pbtype >= 0 && qbtype < 0) {
         //Protein-DNA Excluded Volume **NONBONDED
@@ -118,35 +113,23 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         else ppos_back = POS_BACK * a1;
         number4 ppos_base = POS_BASE * a1;
 
-        number4 pback = ppos + ppos_back;
-        number4 pbase = ppos + ppos_base;
+        number4 r = box->minimum_image(ppos, qpos);
+        number4 rback = r - ppos_back;
+        number4 rbase = r - ppos_base;
 
-        number4 rback = box->minimum_image(pback, qpos);
-        number4 rbase = box->minimum_image(pbase, qpos);
         int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
 
-        bool verbose = 0;
-        if(from_index == 703) printf("p %d q %d \n", from_index, to_index);
-        if(from_index == 703 && to_index == 482){
-            verbose = 1;
-        }
-
-//        number4 rback = box->minimum_image(qpos, ppos_back);
-//        number4 rbase = box->minimum_image(qpos, ppos_base);
         number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
         _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
-//        dT += _cross<number, number4>(ppos_back, Ftmp);
+        dT += _cross<number, number4>(ppos_back, Ftmp);
         dF += Ftmp;
-        if(verbose) printf("Ftmp1 f.x %.8f f.y %.8f f.z %.8f d.x=%.8f d.y=%.8f d.z=%.8f\n", Ftmp.x, Ftmp.y, Ftmp.z, rback.x, rback.y, rback.z);
-//        if(verbose) printf("703 %.5f %.5f %.5f 482 %.5f %.5f %.5f\n", ppos.x, ppos.y, ppos.z, qpos.x, qpos.y, qpos.z);
+
         _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
-//        dT += _cross<number, number4>(ppos_base, Ftmp);
+        dT += _cross<number, number4>(ppos_base, Ftmp);
         dF += Ftmp;
-        if(verbose) printf("Ftmp2 f.x %.8f f.y %.8f f.z %.8f d=%.8f\n", Ftmp.x, Ftmp.y, Ftmp.z, sqrtf(rback.x*rback.x + rback.y*rback.y + rback.z*rback.z));
-        // Add force AND TORQUE to p index
-//        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
-        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
+
+        // Add force and torque to p index
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
             LR_atomicAddXYZ(&(forces[from_index]), dF);
         if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
@@ -157,56 +140,49 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         dF.z = -dF.z;
 
         //Add force to q index
-//        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
-        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f){
             LR_atomicAddXYZ(&(forces[to_index]), dF);
-            printf("p %d q %d f.x %.4f f.y %.4f f.z %.4f\n", from_index, to_index, -dF.x, -dF.y, -dF.z);
-        }
-
-//        printf("qPRO p %d q %d f.x %.4f f.y %.4f f.z %.4f\n", from_index, to_index, -dF.x, -dF.y, -dF.z);
-
-//    } else if(pbtype < 0 && qbtype >= 0) {
-//        number4 qpos_back = POS_BACK * b1;
-//        number4 qpos_base = POS_BASE * b1;
-////        number4 rback = box->minimum_image(qpos_back, ppos);
-////        number4 rbase = box->minimum_image(qpos_base, ppos);
-//        number4 rback = box->minimum_image(ppos, qpos_back);
-//        number4 rbase = box->minimum_image(ppos, qpos_base);
-//        number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
-//
-//        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
-////        printf("Ftmp1 f.x %.8f f.y %.8f f.z %.8f", Ftmp.x, Ftmp.y, Ftmp.z);
-//        dT += _cross<number, number4>(qpos_back, Ftmp);
-//        dF += Ftmp;
-//
-//        //Ftmp is set to 0 in excluded volume function
-//        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
-////        printf("Ftmp2 f.x %.8f f.y %.8f f.z %.8f", Ftmp.x, Ftmp.y, Ftmp.z);
-//        dT += _cross<number, number4>(qpos_base, Ftmp);
-//        dF += Ftmp;
-//
-//        // Add Force and torque to q index
-//        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
-//        //int to_index = MD_N[0]*(b.n_to % MD_n_forces[0]) + b.to;
-//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
-//            LR_atomicAddXYZ(&(forces[to_index]), dF);
-//        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
-//            LR_atomicAddXYZ(&(torques[to_index]), dT);
-//
-//        dF.x = -dF.x;
-//        dF.y = -dF.y;
-//        dF.z = -dF.z;
-//
-//        //add forces to p index
-//        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
-//        //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
-//        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f) {
-//            LR_atomicAddXYZ(&(forces[from_index]), dF);
 //            printf("p %d q %d f.x %.4f f.y %.4f f.z %.4f\n", from_index, to_index, -dF.x, -dF.y, -dF.z);
-//        }
+        }
+    } else if(pbtype < 0 && qbtype >= 0) {
+        number4 qpos_back;
+        if(grooving) qpos_back = POS_MM_BACK1 * b1 + POS_MM_BACK2 * b2;
+        else qpos_back = POS_BACK * b1;
+        number4 qpos_base = POS_BASE * b1;
+        number4 qpos_stack = POS_STACK * b1;
 
-//        printf("pPRO p %d q %d f.x %.8f f.y %.8f f.z %.8f\n", from_index, to_index, dF.x, dF.y, dF.z);
+        int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
+        int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
+
+        //vector r is reversed from the above case
+        number4 r = box->minimum_image(qpos, ppos);
+        number4 rback = r - qpos_back;
+        number4 rbase = r - qpos_base;
+
+        number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
+        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
+        dT += _cross<number, number4>(qpos_back, Ftmp);
+        dF += Ftmp;
+
+        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
+        dT += _cross<number, number4>(qpos_base, Ftmp);
+        dF += Ftmp;
+
+        // Add Force and torque to q index
+        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f)
+            LR_atomicAddXYZ(&(forces[to_index]), dF);
+        if ((dT.x * dT.x + dT.y * dT.y + dT.z * dT.z + dT.w * dT.w) > (number) 0.f)
+            LR_atomicAddXYZ(&(torques[to_index]), dT);
+
+        dF.x = -dF.x;
+        dF.y = -dF.y;
+        dF.z = -dF.z;
+
+        //add forces to p index
+        if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f) {
+            LR_atomicAddXYZ(&(forces[from_index]), dF);
+//            printf("p %d q %d f.x %.4f f.y %.4f f.z %.4f\n", from_index, to_index, -dF.x, -dF.y, -dF.z);
+        }
     } else if(pbtype >= 0 && qbtype >= 0){
         LR_bonds pbonds = bonds[b.from];
         LR_bonds qbonds = bonds[b.to];
