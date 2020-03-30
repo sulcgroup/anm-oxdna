@@ -520,7 +520,7 @@ number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BasePa
         switch (interactiontype) {
             case 's': {
                 //Harmonic Spring Potential
-                if ((eqdist < 0.0) || (eqdist > 2.0))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
+                if ((eqdist < 0.0) || (eqdist > 3.0))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
                 {
                     if (keys.first + 1 != keys.second) {
                         throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f",

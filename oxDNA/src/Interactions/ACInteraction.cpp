@@ -145,7 +145,7 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		{
 			if(p->index < *k)
 			{
-			  p->add_bonded_neighbor(dynamic_cast<ACParticle<number>  *> (particles[*k]) );
+			    p->add_bonded_neighbor(dynamic_cast<ACParticle<number>  *> (particles[*k]) );
 			}
 		}
 

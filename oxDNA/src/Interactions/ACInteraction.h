@@ -123,7 +123,7 @@ number ACInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 				case 's':
 					{
 						//Harmonic Spring Potential
-						if ((eqdist < 0.0) || (eqdist > 2.0))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
+						if ((eqdist < 0.0) || (eqdist > 3.0))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
 						{
 							if (keys.first+1 != keys.second){
 								throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f", q->index, p->index, eqdist);
@@ -149,54 +149,68 @@ number ACInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 						}
 						return energy;
 					} break;
-					case 'i':
-						{
-							//Every Possible Pair of Particles Needs to be Calculated
-							number _k = _potential[keys].second; //stiffness of the spring
-							if ((_k == 0) || (_k < 0)){
-								throw oxDNAException("No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f", p->index, q->index, _k);
-							}
-							number rnorm = r->norm();
-							number rinsta = sqrt(rnorm);
-							number energy = 0.5 * _k * SQR(rinsta-eqdist)*(1/eqdist);
+			    case 'f':
+                    {
+                        //FENE Potential
+                        number fdelta = 0.3f, fdelta2 = 0.09f, f_eps = 2.0f;
+                        number rnorm = r->norm();
+                        number r_mod = sqrt(rnorm);
+                        eqdist = _rknot[keys];
+                        f_eqdist = r_mod - eqdist
 
-							if (update_forces)
-							{
-								LR_vector<number> force(*r );
-								force *= (-1.0f * _k ) * ((rinsta-eqdist)/rinsta) * (1/eqdist);
-								p->force -= force;
-								q->force += force;
-							//printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
-							//printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
-							}
-							return energy;
-						} break;
-					case 'e':
-						{
-							//Every Possible Pair of Particles Needs to be Calculated
-							number _k = _potential[keys].second; //stiffness of the spring
-							if ((_k == 0) || (_k < 0)){
-								throw oxDNAException("No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f", p->index, q->index, _k);
-							}
-							number rnorm = r->norm();
-							number rinsta = sqrt(rnorm);
-							number energy = 0.5 * _k * SQR(rinsta-eqdist)*(1/(eqdist*eqdist));
+                        energy = - (f_eps / 2.f) * log(1.f - SQR(f_eqdist) / fdelta2);
+                        if (update_forces) force = r * (-(f_eps * f_eqdist  / (fdelta2 - SQR(f_eqdist))) / r_mod);
 
-							if (update_forces)
-							{
-								LR_vector<number> force(*r );
-								force *= (-1.0f * _k ) * ((rinsta-eqdist)/rinsta) * (1/(eqdist*eqdist));
-								p->force -= force;
-								q->force += force;
-							//printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
-							//printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
-							}
-							return energy;
-						} break;
-					default:
-						{
-							throw oxDNAException("Interaction type specified in .par file is Invalid, particles %d and %d, switch %c",p->index,q->index,interactiontype);
-						}
+                        return energy;
+                    }
+                case 'i':
+                    {
+                        //Every Possible Pair of Particles Needs to be Calculated
+                        number _k = _potential[keys].second; //stiffness of the spring
+                        if ((_k == 0) || (_k < 0)){
+                            throw oxDNAException("No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f", p->index, q->index, _k);
+                        }
+                        number rnorm = r->norm();
+                        number rinsta = sqrt(rnorm);
+                        number energy = 0.5 * _k * SQR(rinsta-eqdist)*(1/eqdist);
+
+                        if (update_forces)
+                        {
+                            LR_vector<number> force(*r );
+                            force *= (-1.0f * _k ) * ((rinsta-eqdist)/rinsta) * (1/eqdist);
+                            p->force -= force;
+                            q->force += force;
+                        //printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
+                        //printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
+                        }
+                        return energy;
+                    } break;
+                case 'e':
+                    {
+                        //Every Possible Pair of Particles Needs to be Calculated
+                        number _k = _potential[keys].second; //stiffness of the spring
+                        if ((_k == 0) || (_k < 0)){
+                            throw oxDNAException("No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f", p->index, q->index, _k);
+                        }
+                        number rnorm = r->norm();
+                        number rinsta = sqrt(rnorm);
+                        number energy = 0.5 * _k * SQR(rinsta-eqdist)*(1/(eqdist*eqdist));
+
+                        if (update_forces)
+                        {
+                            LR_vector<number> force(*r );
+                            force *= (-1.0f * _k ) * ((rinsta-eqdist)/rinsta) * (1/(eqdist*eqdist));
+                            p->force -= force;
+                            q->force += force;
+                        //printf("@@@: particle %d and %d rinsta=%f , eqdist=%f, r-r0 = %f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
+                        //printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
+                        }
+                        return energy;
+                    } break;
+                default:
+                    {
+                        throw oxDNAException("Interaction type specified in .par file is Invalid, particles %d and %d, switch %c",p->index,q->index,interactiontype);
+                    }
 				}
 		} else {
 			return (number) 0.f; //returns 0 if no rknot value in parameter value aka they aren't bonded
