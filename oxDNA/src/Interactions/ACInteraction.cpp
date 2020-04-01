@@ -82,6 +82,7 @@ void ACInteraction<number>::init() {
     _rstar = 0.47f;
     _b = 80892.1;
     _rc = 0.588787;
+}
 
 template<typename number>
 void ACInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
