@@ -71,11 +71,17 @@ void ACInteraction<number>::init() {
 //    _b = 163352410.227f;
 //    _rc = 0.102644f;
 
-    _sigma = 0.3f;
-    _rstar= 0.23f;
-    _b = 3614904.f;
-    _rc = 0.298003f;
-}
+    //quartic parameters
+//    _sigma = 0.3f;
+//    _rstar= 0.23f;
+//    _b = 3614904.f;
+//    _rc = 0.298003f;
+
+    //large possible parameters
+    _sigma = 0.55f;
+    _rstar = 0.47f;
+    _b = 80892.1;
+    _rc = 0.588787;
 
 template<typename number>
 void ACInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {

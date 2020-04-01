@@ -399,8 +399,8 @@ number DNANMInteraction<number>::_protein_dna_repulsive_lj(const LR_vector<numbe
 		if(rnorm > SQR(rstar)) {
 			number rmod = sqrt(rnorm);
 			number rrc = rmod - rcut;
-			energy = stiffness * b * SQR(rrc);
-			if(update_forces) force = -r * (2 * stiffness * b * rrc / rmod);
+			energy = stiffness * b * SQR(SQR(rrc));
+			if(update_forces) force = -r * (4 * stiffness * b * CUB(rrc) / rmod);
 		}
 		else {
 			number tmp = SQR(sigma) / rnorm;
@@ -418,44 +418,44 @@ number DNANMInteraction<number>::_protein_dna_repulsive_lj(const LR_vector<numbe
 template<typename number>
 void DNANMInteraction<number>::init() {
 	this->DNA2Interaction<number>::init();
+    ndna=0, npro=0, ndnas =0;
+	//OLD VERSIONS
     //Backbone-Protein Excluded Volume Parameters
-    _pro_backbone_sigma = 0.4085f;
-    _pro_backbone_rstar= 0.3585f;
-    _pro_backbone_b = 5883.8f;
-    _pro_backbone_rcut = 0.400561f;
-    _pro_backbone_stiffness = 1.0f;
-    //Oldversion
-	//_pro_backbone_sigma = 0.748103f;
-	//_pro_backbone_rstar= 0.698103f;
-	//_pro_backbone_b = 895.144f;
-	//_pro_backbone_rcut = 0.757106f;
-    //_pro_backbone_stiffness = 1.0f;
-    //Base-Protein Excluded Volume Parameters
-    _pro_base_sigma = 0.2235f;
-    _pro_base_rstar= 0.1735f;
-    _pro_base_b = 101416.f;
-    _pro_base_rcut = 0.198864f;
-    _pro_base_stiffness = 1.0f;
-    //OldVersion
-//    _pro_base_sigma = 0.563103f;
-//     _pro_base_rstar= 0.513103f;
-//	_pro_base_b = 1989.15f;
-//	_pro_base_rcut = 0.564332f;
+//    _pro_backbone_sigma = 0.4085f;
+//    _pro_backbone_rstar= 0.3585f;
+//    _pro_backbone_b = 5883.8f;
+//    _pro_backbone_rcut = 0.400561f;
+//    _pro_backbone_stiffness = 1.0f;
+//    //Base-Protein Excluded Volume Parameters
+//    _pro_base_sigma = 0.2235f;
+//    _pro_base_rstar= 0.1735f;
+//    _pro_base_b = 101416.f;
+//    _pro_base_rcut = 0.198864f;
 //    _pro_base_stiffness = 1.0f;
+//    //Protein-Protein Excluded Volume Parameters
+//    _pro_sigma = 0.117f;
+//    _pro_rstar= 0.087f;
+//    _pro_b = 671492.f;
+//    _pro_rcut = 0.100161f;
+    //NEW_VERSION(Quartic LJ version)
+    _pro_backbone_sigma = 0.68f;
+    _pro_backbone_rstar= 0.679f;
+    _pro_backbone_b = 147802936.f;
+    _pro_backbone_rcut = 0.682945f;
+    _pro_backbone_stiffness = 1.0f;
+    //Base-Protein Excluded Volume Parameters
+    _pro_base_sigma = 0.47f;
+    _pro_base_rstar= 0.45f;
+    _pro_base_b = 157081.f;
+    _pro_base_rcut = 0.506028f;
+    _pro_base_stiffness = 1.0f;
     //Protein-Protein Excluded Volume Parameters
-    _pro_sigma = 0.117f;
-    _pro_rstar= 0.087f;
-    _pro_b = 671492.f;
-    _pro_rcut = 0.100161f;
-    //Oldversion
-//	_pro_sigma = 0.381957276f;
-//	_pro_rstar= 0.331957276f;
-//	_pro_b = 7611.11f;
-//	_pro_rcut = 0.372089f;
-	//Topology File Parameters
-	ndna=0;
-	npro=0;
-	ndnas=0;
+    _pro_sigma = 0.55f;
+    _pro_rstar= 0.47f;
+    _pro_b = 80892.1f;
+    _pro_rcut = 0.588787f;
+
+
 }
 
 //Functions from ACInteraction.h
@@ -464,14 +464,15 @@ void DNANMInteraction<number>::init() {
 template<typename number>
 number DNANMInteraction<number>::_protein_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
 	// this is a bit faster than calling r.norm()
+	//changed to a quartic form
 	number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
 	number energy = (number) 0;
 	if(rnorm < SQR(_pro_rcut)) {
 		if(rnorm > SQR(_pro_rstar)) {
 			number rmod = sqrt(rnorm);
 			number rrc = rmod - _pro_rcut;
-			energy = EXCL_EPS * _pro_b * SQR(rrc);
-			if(update_forces) force = -r * (2 * EXCL_EPS * _pro_b * rrc/ rmod);
+			energy = EXCL_EPS * _pro_b * SQR(SQR(rrc));
+			if(update_forces) force = -r * (4 * EXCL_EPS * _pro_b * CUB(rrc)/ rmod);
 		}
 		else {
 			number tmp = SQR(_pro_sigma) / rnorm;

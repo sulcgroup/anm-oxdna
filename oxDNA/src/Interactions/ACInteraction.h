@@ -34,7 +34,7 @@ protected:
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
 	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
-    inline number _repulsive_lj_quad(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
+    inline number _repulsive_lj_quart(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
 
 public:
 	enum {
@@ -62,7 +62,7 @@ public:
 	virtual void check_input_sanity(BaseParticle<number> **particles, int N);
 };
 
-
+//The Below function is currently unused
 template<typename number>
 number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
 
@@ -90,7 +90,7 @@ number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 
 
 template<typename number>
-number ACInteraction<number>::_repulsive_lj_quad(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
+number ACInteraction<number>::_repulsive_lj_quart(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
 
     number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
     number energy = (number) 0;
@@ -120,7 +120,7 @@ number ACInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<
 	if (p->index != q->index && abs(q->index - p->index) != 1){
 		LR_vector<number> force(0,0,0);
 
-		number energy =  this->_repulsive_lj_quad(*r, force, update_forces);
+		number energy =  this->_repulsive_lj_quart(*r, force, update_forces);
 
 		if(update_forces)
 		{
@@ -176,25 +176,6 @@ number ACInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
 						}
 						return energy;
 					} break;
-			    case 'f':
-                    {
-                        //FENE Potential
-                        number fdelta = 0.3f, fdelta2 = 0.09f, f_eps = 2.0f;
-                        number rnorm = r->norm();
-                        number r_mod = sqrt(rnorm);
-                        eqdist = _rknot[keys];
-                        number f_eqdist = r_mod - eqdist;
-
-                        number energy = - (f_eps / 2.f) * log(1.f - SQR(f_eqdist) / fdelta2);
-                        if (update_forces) {
-                            LR_vector<number> force(*r);
-                            force *= (-(f_eps * f_eqdist / (fdelta2 - SQR(f_eqdist))) / r_mod);
-							//printf("p %d, q%d | f.x %.5f f.y %.5f f.z %.5f\n", p->index, q->index, force.x, force.y, force.z);
-                            p->force -= force;
-                            q->force += force;
-                        }
-                        return energy;
-                    } break;
                 case 'i':
                     {
                         //Every Possible Pair of Particles Needs to be Calculated
