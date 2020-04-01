@@ -34,6 +34,7 @@ protected:
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
 	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
+    inline number _repulsive_lj_quad(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
 
 public:
 	enum {
@@ -89,11 +90,37 @@ number ACInteraction<number>::_repulsive_lj(const LR_vector<number> &r, LR_vecto
 
 
 template<typename number>
+number ACInteraction<number>::_repulsive_lj_quad(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces) {
+
+    number rnorm = SQR(r.x) + SQR(r.y) + SQR(r.z);
+    number energy = (number) 0;
+    if(rnorm < SQR(_rc)) {
+        if(rnorm > SQR(_rstar)) {
+            number rmod = sqrt(rnorm);
+            number rrc = rmod - _rc;
+            energy = EXCL_EPS * _b * SQR(SQR(rrc));
+            if(update_forces) force = -r * (EXCL_EPS * 4.f * _b * CUB(rrc)/ rmod);
+        }
+        else {
+            number tmp = SQR(_sigma) / rnorm;
+            number lj_part = tmp * tmp * tmp;
+            energy = 4 * EXCL_EPS * (SQR(lj_part) - lj_part);
+            if(update_forces) force = -r* (24 * EXCL_EPS * (lj_part - 2*SQR(lj_part))/rnorm);
+        }
+    }
+
+    if(update_forces && energy == (number) 0) force.x = force.y = force.z = (number) 0;
+
+    return energy;
+}
+
+
+template<typename number>
 number ACInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-	if (p->index != q->index){
+	if (p->index != q->index && abs(q->index - p->index) != 1){
 		LR_vector<number> force(0,0,0);
 
-		number energy =  this->_repulsive_lj(*r, force, update_forces);
+		number energy =  this->_repulsive_lj_quad(*r, force, update_forces);
 
 		if(update_forces)
 		{
@@ -156,13 +183,18 @@ number ACInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<numb
                         number rnorm = r->norm();
                         number r_mod = sqrt(rnorm);
                         eqdist = _rknot[keys];
-                        f_eqdist = r_mod - eqdist
+                        number f_eqdist = r_mod - eqdist;
 
-                        energy = - (f_eps / 2.f) * log(1.f - SQR(f_eqdist) / fdelta2);
-                        if (update_forces) force = r * (-(f_eps * f_eqdist  / (fdelta2 - SQR(f_eqdist))) / r_mod);
-
+                        number energy = - (f_eps / 2.f) * log(1.f - SQR(f_eqdist) / fdelta2);
+                        if (update_forces) {
+                            LR_vector<number> force(*r);
+                            force *= (-(f_eps * f_eqdist / (fdelta2 - SQR(f_eqdist))) / r_mod);
+							//printf("p %d, q%d | f.x %.5f f.y %.5f f.z %.5f\n", p->index, q->index, force.x, force.y, force.z);
+                            p->force -= force;
+                            q->force += force;
+                        }
                         return energy;
-                    }
+                    } break;
                 case 'i':
                     {
                         //Every Possible Pair of Particles Needs to be Calculated
