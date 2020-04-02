@@ -64,6 +64,32 @@ __constant__ int _offset;
 
 #include "../cuda_utils/CUDA_lr_common.cuh"
 
+template<typename number, typename number4>
+__forceinline__ __device__ void _excluded_volume_quart(const number4 &r, number4 &F, number sigma, number rstar, number b, number rc) {
+    number rsqr = CUDA_DOT(r, r);
+
+    F.x = F.y = F.z = F.w = (number) 0.f;
+    if(rsqr < SQR(rc)) {
+        if(rsqr > SQR(rstar)) {
+            number rmod = sqrt(rsqr);
+            number rrc = rmod - rc;
+            number fmod = 4.f * EXCL_EPS * b * CUB(rrc) / rmod;
+            F.x = r.x * fmod;
+            F.y = r.y * fmod;
+            F.z = r.z * fmod;
+            F.w = EXCL_EPS * b * SQR(SQR(rrc));
+        }
+        else {
+            number lj_part = CUB(SQR(sigma)/rsqr);
+            number fmod = 24.f * EXCL_EPS * (lj_part - 2.f*SQR(lj_part)) / rsqr;
+            F.x = r.x * fmod;
+            F.y = r.y * fmod;
+            F.z = r.z * fmod;
+            F.w = 4.f * EXCL_EPS * (SQR(lj_part) - lj_part);
+        }
+    }
+}
+
 template <typename number, typename number4>
 __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *orientations, number4 *forces, number4 *torques, edge_bond *edge_list, int n_edges, LR_bonds *bonds, bool grooving, bool use_debye_huckel, bool use_oxDNA2_coaxial_stacking, CUDABox<number, number4> *box) {
     if (IND >= n_edges) return;
@@ -89,7 +115,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
     if (pbtype < 0 && qbtype < 0) {
         //Protein-Protein Excluded Volume
         number4 r = box->minimum_image(ppos, qpos);
-        _excluded_volume(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
+        _excluded_volume_quart(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
 
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from; //pindex
         int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to; //qindex
@@ -121,11 +147,11 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
 
         number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
-        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
+        _excluded_volume_quart(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
         dT += _cross<number, number4>(ppos_back, Ftmp);
         dF += Ftmp;
 
-        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
+        _excluded_volume_quart(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
         dT += _cross<number, number4>(ppos_base, Ftmp);
         dF += Ftmp;
 
@@ -160,11 +186,11 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         number4 rbase = r - qpos_base;
 
         number4 Ftmp = make_number4<number, number4>(0, 0, 0, 0);
-        _excluded_volume(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
+        _excluded_volume_quart(rback, Ftmp, MD_pro_backbone_sigma, MD_pro_backbone_rstar, MD_pro_backbone_b, MD_pro_backbone_rc);
         dT += _cross<number, number4>(qpos_back, Ftmp);
         dF += Ftmp;
 
-        _excluded_volume(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
+        _excluded_volume_quart(rbase, Ftmp, MD_pro_base_sigma, MD_pro_base_rstar, MD_pro_base_b, MD_pro_base_rc);
         dT += _cross<number, number4>(qpos_base, Ftmp);
         dF += Ftmp;
 
