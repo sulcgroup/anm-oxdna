@@ -152,7 +152,6 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     }
 
     //Some System Checks
-    if((int) carbons != (this->npro)) throw oxDNAException("Mismatching number of Protein particles in parameter and topology file");
     // WHAT ELSE SHOULD I BE DOUBLE CHECKING?
 
     // Copied from CUDADNAINTERACTION
