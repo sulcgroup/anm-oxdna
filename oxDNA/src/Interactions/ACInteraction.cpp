@@ -78,10 +78,16 @@ void ACInteraction<number>::init() {
 //    _rc = 0.298003f;
 
     //large possible parameters
-    _sigma = 0.55f;
-    _rstar = 0.47f;
-    _b = 80892.1;
-    _rc = 0.588787;
+//    _sigma = 0.55f;
+//    _rstar = 0.47f;
+//    _b = 80892.1;
+//    _rc = 0.588787;
+
+    //oof not those lets try these
+    _sigma = 0.35f;
+    _rstar = 0.349f;
+    _b = 306484596.421f;
+    _rc = 0.352894;
 }
 
 template<typename number>

@@ -438,23 +438,40 @@ void DNANMInteraction<number>::init() {
 //    _pro_b = 671492.f;
 //    _pro_rcut = 0.100161f;
     //NEW_VERSION(Quartic LJ version)
-    _pro_backbone_sigma = 0.68f;
-    _pro_backbone_rstar= 0.679f;
-    _pro_backbone_b = 147802936.f;
-    _pro_backbone_rcut = 0.682945f;
+//    _pro_backbone_sigma = 0.68f;
+//    _pro_backbone_rstar= 0.679f;
+//    _pro_backbone_b = 147802936.f;
+//    _pro_backbone_rcut = 0.682945f;
+//    _pro_backbone_stiffness = 1.0f;
+//    //Base-Protein Excluded Volume Parameters
+//    _pro_base_sigma = 0.47f;
+//    _pro_base_rstar= 0.45f;
+//    _pro_base_b = 157081.f;
+//    _pro_base_rcut = 0.506028f;
+//    _pro_base_stiffness = 1.0f;
+//    //Protein-Protein Excluded Volume Parameters
+//    _pro_sigma = 0.55f;
+//    _pro_rstar= 0.47f;
+//    _pro_b = 80892.1f;
+//    _pro_rcut = 0.588787f;
+    //that ain't it chief
+    //let's try this
+    _pro_backbone_sigma = 0.57f;
+    _pro_backbone_rstar= 0.569f;
+    _pro_backbone_b = 178699253.5f;
+    _pro_backbone_rcut = 0.572934f;
     _pro_backbone_stiffness = 1.0f;
     //Base-Protein Excluded Volume Parameters
-    _pro_base_sigma = 0.47f;
-    _pro_base_rstar= 0.45f;
-    _pro_base_b = 157081.f;
-    _pro_base_rcut = 0.506028f;
+    _pro_base_sigma = 0.36f;
+    _pro_base_rstar= 0.359f;
+    _pro_base_b = 296866090.f;
+    _pro_base_rcut = 0.362897f;
     _pro_base_stiffness = 1.0f;
     //Protein-Protein Excluded Volume Parameters
-    _pro_sigma = 0.55f;
-    _pro_rstar= 0.47f;
-    _pro_b = 80892.1f;
-    _pro_rcut = 0.588787f;
-
+    _pro_sigma = 0.35f;
+    _pro_rstar = 0.349f;
+    _pro_b = 306484596.421f;
+    _pro_rcut = 0.352894;
 
 }
 
