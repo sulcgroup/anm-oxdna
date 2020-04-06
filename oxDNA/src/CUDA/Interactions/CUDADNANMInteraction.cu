@@ -264,25 +264,8 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
 ////    _pro_b = 671492.f;
 ////    _pro_rcut = 0.100161f;
 //
-    //NEW VERSION-> QUARTIC
-//    _pro_backbone_sigma = 0.68f;
-//    _pro_backbone_rstar= 0.679f;
-//    _pro_backbone_b = 147802936.f;
-//    _pro_backbone_rcut = 0.682945f;
-//    _pro_backbone_stiffness = 1.0f;
-//    //Base-Protein Excluded Volume Parameters
-//    _pro_base_sigma = 0.47f;
-//    _pro_base_rstar= 0.45f;
-//    _pro_base_b = 157081.f;
-//    _pro_base_rcut = 0.506028f;
-//    _pro_base_stiffness = 1.0f;
-//    //Protein-Protein Excluded Volume Parameters
-//    _pro_sigma = 0.55f;
-//    _pro_rstar= 0.47f;
-//    _pro_b = 80892.1f;
-//    _pro_rcut = 0.588787f;
-
-    //NEWER VERSION (IT's BETTER I PROMISE)
+    //NEW VERSION #QuarticExcludedVolume
+    //Backbone-Protein Excluded Volume Parameters
     _pro_backbone_sigma = 0.57f;
     _pro_backbone_rstar= 0.569f;
     _pro_backbone_b = 178699253.5f;
@@ -318,8 +301,6 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_npro, &this->npro, sizeof(int)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_offset, &this->offset, sizeof(int)) );
 
-    //THIS IS THE OFFENDING CODE
-    // I think this is fixed now?
     //Parameters for ANM
     CUDA_SAFE_CALL( cudaMemcpy(_d_spring_pottype, _h_spring_pottype, _spring_param_size_char, cudaMemcpyHostToDevice));
     CUDA_SAFE_CALL( cudaMemcpy(_d_spring_potential, _h_spring_potential, _spring_param_size_number, cudaMemcpyHostToDevice));
