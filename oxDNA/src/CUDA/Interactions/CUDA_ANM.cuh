@@ -45,13 +45,11 @@ __constant__ float MD_pro_backbone_sigma;
 __constant__ float MD_pro_backbone_rstar;
 __constant__ float MD_pro_backbone_b;
 __constant__ float MD_pro_backbone_rc;
-__constant__ float MD_pro_backbone_stiffness;
 
 __constant__ float MD_pro_base_sigma;
 __constant__ float MD_pro_base_rstar;
 __constant__ float MD_pro_base_b;
 __constant__ float MD_pro_base_rc;
-__constant__ float MD_pro_base_stiffness;
 
 __constant__ float MD_pro_sigma;
 __constant__ float MD_pro_rstar;
@@ -116,8 +114,6 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         //Protein-Protein Excluded Volume
         number4 r = box->minimum_image(ppos, qpos);
         _excluded_volume_quart(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
-//        number modr = _module<number, number4>(r);
-//        printf("d %.5f, fmod %.5f \n", modr, dF.x);
 
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from; //pindex
         int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to; //qindex
@@ -312,7 +308,7 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             if(eqdist > (number) 0){
                 number4 qpos = poss[qindex];
                 number4 r = box->minimum_image(ppos, qpos);
-//               number4 r = make_number4<number, number4>(qpos.x - ppos.x, qpos.y - ppos.y, qpos.z - ppos.z, (number) 0);
+
                 number d = _module<number, number4>(r);
                 number gamma = _d_spring_potential[i];
 
