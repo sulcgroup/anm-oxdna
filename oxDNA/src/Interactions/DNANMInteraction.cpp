@@ -78,9 +78,12 @@ void DNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particl
 
 template<typename number>
 void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particles, int N) {
-	if (ndna==0 || ndnas==0){
-        OX_LOG(Logger::LOG_INFO,"No DNA Particles Specified, Continuing with just Protein Particles");
-        for(int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
+	if (ndna==0 || ndnas==0) {
+        OX_LOG(Logger::LOG_INFO, "No DNA Particles Specified, Continuing with just Protein Particles");
+        for (int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
+    } else if (npro == 0) {
+        OX_LOG(Logger::LOG_INFO, "No Protein Particles Specified, Continuing with just DNA Particles");
+        for (int i = 0; i < npro; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
 	} else {
 	    if (_firststrand > 0){
             for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
@@ -265,7 +268,8 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
     LR_vector<number> computed_r(0, 0, 0);
     if(r == NULL) {
         if (q != P_VIRTUAL && p != P_VIRTUAL) {
-            computed_r = q->pos - p->pos;
+            computed_r = this->_box->min_image(p->pos, q->pos);
+//            computed_r = q->pos - p->pos;
             r = &computed_r;
         }
     }

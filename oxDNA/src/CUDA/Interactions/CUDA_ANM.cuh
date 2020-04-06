@@ -116,6 +116,8 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         //Protein-Protein Excluded Volume
         number4 r = box->minimum_image(ppos, qpos);
         _excluded_volume_quart(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
+//        number modr = _module<number, number4>(r);
+//        printf("d %.5f, fmod %.5f \n", modr, dF.x);
 
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from; //pindex
         int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to; //qindex
@@ -309,20 +311,21 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             number eqdist = _d_spring_eqdist[i];
             if(eqdist > (number) 0){
                 number4 qpos = poss[qindex];
-                number4 r = make_number4<number, number4>(qpos.x - ppos.x, qpos.y - ppos.y, qpos.z - ppos.z, (number) 0);
+                number4 r = box->minimum_image(ppos, qpos);
+//               number4 r = make_number4<number, number4>(qpos.x - ppos.x, qpos.y - ppos.y, qpos.z - ppos.z, (number) 0);
                 number d = _module<number, number4>(r);
                 number gamma = _d_spring_potential[i];
 
                 number fmod = (-1.0f * gamma) * (d - eqdist) / d;
 
                 dF = fmod*r;
-                dF.w = -0.5f * gamma * powf(d-eqdist, 2);
+                dF.w = -0.5f * gamma * SQR(d-eqdist);
 
                 ftotal -= dF;
     //                if(IND == 217 && qindex == 550) {
-                //printf("p %d q %d g %.2f d %.6f ro %.2f df.x %.8f, df.y %.8f, df.z %.8f p.x %.8f p.y %.8f p.z %.8f q.x %.8f q.y %.8f q.z %.8f\n",
-                  //     IND, qindex, gamma, d, eqdist, dF.x, dF.y, dF.z, forces[IND].x, forces[IND].y, forces[IND].z,
-                    //   forces[qindex].x,forces[qindex].y, forces[qindex].z);
+//                printf("p %d q %d g %.2f d %.6f ro %.2f df.x %.8f, df.y %.8f, df.z %.8f p.x %.8f p.y %.8f p.z %.8f q.x %.8f q.y %.8f q.z %.8f\n",
+//                       IND, qindex, gamma, d, eqdist, dF.x, dF.y, dF.z, forces[IND].x, forces[IND].y, forces[IND].z,
+//                       forces[qindex].x,forces[qindex].y, forces[qindex].z);
             };
         }
         LR_atomicAddXYZ(&(forces[IND]), ftotal);

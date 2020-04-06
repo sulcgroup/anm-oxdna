@@ -22,7 +22,7 @@ CUDADNANMInteraction<number, number4>::CUDADNANMInteraction() {
     _h_spring_potential = NULL;
     _h_spring_eqdist = NULL;
 
-    _spring_param_size_double = 0;
+    _spring_param_size_number = 0;
     _spring_param_size_char = 0;
 }
 
@@ -111,18 +111,25 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
 
 
 //    //Initalizing Host and Device Arrays for Spring Parameters
-    _spring_param_size_double = sizeof(double) * (this->npro*this->npro);
+    _spring_param_size_number = sizeof(number) * (this->npro*this->npro);
     _spring_param_size_char = sizeof(char) * (this->npro*this->npro);
     _h_spring_pottype = new char[this->npro*this->npro]();
     CUDA_SAFE_CALL( cudaMalloc(&_d_spring_pottype, _spring_param_size_char));
     _h_spring_potential = new number[this->npro*this->npro]();
-    CUDA_SAFE_CALL(cudaMalloc(&_d_spring_potential, _spring_param_size_double));
+    CUDA_SAFE_CALL(cudaMalloc(&_d_spring_potential, _spring_param_size_number));
     _h_spring_eqdist = new number[this->npro*this->npro]();
-    CUDA_SAFE_CALL(cudaMalloc(&_d_spring_eqdist, _spring_param_size_double));
+    CUDA_SAFE_CALL(cudaMalloc(&_d_spring_eqdist, _spring_param_size_number));
+
+    char potswitch = 'x';
+    number potential = 0.f, dist = 0.f;
+    for(int i = 0; i< (this->npro*this->npro); i++){
+        _h_spring_eqdist[i] = dist;
+        _h_spring_potential[i] = potential;
+        _h_spring_pottype[i] = potswitch;
+    }
+
 
     int key1, key2 = 0;
-    char potswitch = 'x';
-    double potential, dist = 0.f;
     string carbons;
     fstream parameters;
     parameters.open(this->_parameterfile, ios::in);
@@ -134,8 +141,10 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
         {
             parameters >> key1 >> key2 >> dist >> potswitch >> potential;
             //adjust by offset
-            key1 -= offset;
-            key2 -= offset;
+            if(offset != 0){
+                key1 -= offset;
+                key2 -= offset;
+            }
             _h_spring_potential[key1*this->npro + key2] = potential;
             _h_spring_eqdist[key1*this->npro + key2] = dist;
             _h_spring_pottype[key1*this->npro + key2] = potswitch;
@@ -216,8 +225,7 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
 
         number debyecut;
         if (this->_grooving) {
-            debyecut =
-                    2.0f * sqrt((POS_MM_BACK1) * (POS_MM_BACK1) + (POS_MM_BACK2) * (POS_MM_BACK2)) + _debye_huckel_RC;
+            debyecut = 2.0f * sqrt((POS_MM_BACK1) * (POS_MM_BACK1) + (POS_MM_BACK2) * (POS_MM_BACK2)) + _debye_huckel_RC;
         } else {
             debyecut = 2.0f * sqrt(SQR(POS_BACK)) + _debye_huckel_RC;
         }
@@ -227,7 +235,7 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
             this->_rcut = debyecut;
             this->_sqr_rcut = debyecut*debyecut;
         }
-        // End copy from DNA2Interaction
+        //End copy from DNA2Interaction
 
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_RC, &_debye_huckel_RC, sizeof(float)) );
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_RHIGH, &_debye_huckel_RHIGH, sizeof(float)) );
@@ -236,43 +244,61 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_minus_kappa, &_minus_kappa, sizeof(float)) );
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_half_charged_ends, &_debye_huckel_half_charged_ends, sizeof(bool)) );
     }
-    //Constants for DNA/Protein Interactions
-    //OLD VERSION-> QUADRATIC
-    //Backbone-Protein Excluded Volume Parameters
-//    _pro_backbone_sigma = 0.4085f;
-//    _pro_backbone_rstar= 0.3585f;
-//    _pro_backbone_b = 5883.8f;
-//    _pro_backbone_rcut = 0.400561f;
+//    //Constants for DNA/Protein Interactions
+//    //OLD VERSION-> QUADRATIC
+//    //Backbone-Protein Excluded Volume Parameters
+////    _pro_backbone_sigma = 0.4085f;
+////    _pro_backbone_rstar= 0.3585f;
+////    _pro_backbone_b = 5883.8f;
+////    _pro_backbone_rcut = 0.400561f;
+////    _pro_backbone_stiffness = 1.0f;
+////    //Base-Protein Excluded Volume Parameters
+////    _pro_base_sigma = 0.2235f;
+////    _pro_base_rstar= 0.1735f;
+////    _pro_base_b = 101416.f;
+////    _pro_base_rcut = 0.198864f;
+////    _pro_base_stiffness = 1.0f;
+////    //Protein-Protein Excluded Volume Parameters
+////    _pro_sigma = 0.117f;
+////    _pro_rstar= 0.087f;
+////    _pro_b = 671492.f;
+////    _pro_rcut = 0.100161f;
+//
+    //NEW VERSION-> QUARTIC
+//    _pro_backbone_sigma = 0.68f;
+//    _pro_backbone_rstar= 0.679f;
+//    _pro_backbone_b = 147802936.f;
+//    _pro_backbone_rcut = 0.682945f;
 //    _pro_backbone_stiffness = 1.0f;
 //    //Base-Protein Excluded Volume Parameters
-//    _pro_base_sigma = 0.2235f;
-//    _pro_base_rstar= 0.1735f;
-//    _pro_base_b = 101416.f;
-//    _pro_base_rcut = 0.198864f;
+//    _pro_base_sigma = 0.47f;
+//    _pro_base_rstar= 0.45f;
+//    _pro_base_b = 157081.f;
+//    _pro_base_rcut = 0.506028f;
 //    _pro_base_stiffness = 1.0f;
 //    //Protein-Protein Excluded Volume Parameters
-//    _pro_sigma = 0.117f;
-//    _pro_rstar= 0.087f;
-//    _pro_b = 671492.f;
-//    _pro_rcut = 0.100161f;
+//    _pro_sigma = 0.55f;
+//    _pro_rstar= 0.47f;
+//    _pro_b = 80892.1f;
+//    _pro_rcut = 0.588787f;
 
-    //NEW VERSION-> QUARTIC
-    _pro_backbone_sigma = 0.68f;
-    _pro_backbone_rstar= 0.679f;
-    _pro_backbone_b = 147802936.f;
-    _pro_backbone_rcut = 0.682945f;
+    //NEWER VERSION (IT's BETTER I PROMISE)
+    _pro_backbone_sigma = 0.57f;
+    _pro_backbone_rstar= 0.569f;
+    _pro_backbone_b = 178699253.5f;
+    _pro_backbone_rcut = 0.572934f;
     _pro_backbone_stiffness = 1.0f;
     //Base-Protein Excluded Volume Parameters
-    _pro_base_sigma = 0.47f;
-    _pro_base_rstar= 0.45f;
-    _pro_base_b = 157081.f;
-    _pro_base_rcut = 0.506028f;
+    _pro_base_sigma = 0.36f;
+    _pro_base_rstar= 0.359f;
+    _pro_base_b = 296866090.0f;
+    _pro_base_rcut = 0.362897f;
     _pro_base_stiffness = 1.0f;
     //Protein-Protein Excluded Volume Parameters
-    _pro_sigma = 0.55f;
-    _pro_rstar= 0.47f;
-    _pro_b = 80892.1f;
-    _pro_rcut = 0.588787f;
+    _pro_sigma = 0.35f;
+    _pro_rstar = 0.349f;
+    _pro_b = 306484596.0f;
+    _pro_rcut = 0.352894;
 
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_sigma, &_pro_sigma, sizeof(float)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rstar, &_pro_rstar, sizeof(float)) );
@@ -295,10 +321,12 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_npro, &this->npro, sizeof(int)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_offset, &this->offset, sizeof(int)) );
 
+    //THIS IS THE OFFENDING CODE
+    // I think this is fixed now?
     //Parameters for ANM
     CUDA_SAFE_CALL( cudaMemcpy(_d_spring_pottype, _h_spring_pottype, _spring_param_size_char, cudaMemcpyHostToDevice));
-    CUDA_SAFE_CALL( cudaMemcpy(_d_spring_potential, _h_spring_potential, _spring_param_size_double, cudaMemcpyHostToDevice));
-    CUDA_SAFE_CALL( cudaMemcpy(_d_spring_eqdist, _h_spring_eqdist, _spring_param_size_double, cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL( cudaMemcpy(_d_spring_potential, _h_spring_potential, _spring_param_size_number, cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(_d_spring_eqdist, _h_spring_eqdist, _spring_param_size_number, cudaMemcpyHostToDevice));
 }
 
 template<typename number, typename number4>

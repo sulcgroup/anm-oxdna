@@ -45,7 +45,7 @@ public:
     char *_d_spring_pottype, *_h_spring_pottype;
     number *_d_spring_potential, *_h_spring_potential;
     number *_d_spring_eqdist, *_h_spring_eqdist;
-    size_t _spring_param_size_double, _spring_param_size_char;
+    size_t _spring_param_size_number, _spring_param_size_char;
     int offset; //Will only come into play if proteins are after dna in topology file (particle id wise). Adjusts proteins index for the spring parameter arrays
 	CUDADNANMInteraction();
 	virtual ~CUDADNANMInteraction();
