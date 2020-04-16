@@ -279,6 +279,7 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
         number energy = _dna_backbone(p,q,r,update_forces);
         energy += _dna_bonded_excluded_volume(p,q,r,update_forces);
         energy += _dna_stacking(p,q,r,update_forces);
+        printf("CPU i %d j %d E %.5f", p->index, q->index, energy);
         return energy;
     }
 
@@ -288,11 +289,14 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
         ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
         if ((*cp).ACParticle<number>::is_bonded(q)){
             number energy = _protein_spring(p,q,r,update_forces);
-            if (abs(p->index - q->index) == 1) return energy;
-            else {
-                energy += _protein_exc_volume(p,q,r,update_forces);
-                return energy;
-            }
+//            if (abs(p->index - q->index) == 1) {
+////                printf("CPU i %d j %d E %.5f", p->index, q->index, energy);
+//                return energy;
+//            }
+//            else {
+//                printf("CPU i %d j %d E %.5f", p->index, q->index, energy);
+            energy += _protein_exc_volume(p,q,r,update_forces);
+            return energy;
         } else{
             return 0.f;
         }

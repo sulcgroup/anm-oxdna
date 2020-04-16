@@ -214,8 +214,6 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
                                                         use_debye_huckel, use_oxDNA2_coaxial_stacking, pbonds, qbonds,
                                                         b.from, b.to, box);
 
-        dF.w *= (number) 0.5f;
-        dT.w *= (number) 0.5f;
 
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
         //int from_index = MD_N[0]*(b.n_from % MD_n_forces[0]) + b.from;
@@ -309,13 +307,14 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
                 number4 qpos = poss[qindex];
                 number4 r = box->minimum_image(ppos, qpos);
 
-                number d = _module<number, number4>(r);
-                number gamma = _d_spring_potential[i];
+                    number d = _module<number, number4>(r);
+                    number gamma = _d_spring_potential[i];
 
-                number fmod = (-1.0f * gamma) * (d - eqdist) / d;
+                    number fmod = (-1.0f * gamma) * (d - eqdist) / d;
 
-                dF = fmod*r;
-                dF.w = -0.5f * gamma * SQR(d-eqdist);
+                    dF = fmod*r;
+                    dF.w = -0.5f * gamma * SQR(d-eqdist);
+                    dF.w *= 0.5f;
 
                 ftotal -= dF;
     //                if(IND == 217 && qindex == 550) {
