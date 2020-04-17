@@ -289,12 +289,6 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
         ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
         if ((*cp).ACParticle<number>::is_bonded(q)){
             number energy = _protein_spring(p,q,r,update_forces);
-//            if (abs(p->index - q->index) == 1) {
-////                printf("CPU i %d j %d E %.5f", p->index, q->index, energy);
-//                return energy;
-//            }
-//            else {
-//                printf("CPU i %d j %d E %.5f", p->index, q->index, energy);
             energy += _protein_exc_volume(p,q,r,update_forces);
             return energy;
         } else{

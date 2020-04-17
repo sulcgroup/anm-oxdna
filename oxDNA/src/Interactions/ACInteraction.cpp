@@ -216,11 +216,8 @@ number ACInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, B
     ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
     if ((*cp).ACParticle<number>::is_bonded(q)){
         number energy = _spring(p,q,r,update_forces);
-        if (abs(p->index - q->index) == 1) return energy;
-        else {
-            energy += _exc_volume(p,q,r,update_forces);
-            return energy;
-        }
+        energy += _exc_volume(p,q,r,update_forces);
+        return energy;
     } else {
         return 0.f;
     }
