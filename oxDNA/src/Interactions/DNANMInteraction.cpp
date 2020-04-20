@@ -279,7 +279,6 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
         number energy = _dna_backbone(p,q,r,update_forces);
         energy += _dna_bonded_excluded_volume(p,q,r,update_forces);
         energy += _dna_stacking(p,q,r,update_forces);
-        printf("CPU i %d j %d E %.5f", p->index, q->index, energy);
         return energy;
     }
 
