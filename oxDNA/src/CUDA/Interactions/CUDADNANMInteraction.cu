@@ -311,22 +311,24 @@ template<typename number, typename number4>
 void CUDADNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, number4> *lists, number4 *d_poss, GPU_quat<number> *d_orientations, number4 *d_forces, number4 *d_torques, LR_bonds *d_bonds, CUDABox<number, number4> *d_box) {
 	CUDASimpleVerletList<number, number4> *_v_lists = dynamic_cast<CUDASimpleVerletList<number, number4> *>(lists);
 	if(_v_lists != NULL) {
-		if(_v_lists->use_edge()) {
-				dnanm_forces_edge_nonbonded<number, number4>
-					<<<(_v_lists->_N_edges - 1)/(this->_launch_cfg.threads_per_block) + 1, this->_launch_cfg.threads_per_block>>>
-					(d_poss, d_orientations, this->_d_edge_forces, this->_d_edge_torques, _v_lists->_d_edge_list, _v_lists->_N_edges, d_bonds, this->_grooving, _use_debye_huckel, _use_oxDNA2_coaxial_stacking, d_box);
+        if (_v_lists->use_edge()) {
+            dnanm_forces_edge_nonbonded<number, number4>
+                    << < (_v_lists->_N_edges - 1) / (this->_launch_cfg.threads_per_block) + 1,
+                    this->_launch_cfg.threads_per_block >> >
+                    (d_poss, d_orientations, this->_d_edge_forces, this->_d_edge_torques, _v_lists->_d_edge_list, _v_lists->_N_edges, d_bonds, this->_grooving, _use_debye_huckel, _use_oxDNA2_coaxial_stacking, d_box);
 
-				this->_sum_edge_forces_torques(d_forces, d_torques);
+            this->_sum_edge_forces_torques(d_forces, d_torques);
 
-				// potential for removal here
-				cudaThreadSynchronize();
-				CUT_CHECK_ERROR("forces_second_step error -- after non-bonded");
+            // potential for removal here
+            cudaThreadSynchronize();
+            CUT_CHECK_ERROR("forces_second_step error -- after non-bonded");
 
-				dnanm_forces_edge_bonded<number, number4>
-					<<<this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block>>>
-					(d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, _d_spring_eqdist, _d_spring_potential);
-			}
-		else throw oxDNAException("Edge Approach is only implemented for DNANM Interaction using CUDA approach. Please add use_edge = 1 to your input file.")
+            dnanm_forces_edge_bonded<number, number4>
+                    << < this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block >> >
+                   (d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, _d_spring_eqdist, _d_spring_potential);
+
+        } else throw oxDNAException("Edge Approach is only implemented for DNANM Interaction using CUDA approach. Please add use_edge = 1 to your input file.");
+
 	} else throw oxDNAException("Must Use with Lists to run simulation");
 }
 
