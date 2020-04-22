@@ -326,6 +326,7 @@ void CUDADNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, 
 					<<<this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block>>>
 					(d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, _d_spring_eqdist, _d_spring_potential);
 			}
+		else throw oxDNAException("Edge Approach is only implemented for DNANM Interaction using CUDA approach. Please add use_edge = 1 to your input file.")
 	} else throw oxDNAException("Must Use with Lists to run simulation");
 }
 
