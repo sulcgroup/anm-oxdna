@@ -83,7 +83,7 @@ void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particl
         for (int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
     } else if (npro == 0) {
         OX_LOG(Logger::LOG_INFO, "No Protein Particles Specified, Continuing with just DNA Particles");
-        for (int i = 0; i < npro; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
+        for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
 	} else {
 	    if (_firststrand > 0){
             for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
