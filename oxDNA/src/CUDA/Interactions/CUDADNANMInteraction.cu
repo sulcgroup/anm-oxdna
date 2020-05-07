@@ -244,26 +244,7 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_minus_kappa, &_minus_kappa, sizeof(float)) );
         CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_half_charged_ends, &_debye_huckel_half_charged_ends, sizeof(bool)) );
     }
-//    //Constants for DNA/Protein Interactions
-//    //OLD VERSION-> QUADRATIC
-//    //Backbone-Protein Excluded Volume Parameters
-////    _pro_backbone_sigma = 0.4085f;
-////    _pro_backbone_rstar= 0.3585f;
-////    _pro_backbone_b = 5883.8f;
-////    _pro_backbone_rcut = 0.400561f;
-////    _pro_backbone_stiffness = 1.0f;
-////    //Base-Protein Excluded Volume Parameters
-////    _pro_base_sigma = 0.2235f;
-////    _pro_base_rstar= 0.1735f;
-////    _pro_base_b = 101416.f;
-////    _pro_base_rcut = 0.198864f;
-////    _pro_base_stiffness = 1.0f;
-////    //Protein-Protein Excluded Volume Parameters
-////    _pro_sigma = 0.117f;
-////    _pro_rstar= 0.087f;
-////    _pro_b = 671492.f;
-////    _pro_rcut = 0.100161f;
-//
+    //Constants for DNA/Protein Interactions
     //NEW VERSION #QuarticExcludedVolume
     //Backbone-Protein Excluded Volume Parameters
     _pro_backbone_sigma = 0.57f;
