@@ -281,8 +281,6 @@ void RNANMInteraction<number>::get_settings(input_file &inp) {
     parameters.close();
 }
 
-
-
 template<typename number> //initialise the interaction
 void RNANMInteraction<number>::init() {
     this->RNA2Interaction<number>::init();
