@@ -83,7 +83,7 @@ void DNANMInteraction<number>::allocate_particles(BaseParticle<number> **particl
         for (int i = 0; i < npro; i++) particles[i] = new ACParticle<number>();
     } else if (npro == 0) {
         OX_LOG(Logger::LOG_INFO, "No Protein Particles Specified, Continuing with just DNA Particles");
-        for (int i = 0; i < npro; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
+        for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
 	} else {
 	    if (_firststrand > 0){
             for (int i = 0; i < ndna; i++) particles[i] = new DNANucleotide<number>(this->_grooving);
@@ -109,7 +109,12 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
                              this->_topology_filename);
 
     topology.getline(line, 2040);
-    sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
+    try{
+        sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
+    } catch(...){
+        throw oxDNAException("Problem with header make sure the format is correct for DNANM Interaction");
+    }
+
 
     int strand, i = 0;
     while (topology.good()) {
@@ -125,7 +130,6 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
         ss >> strand;
         if (i == 0) {
             _firststrand = strand; //Must be set prior to allocation of particles
-//            printf("DNANM firststrand = %d", _firststrand);
             allocate_particles(particles, N);
             for (int j = 0; j < N; j++) {
                 particles[j]->index = j;
@@ -158,16 +162,6 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
             if (strlen(aminoacid) == 1) {
                 p->btype = Utils::decode_aa(aminoacid[0]);
             }
-
-            if (nside < 0)
-                p->n3 = P_VIRTUAL;
-            else
-                p->add_bonded_neighbor(dynamic_cast<ACParticle<number> *> (particles[nside]));
-
-            if (cside < 0)
-                p->n5 = P_VIRTUAL;
-            else
-                p->add_bonded_neighbor(dynamic_cast<ACParticle<number> *> (particles[cside]));
 
             p->strand_id = abs(strand) + ndnas - 1;
             p->index = i;
@@ -269,7 +263,6 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
     if(r == NULL) {
         if (q != P_VIRTUAL && p != P_VIRTUAL) {
             computed_r = this->_box->min_image(p->pos, q->pos);
-//            computed_r = q->pos - p->pos;
             r = &computed_r;
         }
     }
@@ -279,7 +272,6 @@ number DNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
         number energy = _dna_backbone(p,q,r,update_forces);
         energy += _dna_bonded_excluded_volume(p,q,r,update_forces);
         energy += _dna_stacking(p,q,r,update_forces);
-        printf("CPU i %d j %d E %.5f", p->index, q->index, energy);
         return energy;
     }
 
@@ -566,7 +558,7 @@ number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BasePa
 //                           "q.y=%.8f q.z=%.8f\n", p->index, q->index, rinsta, eqdist, force.x, force.y, force.z, p->force.x,
 //                           p->force.y, p->force.z, q->force.x, q->force.y, q->force.z);
                            //"%f, prefactor = %f, force = %f,%f,%f, ener=%f \n",p->index,q->index,rinsta,eqdist, rinsta-eqdist, (-1.0f * _k ) * (rinsta-eqdist)/rinsta, force.x,force.y,force.z,energy);
-                    //printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
+//                    printf("@@@: %f %f \n",rinsta,(-1.0f * _k ) * (rinsta-eqdist)/rinsta);
                 }
                 return energy;
             }

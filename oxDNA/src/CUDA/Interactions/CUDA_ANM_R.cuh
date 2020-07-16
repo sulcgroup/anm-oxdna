@@ -1,46 +1,4 @@
-/* System constants */
-/*
-__constant__ int MD_N[1];
-__constant__ int MD_n_forces[1];
-
-__constant__ float MD_hb_multi[1];
-__constant__ float MD_F1_A[2];
-__constant__ float MD_F1_RC[2];
-__constant__ float MD_F1_R0[2];
-__constant__ float MD_F1_BLOW[2];
-__constant__ float MD_F1_BHIGH[2];
-__constant__ float MD_F1_RLOW[2];
-__constant__ float MD_F1_RHIGH[2];
-__constant__ float MD_F1_RCLOW[2];
-__constant__ float MD_F1_RCHIGH[2];
-// 50 = 2 * 5 * 5
-__constant__ float MD_F1_EPS[50];
-__constant__ float MD_F1_SHIFT[50];
-
-__constant__ float MD_F2_K[2];
-__constant__ float MD_F2_RC[2];
-__constant__ float MD_F2_R0[2];
-__constant__ float MD_F2_BLOW[2];
-__constant__ float MD_F2_RLOW[2];
-__constant__ float MD_F2_RCLOW[2];
-__constant__ float MD_F2_BHIGH[2];
-__constant__ float MD_F2_RCHIGH[2];
-__constant__ float MD_F2_RHIGH[2];
-
-__constant__ float MD_F5_PHI_A[4];
-__constant__ float MD_F5_PHI_B[4];
-__constant__ float MD_F5_PHI_XC[4];
-__constant__ float MD_F5_PHI_XS[4];
-
-__constant__ float MD_dh_RC[1];
-__constant__ float MD_dh_RHIGH[1];
-__constant__ float MD_dh_prefactor[1];
-__constant__ float MD_dh_B[1];
-__constant__ float MD_dh_minus_kappa[1];
-__constant__ bool MD_dh_half_charged_ends[1];
-*/
-
-//added constants for DNANM
+//added constants for RNANM
 __constant__ float MD_pro_backbone_sigma;
 __constant__ float MD_pro_backbone_rstar;
 __constant__ float MD_pro_backbone_b;
@@ -57,8 +15,9 @@ __constant__ float MD_pro_b;
 __constant__ float MD_pro_rc;
 
 __constant__ int _npro;
-__constant__ int _ndna;
+__constant__ int _nrna;
 __constant__ int _offset;
+
 
 #include "../cuda_utils/CUDA_lr_common.cuh"
 
@@ -89,7 +48,7 @@ __forceinline__ __device__ void _excluded_volume_quart(const number4 &r, number4
 }
 
 template <typename number, typename number4>
-__global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *orientations, number4 *forces, number4 *torques, edge_bond *edge_list, int n_edges, LR_bonds *bonds, bool grooving, bool use_debye_huckel, bool use_oxDNA2_coaxial_stacking, CUDABox<number, number4> *box) {
+__global__ void rnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *orientations, number4 *forces, number4 *torques, edge_bond *edge_list, int n_edges,LR_bonds *bonds, bool average,bool use_debye_huckel, bool mismatch_repulsion, CUDABox<number, number4> *box) {
     if (IND >= n_edges) return;
 
     number4 dF = make_number4 < number, number4>(0, 0, 0, 0);
@@ -132,10 +91,8 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
 
     } else if (pbtype >= 0 && qbtype < 0) {
         //Protein-DNA Excluded Volume **NONBONDED
-        number4 ppos_back;
-        if(grooving) ppos_back = POS_MM_BACK1 * a1 + POS_MM_BACK2 * a2;
-        else ppos_back = POS_BACK * a1;
-        number4 ppos_base = POS_BASE * a1;
+        number4 ppos_back = a1 * rnamodel.RNA_POS_BACK_a1 + a2 * rnamodel.RNA_POS_BACK_a2 + a3 * rnamodel.RNA_POS_BACK_a3;
+        number4 ppos_base = rnamodel.RNA_POS_BASE * a1;
 
         number4 r = box->minimum_image(ppos, qpos);
         number4 rback = r - ppos_back;
@@ -166,14 +123,10 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         //Add force to q index
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f){
             LR_atomicAddXYZ(&(forces[to_index]), dF);
-//            printf("p %d q %d f.x %.4f f.y %.4f f.z %.4f\n", from_index, to_index, -dF.x, -dF.y, -dF.z);
         }
     } else if(pbtype < 0 && qbtype >= 0) {
-        number4 qpos_back;
-        if(grooving) qpos_back = POS_MM_BACK1 * b1 + POS_MM_BACK2 * b2;
-        else qpos_back = POS_BACK * b1;
-        number4 qpos_base = POS_BASE * b1;
-        number4 qpos_stack = POS_STACK * b1;
+        number4 qpos_back = b1 * rnamodel.RNA_POS_BACK_a1 + b2 * rnamodel.RNA_POS_BACK_a2 + b3 * rnamodel.RNA_POS_BACK_a3;
+        number4 qpos_base = rnamodel.RNA_POS_BASE * b1;
 
         int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
@@ -205,14 +158,12 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
         //add forces to p index
         if ((dF.x * dF.x + dF.y * dF.y + dF.z * dF.z + dF.w * dF.w) > (number) 0.f) {
             LR_atomicAddXYZ(&(forces[from_index]), dF);
-//            printf("p %d q %d f.x %.4f f.y %.4f f.z %.4f\n", from_index, to_index, -dF.x, -dF.y, -dF.z);
         }
     } else if(pbtype >= 0 && qbtype >= 0){
         LR_bonds pbonds = bonds[b.from];
         LR_bonds qbonds = bonds[b.to];
-        _particle_particle_interaction<number, number4>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving,
-                                                        use_debye_huckel, use_oxDNA2_coaxial_stacking, pbonds, qbonds,
-                                                        b.from, b.to, box);
+        _particle_particle_interaction<number, number4>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, average,
+                                                        use_debye_huckel, mismatch_repulsion, pbonds, qbonds, box);
 
 
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
@@ -244,7 +195,7 @@ __global__ void dnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
 
 // bonded interactions for edge-based approach
 template <typename number, typename number4>
-__global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_spring_eqdist, number *_d_spring_potential) {
+__global__ void rnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool average, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_spring_eqdist, number *_d_spring_potential) {
     if(IND >= MD_N[0]) return;
 
     number4 F0, T0;
@@ -276,8 +227,8 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             number4 b1, b2, b3;
             get_vectors_from_quat<number, number4>(orientations[bs.n3], b1, b2, b3);
 
-            _bonded_part<number, number4, true>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving,
-                                                use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
+            _bonded_part<number, number4, true>(ppos, a1, a2, a3,
+                                                qpos, b1, b2, b3, dF, dT, average,use_mbf,  mbf_xmax,  mbf_finf);
         }
         if(bs.n5 != P_INVALID) {
             number4 qpos = poss[bs.n5];
@@ -285,8 +236,8 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             number4 b1, b2, b3;
             get_vectors_from_quat<number, number4>(orientations[bs.n5], b1, b2, b3);
 
-            _bonded_part<number, number4, false>(qpos, b1, b2, b3, ppos, a1, a2, a3, dF, dT, grooving,
-                                                 use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
+            _bonded_part<number, number4, false>(qpos, b1, b2, b3,
+                                                 ppos, a1, a2, a3, dF, dT, average,use_mbf,  mbf_xmax,  mbf_finf);
         }
 
         forces[IND] = (dF + F0);
@@ -294,7 +245,6 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
 
         torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
     } else{
-//        printf("p %d btype %d\n", IND, pbtype);
         number4 ftotal = make_number4<number, number4>(0,0,0,0);
         for(int i = _npro*(IND - _offset); i < _npro*(IND - _offset)+_npro; i++){
             int qindex = i - _npro*(IND - _offset) +_offset;
@@ -303,24 +253,19 @@ __global__ void dnanm_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
                 number4 qpos = poss[qindex];
                 number4 r = box->minimum_image(ppos, qpos);
 
-                    number d = _module<number, number4>(r);
-                    number gamma = _d_spring_potential[i];
+                number d = _module<number, number4>(r);
+                number gamma = _d_spring_potential[i];
 
-                    number fmod = (-1.0f * gamma) * (d - eqdist) / d;
+                number fmod = (-1.0f * gamma) * (d - eqdist) / d;
 
-                    dF = fmod*r;
-                    dF.w = -0.5f * gamma * SQR(d-eqdist);
-                    dF.w *= 0.5f;
+                dF = fmod*r;
+                dF.w = -0.5f * gamma * SQR(d-eqdist);
+                dF.w *= 0.5f;
 
                 ftotal -= dF;
-    //                if(IND == 217 && qindex == 550) {
-//                printf("p %d q %d g %.2f d %.6f ro %.2f df.x %.8f, df.y %.8f, df.z %.8f p.x %.8f p.y %.8f p.z %.8f q.x %.8f q.y %.8f q.z %.8f\n",
-//                       IND, qindex, gamma, d, eqdist, dF.x, dF.y, dF.z, forces[IND].x, forces[IND].y, forces[IND].z,
-//                       forces[qindex].x,forces[qindex].y, forces[qindex].z);
             };
         }
+
         LR_atomicAddXYZ(&(forces[IND]), ftotal);
-        //printf("IND %d, f.x %.6f, f.y %.6f, f.z %.6f\n", IND, forces[IND].x, forces[IND].y, forces[IND].z);
     }
 }
-
