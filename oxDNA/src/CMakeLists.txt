@@ -112,6 +112,7 @@ SET(interactions_SOURCES
 	Interactions/DNAInteraction_relax2.cpp
 	Interactions/DNANMInteraction.cpp
 	Interactions/ACInteraction.cpp
+	Interactions/ACTInteraction.cpp
 	Interactions/CustomInteraction.cpp
 	Interactions/InteractionFactory.cpp
 )

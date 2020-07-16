@@ -30,6 +30,7 @@
 #include "TEPInteraction.h"
 #include "JordanInteraction.h"
 #include "ACInteraction.h"
+#include "ACTInteraction.h"
 #include "DNANMInteraction.h"
 
 InteractionFactory::InteractionFactory() {
@@ -82,6 +83,7 @@ IBaseInteraction<number> *InteractionFactory::make_interaction(input_file &inp) 
 	else if(inter_type.compare("Jordan") == 0) return new JordanInteraction<number>();
 	else if(inter_type.compare("AC") == 0) return new ACInteraction<number>();
 	else if(inter_type.compare("DNANM") == 0) return new DNANMInteraction<number>();
+	else if(inter_type.compare("ACT") == 0) return new ACTInteraction<number>();
 	else {
 		IBaseInteraction<number> *res = PluginManager::instance()->get_interaction<number>(inter_type);
 		if(res == NULL) throw oxDNAException ("Interaction '%s' not found. Aborting", inter_type.c_str());
