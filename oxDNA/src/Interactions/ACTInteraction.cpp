@@ -20,8 +20,7 @@ ACTInteraction<number>::ACTInteraction(){
 }
 
 template<typename number>
-ACTInteraction<number>::~ACTInteraction() {
-}
+ACTInteraction<number>::~ACTInteraction() = default;
 
 template<typename number>
 void ACTInteraction<number>::get_settings(input_file &inp) {
@@ -264,7 +263,8 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
     double b0 = get<1>(ang_params);
     double c0 = get<2>(ang_params);
 
-    LR_vector<number> &r_unit = r->normalize();
+    LR_vector<number> &r_unit = *r;
+    r_unit.normalize();
     LR_vector<number> &a1 = p->orientationT.v1;
     LR_vector<number> &b1 = q->orientationT.v1;
 
@@ -284,8 +284,6 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
         p->torque += energy*(o1/_sigma_bond_sqr * r_unit.cross(a1) + torq_piece);
         q->torque += energy*(o2/_sigma_bond_sqr * r_unit.cross(b1) - torq_piece);
     }
-
-    if(update_forces && energy == (number) 0) force.x = force.y = force.z = (number) 0;
 
     return energy;
 }

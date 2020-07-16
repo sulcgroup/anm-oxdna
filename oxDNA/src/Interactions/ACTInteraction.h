@@ -10,6 +10,7 @@
 
 #include "BaseInteraction.h"
 #include "../Particles/ACTParticle.h"
+#include "ACInteraction.h"
 /**
  * @brief Handles (generalised) Anisotropic-Chain interactions between spheres of size .1573 simulation units
  *
@@ -23,7 +24,7 @@
  * none
  */
 template <typename number>
-class ACTInteraction: public ACTInteraction<number> {
+class ACTInteraction: public ACInteraction<number> {
 protected:
 
 //	map<pair<int, int>, double> _rknot; //eqdist of each bond of psuedobonds
@@ -54,16 +55,18 @@ public:
 	virtual void allocate_particles(BaseParticle<number> **particles, int N); //change to ACT particles
 	virtual void read_topology(int N, int *N_strands, BaseParticle<number> **particles); //change to ACT particles
 
-	virtual number pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r=NULL, bool update_forces=false);
-	virtual number pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r=NULL, bool update_forces=false);
-	virtual number pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r=NULL, bool update_forces=false);
+	virtual number pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
+	virtual number pair_interaction_bonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
+	virtual number pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 	//above 3 will need the most work
 
-	virtual number pair_interaction_term(int name, BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r=NULL, bool update_forces=false) {
+	virtual number pair_interaction_term(int name, BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 		return this->_pair_interaction_term_wrapper(this, name, p, q, r, update_forces);
 	}
 
 	virtual void check_input_sanity(BaseParticle<number> **particles, int N);  //Still don't think this does much
+	//New Potential
+    number _ang_pot(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 };
 //
 ////The Below function is currently unused
@@ -239,4 +242,4 @@ public:
 //}
 
 
-#endif /* ACINTERACTION_H_ */
+#endif /* ACTINTERACTION_H_ */
