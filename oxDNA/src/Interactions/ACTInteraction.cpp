@@ -277,15 +277,15 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
     LR_vector<number> &a1 = p->orientationT.v1;
     LR_vector<number> &b1 = q->orientationT.v1;
     //Vectors Are Correct
-    printf("Before \n");
-    printf("a1 %.4f, %.4f, %.4f \n", a1.x, a1.y, a1.z);
-    printf("b1 %.4f, %.4f, %.4f \n", b1.x, b1.y, b1.z);
+//    printf("Before \n");
+//    printf("a1 %.4f, %.4f, %.4f \n", a1.x, a1.y, a1.z);
+//    printf("b1 %.4f, %.4f, %.4f \n", b1.x, b1.y, b1.z);
 
     double o1 = a1*rij_unit-a0;
     double o2 = b1*rji_unit-b0;
     double o3 = a1*b1-c0;
     //Angles are correct
-    printf("angle a %.3f, angle b %.3f, angle c %.3f \n", o1, o2, o3);
+//    printf("angle a %.3f, angle b %.3f, angle c %.3f \n", o1, o2, o3);
 
 
 //    number energy = exp(SQR(o1)/(2*_sigma_bend_sqr) + SQR(o2)/(2*_sigma_bend_sqr) + SQR(o3)/(2*_sigma_tor_sqr));
@@ -297,7 +297,7 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
         LR_vector<number> force = ((a1*(o1/_sigma_bend_sqr)) - (b1*(o2/_sigma_bend_sqr))) * energy*-1;
 //        p->force -= force;
 //        q->force += force;
-        printf("F %.4f %.4f %.4f \n", force.x, force.y, force.z);
+//        printf("F %.4f %.4f %.4f \n", force.x, force.y, force.z);
 
 //        LR_vector<number> torq_piece = a1.cross(b1)*(o3/_sigma_tor_sqr);
 //        printf("Tor piece %.4f %.4f %.4f \n", torq_piece.x, torq_piece.y, torq_piece.z);
@@ -311,8 +311,8 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
         LR_vector<number> qtorq = ((rji_unit.cross(b1) * (o2/_sigma_bend_sqr)))*energy;
         LR_vector<number> ra = rij_unit.cross(a1);
         LR_vector<number> rb = rji_unit.cross(b1);
-        printf("pt %.4f %.4f %.4f qt %.4f %.4f %.4f \n", ptorq.x, ptorq.y, ptorq.z, qtorq.x, qtorq.y, qtorq.z);
-        printf("ra %.4f %.4f %.4f rb %.4f %.4f %.4f \n", ra.x, ra.y, ra.z, rb.x, rb.y, rb.z);
+//        printf("pt %.4f %.4f %.4f qt %.4f %.4f %.4f \n", ptorq.x, ptorq.y, ptorq.z, qtorq.x, qtorq.y, qtorq.z);
+//        printf("ra %.4f %.4f %.4f rb %.4f %.4f %.4f \n", ra.x, ra.y, ra.z, rb.x, rb.y, rb.z);
 
         //Inspired by the potentials in TEPInteraction
 //        LR_vector<number> ptorq2 = p->orientationT*ptorq;
