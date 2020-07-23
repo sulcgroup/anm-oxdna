@@ -166,6 +166,7 @@ SET(common_SOURCES
 	Particles/BaseParticle.cpp
 	Particles/DNANucleotide.cpp
 	Particles/ACParticle.cpp
+	Particles/ACTParticle.cpp
 	Particles/PatchyParticle.cpp
 	Particles/PatchyParticleDan.cpp
 	Particles/TSPParticle.cpp

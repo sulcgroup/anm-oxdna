@@ -12,7 +12,7 @@
 #include <set>
 
 /**
- * @brief A customisable particle. Used by ACInteraction.
+ * @brief A customisable particle. Used by ACTInteraction.
  */
 template<typename number>
 class ACTParticle: public BaseParticle<number> {
@@ -26,7 +26,7 @@ public:
     const static LR_vector<number> second_axis;
     const static LR_vector<number> third_axis;
 
-	virtual bool is_rigid_body() { return True; }
+	virtual bool is_rigid_body() { return true; }
 
 	virtual bool is_bonded(BaseParticle<number> *q);
 	virtual void add_bonded_neighbor(ACTParticle<number> *nn);

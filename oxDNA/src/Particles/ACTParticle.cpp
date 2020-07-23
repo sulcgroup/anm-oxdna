@@ -13,7 +13,6 @@ template <typename number> LR_vector<number> const ACTParticle<number>::third_ax
 
 template<typename number>
 ACTParticle<number>::ACTParticle() : BaseParticle<number>()  {
-
 }
 
 template<typename number>
