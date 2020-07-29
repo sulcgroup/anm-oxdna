@@ -100,7 +100,7 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
     *N_strands = N;
     int my_N, my_N_strands;
 
-    char line[2048];
+    char line[5120];
     std::ifstream topology;
     topology.open(this->_topology_filename, ios::in);
 
@@ -108,17 +108,17 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
         throw oxDNAException("Can't read topology file '%s'. Aborting",
                              this->_topology_filename);
 
-    topology.getline(line, 2040);
+    topology.getline(line, 5120);
     try{
         sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
-    } catch(...){
+    }catch(...){
         throw oxDNAException("Problem with header make sure the format is correct for DNANM Interaction");
     }
 
 
     int strand, i = 0;
     while (topology.good()) {
-        topology.getline(line, 2040);
+        topology.getline(line, 5120);
         if (strlen(line) == 0 || line[0] == '#')
             continue;
         if (i == N)
@@ -532,19 +532,19 @@ number DNANMInteraction<number>::_protein_spring(BaseParticle<number> *p, BasePa
         switch (interactiontype) {
             case 's': {
                 //Harmonic Spring Potential
-                if ((eqdist < 0.0) || (eqdist > 3.0))  //ensures r0 is less than 7 Angstrom cutoff and nonnegative
-                {
-                    if (keys.first + 1 != keys.second) {
-                        throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f",
-                                             q->index, p->index, eqdist);
-                    }
-                }
+                //if ((eqdist < 0.f) || (eqdist > 3.f))  //ensures r0 is nonnegative
+//                {
+//                    if (keys.first + 1 != keys.second) {
+//                        throw oxDNAException("No rknot or invalid rknot value for particle %d and %d rknot was %f",
+//                                             q->index, p->index, eqdist);
+//                    }
+//                }
                 number _k = _potential[keys].second; //stiffness of the spring
-                if ((_k == 0) || (_k < 0)) {
-                    throw oxDNAException(
-                            "No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f",
-                            p->index, q->index, _k);
-                }
+//                if ((_k == 0) || (_k < 0)) {
+//                    throw oxDNAException(
+//                            "No Spring Constant or invalid Spring Constant for particle %d and %d spring constant was %f",
+//                            p->index, q->index, _k);
+//                }
                 number rnorm = r->norm();
                 number rinsta = sqrt(rnorm);
                 number energy = 0.5 * _k * SQR((rinsta - eqdist));

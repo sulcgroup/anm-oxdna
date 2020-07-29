@@ -108,7 +108,7 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 	int my_N, my_N_strands;
 
-	char line[2048];
+	char line[5120];
 	std::ifstream topology;
 	topology.open(this->_topology_filename, ios::in);
 
@@ -116,14 +116,14 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 		throw oxDNAException("Can't read topology file '%s'. Aborting",
 				this->_topology_filename);
 
-	topology.getline(line, 2040);
+	topology.getline(line, 5120);
 
 	sscanf(line, "%d %d\n", &my_N, &my_N_strands);
 
-	char aminoacid[2040];
+	char aminoacid[256];
 	int strand, i = 0;
 	while (topology.good()) {
-		topology.getline(line, 2040);
+		topology.getline(line, 5120);
 		if (strlen(line) == 0 || line[0] == '#')
 			continue;
 		if (i == N)

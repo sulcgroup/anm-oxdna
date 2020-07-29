@@ -96,7 +96,7 @@ void ACTInteraction<number>::init() {
     this->_rc = 0.352894;
 
     //Angular Constants
-    _sigma_bend_sqr = 0.50f;
+    _sigma_bend_sqr = 5.00f;
     _sigma_tor_sqr = 0.50f;
 }
 
@@ -259,10 +259,11 @@ void ACTInteraction<number>::check_input_sanity(BaseParticle<number> **particles
 template<typename number>
 number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
     // Get Angular Parameters
-    tuple<double, double, double> ang_params = _ang_vals[p->index];
+    tuple<double, double, double> &ang_params = _ang_vals[p->index];
     double a0 = get<0>(ang_params);
     double b0 = get<1>(ang_params);
     double c0 = get<2>(ang_params);
+    number &_k = _sigma_bend_sqr;
     //Angles Successfully Imported
 //    printf("a0 %.4f, b0 %.4f, c0 %.4f", a0, b0, c0);
 //    printf("Particles p %d, q %d \n", p->index, q->index);
@@ -281,8 +282,8 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
 //    printf("a1 %.4f, %.4f, %.4f \n", a1.x, a1.y, a1.z);
 //    printf("b1 %.4f, %.4f, %.4f \n", b1.x, b1.y, b1.z);
 
-    double o1 = a1*rij_unit-a0;
-    double o2 = b1*rji_unit-b0;
+    double o1 = rij_unit*a1-a0;
+    double o2 = rji_unit*b1-b0;
     double o3 = a1*b1-c0;
     //Angles are correct
 //    printf("angle a %.3f, angle b %.3f, angle c %.3f \n", o1, o2, o3);
@@ -290,13 +291,18 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
 
 //    number energy = exp(SQR(o1)/(2*_sigma_bend_sqr) + SQR(o2)/(2*_sigma_bend_sqr) + SQR(o3)/(2*_sigma_tor_sqr));
     //No Torsion Potential
-    number energy = exp(SQR(o1)/(2*_sigma_bend_sqr) + SQR(o2)/(2*_sigma_bend_sqr));
-//    printf("energy %.4f", energy);
+    number energy = _k/2 * (SQR(o1) + SQR(o2));
+//    printf("energy %.4f\n", energy);
 
     if(update_forces){
-        LR_vector<number> force = ((a1*(o1/_sigma_bend_sqr)) - (b1*(o2/_sigma_bend_sqr))) * energy*-1;
-//        p->force -= force;
-//        q->force += force;
+        LR_vector<number> force = b1*_k*o2 - a1*_k*o1;
+        p->force -= force;
+        q->force += force;
+//        LR_vector<number> fa = a1*_k*o1;
+//        LR_vector<number> fb = -b1*_k*o2;
+//
+//        p->force += fa;
+//        q->force -= fb;
 //        printf("F %.4f %.4f %.4f \n", force.x, force.y, force.z);
 
 //        LR_vector<number> torq_piece = a1.cross(b1)*(o3/_sigma_tor_sqr);
@@ -307,23 +313,79 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
 //        LR_vector<number> ptorq = ((a1.cross(rij_unit) * (o1/_sigma_bend_sqr)))*energy;
 //        LR_vector<number> qtorq = ((b1.cross(rji_unit) * (o2/_sigma_bend_sqr)))*energy;
 //  NO Torsion version
-        LR_vector<number> ptorq = ((rij_unit.cross(a1) * (o1/_sigma_bend_sqr)))*energy;
-        LR_vector<number> qtorq = ((rji_unit.cross(b1) * (o2/_sigma_bend_sqr)))*energy;
-        LR_vector<number> ra = rij_unit.cross(a1);
-        LR_vector<number> rb = rji_unit.cross(b1);
+        LR_vector<number> torq = -rij_unit.cross(a1) * o1 * _k + rji_unit.cross(b1) * o2 * _k;
+//        LR_vector<number> qtorq = -rji_unit.cross(a1) * o1 * _k + rji_unit.cross(b1) * o2 * _k;
+//        LR_vector<number> qtorq = rij_unit.cross(a1) * o1 * _k - rij_unit.cross(b1) * o2 * _k;
+//        p->torque -= torq;
+//        q->torque += torq;
+        LR_vector<number> ta = rij_unit.cross(a1) * o1 * _k;
+//        printf("ta %.4f %.4f %.4f \n", -ta.x, -ta.y, -ta.z);
+        LR_vector<number> tb = rji_unit.cross(b1) * o2 * _k;
+//        printf("tb %.4f %.4f %.4f \n", -tb.x, -tb.y, -tb.z);
+        p->torque += ta;
+        q->torque += tb;
 //        printf("pt %.4f %.4f %.4f qt %.4f %.4f %.4f \n", ptorq.x, ptorq.y, ptorq.z, qtorq.x, qtorq.y, qtorq.z);
-//        printf("ra %.4f %.4f %.4f rb %.4f %.4f %.4f \n", ra.x, ra.y, ra.z, rb.x, rb.y, rb.z);
+//        printf("ta %.4f %.4f %.4f tb %.4f %.4f %.4f \n", ta.x, ta.y, ta.z, tb.x, tb.y, tb.z);
 
         //Inspired by the potentials in TEPInteraction
 //        LR_vector<number> ptorq2 = p->orientationT*ptorq;
 //        LR_vector<number> qtorq2 = q->orientationT*qtorq;
-//        printf("pt*O %.4f %.4f %.4f qt*O %.4f %.4f %.4f \n", ptorq2.x, ptorq2.y, ptorq2.z, qtorq2.x, qtorq2.y, qtorq2.z);
-        p->torque += ptorq;
-        q->torque += qtorq;
+//        printf("pt %.4f %.4f %.4f qt %.4f %.4f %.4f \n", -torq.x, -torq.y, -torq.z, torq.x, torq.y, torq.z);
+
+
+
+
     }
 
     return energy;
 }
+
+//WORKING BENDING ONLY VERSION
+
+//template<typename number>
+//number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+//    // Get Angular Parameters
+//    tuple<double, double, double> &ang_params = _ang_vals[p->index];
+//    double a0 = get<0>(ang_params);
+//    double b0 = get<1>(ang_params);
+//    double c0 = get<2>(ang_params);
+//    number &_k = _sigma_bend_sqr;
+//
+//    LR_vector<number> &rij_unit = *r;
+//    rij_unit.normalize();
+//    LR_vector<number> rji_unit = rij_unit*-1.f;
+//
+//    LR_vector<number> &a1 = p->orientationT.v1;
+//    LR_vector<number> &b1 = q->orientationT.v1;
+//
+//    double o1 = rij_unit*a1-a0;
+//    double o2 = rji_unit*b1-b0;
+//    double o3 = a1*b1-c0;
+//
+//    number energy = _k/2 * (SQR(o1) + SQR(o2));
+//
+//    if(update_forces){
+//        LR_vector<number> force = b1*_k*o2 - a1*_k*o1;
+//
+//        p->force -= force;
+//        q->force += force;
+//
+//        LR_vector<number> ta = rij_unit.cross(a1) * o1 * _k;
+//        LR_vector<number> tb = rji_unit.cross(b1) * o2 * _k;
+//
+//        p->torque += ta;
+//        q->torque += tb;
+//    }
+//
+//    return energy;
+//}
+
+
+
+
+
+
+
 
 
 

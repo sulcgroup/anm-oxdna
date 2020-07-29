@@ -66,18 +66,18 @@ void RNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
     *N_strands = N;
     int my_N, my_N_strands;
 
-    char line[2048];
+    char line[5120];
     std::ifstream topology;
     topology.open(this->_topology_filename, ios::in);
 
     if (!topology.good()) throw oxDNAException("Can't read topology file '%s'. Aborting",this->_topology_filename);
 
-    topology.getline(line, 2040);
+    topology.getline(line, 5120);
     sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &nrna, &npro, &nrnas);
 
     int strand, i = 0;
     while (topology.good()) {
-        topology.getline(line, 2040);
+        topology.getline(line, 5120);
         if (strlen(line) == 0 || line[0] == '#')
             continue;
         if (i == N) throw oxDNAException("Too many particles found in the topology file (should be %d), aborting", N);

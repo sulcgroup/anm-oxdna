@@ -68,13 +68,10 @@ void MD_CPUBackend<number>::_first_step(llint curr_step) {
 			// update of the orientation
 			number norm = p->L.module();
 			LR_vector<number> LVersor(p->L/norm);
-//            printf("Particle %d, LVersor %.5f, %.5f, %.5f \n", p->index, LVersor.x, LVersor.y, LVersor.z);
-//			printf("Particle %d L Norm %.5f \n", p->index, norm);
 
 			number sintheta = sin(this->_dt*norm);
 			number costheta = cos(this->_dt*norm);
 			number olcos = 1. - costheta;
-//			printf("particle %d sin T %.7f, cos T %.7f, olcos T %.7f \n", p->index, sintheta, costheta, olcos);
 
 			number xyo = LVersor[0] * LVersor[1] * olcos;
 			number xzo = LVersor[0] * LVersor[2] * olcos;
@@ -86,13 +83,10 @@ void MD_CPUBackend<number>::_first_step(llint curr_step) {
 			LR_matrix<number> R(LVersor[0] * LVersor[0] * olcos + costheta, xyo - zsin, xzo + ysin,
 						xyo + zsin, LVersor[1] * LVersor[1] * olcos + costheta, yzo - xsin,
 						xzo - ysin, yzo + xsin, LVersor[2] * LVersor[2] * olcos + costheta);
-//            printf("particle %d xyo %.7f, xzo %.7f, yzo %.7f \n", p->index, xyo, xzo, yzo);
-//            printf("particle %d xsin %.7f, ysin %.7f, zsin %.7f \n", p->index, xsin, ysin, zsin);
-//            printf("Rotation Matrix Particle %d \n %.7f %.7f %.7f \n %.7f %.7f %.7f \n %.7f %.7f %.7f \n", p->index, R.v1.x, R.v1.y, R.v1.z, R.v2.x, R.v2.y, R.v2.z, R.v3.x, R.v3.y, R.v3.z);
 
 			p->orientation = p->orientation*R;
 			p->orientationT = p->orientation.get_transpose();
-			printf("Particle %d Orientation \n %.7f %.7f %.7f \n %.7f %.7f %.7f \n %.7f %.7f %.7f \n", p->index, p->orientationT.v1.x, p->orientationT.v1.y, p->orientationT.v1.z, p->orientationT.v2.x, p->orientationT.v2.y, p->orientationT.v2.z, p->orientationT.v3.x, p->orientationT.v3.y, p->orientationT.v3.z);
+//			printf("Particle %d Orientation \n %.7f %.7f %.7f \n %.7f %.7f %.7f \n %.7f %.7f %.7f \n", p->index, p->orientationT.v1.x, p->orientationT.v1.y, p->orientationT.v1.z, p->orientationT.v2.x, p->orientationT.v2.y, p->orientationT.v2.z, p->orientationT.v3.x, p->orientationT.v3.y, p->orientationT.v3.z);
 			p->set_positions();
 		}
 
