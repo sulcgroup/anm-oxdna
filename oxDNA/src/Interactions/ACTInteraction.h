@@ -28,10 +28,10 @@ class ACTInteraction: public ACInteraction<number> {
 protected:
 
 //	map<pair<int, int>, double> _rknot; //eqdist of each bond of psuedobonds
-    map<int, tuple <double, double, double> > _ang_vals; //eqdist of each bond of psuedobonds
+    map<int, vector <double> > _ang_vals; //eqdist of each bond of psuedobonds
 //	map<pair<int, int>, pair<char, double> > _potential; //switch to tell lj, FENE or spring as well as strength for each pair of particles
 //
-	number _sigma_bend_sqr, _sigma_tor_sqr;
+	number _k_bend, _k_tor;
 //
 //	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
 //	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
