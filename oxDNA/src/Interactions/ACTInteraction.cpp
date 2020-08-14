@@ -14,9 +14,9 @@
 
 template<typename number>
 ACTInteraction<number>::ACTInteraction(){
-	this->_int_map[this->SPRING_POTENTIAL] = &ACTInteraction<number>::_spring;
-	this->_int_map[this->EXC_VOL] = &ACTInteraction<number>::_exc_volume;
-    this->_int_map[ANGULAR_POTENTIAL] = &ACTInteraction<number>::_exc_volume; //change function to Angular Potential
+    this->_int_map[ANGULAR_POTENTIAL] = (number (ACInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &ACTInteraction<number>::_ang_pot;
+    this->_int_map[this->SPRING_POTENTIAL] = (number (ACInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &ACTInteraction<number>::_spring;
+    this->_int_map[this->EXC_VOL] = (number (ACInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &ACTInteraction<number>::_exc_volume;
 }
 
 template<typename number>
@@ -26,9 +26,35 @@ template<typename number>
 void ACTInteraction<number>::get_settings(input_file &inp) {
 	IBaseInteraction<number>::get_settings(inp);
 	char parameterfile[500];
-	getInputString(&inp, "PARFILE", parameterfile, 0);
+	float kb_tmp, kt_tmp;
+	getInputString(&inp, "parfile", parameterfile, 1);
+	getInputFloat(&inp, "bending_k", &kb_tmp, 0);
+	_k_bend = (number) kb_tmp;
 
-	//Addition of Reading Parameter File
+	getInputFloat(&inp, "torsion_k", &kt_tmp, 0);
+	_k_tor = (number) kt_tmp;
+
+	if(_k_bend < 0 || _k_tor < 0) throw oxDNAException("Invalid Bending or Torsion Constants");
+
+	//Checkers as Lambdas
+	auto valid_angles = [](double a, double b, double c, double d)
+    {
+        double anglemin = min({a, b, c, d});
+        double anglemax = max({a, b, c, d});
+	    if (anglemin < -1.0 || anglemax > 1.0){
+	        throw oxDNAException("Cos of Angle in Parameter File not in Valid bounds");
+	    }
+    };
+
+	auto valid_spring_params = [](int N, int x, int y, double d, char s, double k){
+	    if(x < 0 || x > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", x);
+	    if(y < 0 || y > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", y);
+	    if(d < 0) throw oxDNAException("Invalid Eq Distance %d in Parameter File", d);
+	    if(s != 's') throw oxDNAException("Potential Type %c Not Supported", s);
+	    if(k < 0) throw oxDNAException("Spring Constant %f Not Supported", k);
+	};
+
+	//Reading Parameter File
 	int key1, key2;
 	char potswitch;
 	double potential, dist;
@@ -37,14 +63,18 @@ void ACTInteraction<number>::get_settings(input_file &inp) {
 	fstream parameters;
 	parameters.open(parameterfile, ios::in);
 	getline (parameters,carbons);
+//	printf("Carbons %s", carbons.c_str());
+	int N = stoi(carbons);
 	if (parameters.is_open())
 	{
 		while (parameters.good())
 		{
 			parameters >> key1 >> key2 >> dist >> potswitch >> potential;
+			valid_spring_params(N, key1, key2, dist, potswitch, potential);
 			if (key2 - key1 == 1){
 			    //Angular Parameters
 			    parameters >> a0 >> b0 >> c0 >> d0;
+			    valid_angles(a0, b0, c0, d0);
 			    vector<double> angles {a0, b0, c0, d0};
                 _ang_vals[key1] = angles;
 
@@ -70,37 +100,8 @@ void ACTInteraction<number>::get_settings(input_file &inp) {
 
 template<typename number>
 void ACTInteraction<number>::init() {
-//    _sigma = 0.117f;
-//    _rstar= 0.087f;
-//    _b = 671492.f;
-//    _rc = 0.100161f;
-
-//    _sigma = 0.10f;
-//    _rstar= 0.08f;
-//    _b = 163352410.227f;
-//    _rc = 0.102644f;
-
-    //quartic parameters
-//    _sigma = 0.3f;
-//    _rstar= 0.23f;
-//    _b = 3614904.f;
-//    _rc = 0.298003f;
-
-    //large possible parameters
-//    _sigma = 0.55f;
-//    _rstar = 0.47f;
-//    _b = 80892.1;
-//    _rc = 0.588787;
-
-    //oof not those lets try these
-    this->_sigma = 0.35f;
-    this->_rstar = 0.349f;
-    this->_b = 306484596.421f;
-    this->_rc = 0.352894;
-
-    //Angular Constants
-    _k_bend = 20.0;
-    _k_tor = 10.0f;
+    //initialize Excluded Volume Parameters
+    ACInteraction<number>::init();
 }
 
 template<typename number>
@@ -121,7 +122,7 @@ void ACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<n
 
 	int my_N, my_N_strands;
 
-	char line[2048];
+	char line[5120];
 	std::ifstream topology;
 	topology.open(this->_topology_filename, ios::in);
 
@@ -129,11 +130,11 @@ void ACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<n
 		throw oxDNAException("Can't read topology file '%s'. Aborting",
 				this->_topology_filename);
 
-	topology.getline(line, 2040);
+	topology.getline(line, 5120);
 
 	sscanf(line, "%d %d\n", &my_N, &my_N_strands);
 
-	char aminoacid[2040];
+	char aminoacid[256];
 	int strand, i = 0;
 	while (topology.good()) {
 		topology.getline(line, 2040);
@@ -228,9 +229,8 @@ number ACTInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p, 
 
     ACTParticle<number> *cp = dynamic_cast< ACTParticle<number> * > (p);
     if ((*cp).ACTParticle<number>::is_bonded(q)){
-//        number energy = 0.f;
         number energy = this->_spring(p,q,r,update_forces);
-//        energy += this->_exc_volume(p,q,r,update_forces);
+        energy += this->_exc_volume(p,q,r,update_forces);
         if (q->index - p->index == 1) energy += _ang_pot(p, q, r, update_forces);
         return energy;
     } else {
@@ -260,6 +260,28 @@ void ACTInteraction<number>::check_input_sanity(BaseParticle<number> **particles
 }
 
 template<typename number>
+number ACTInteraction<number>::_spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
+    number eqdist;
+    pair <int,int> keys (std::min(p->index, q->index), std::max(p->index, q->index));
+    eqdist = this->_rknot[keys];
+    //Harmonic Spring Potential
+    number _k = this->_potential[keys].second; //stiffness of the spring
+    number rnorm = r->norm();
+    number rinsta = sqrt(rnorm);
+    number energy = 0.5 * _k * SQR(rinsta-eqdist);
+
+    if (update_forces) {
+        LR_vector<number> force(*r );
+        force *= (-1.0f * _k ) * (rinsta-eqdist)/rinsta;
+
+        p->force -= force;
+        q->force += force;
+    }
+
+    return energy;
+}
+
+template<typename number>
 number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
     // Get Angular Parameters
     vector<double> &ang_params = _ang_vals[p->index];
@@ -267,43 +289,36 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
     double &b0 = ang_params[1];
     double &c0 = ang_params[2];
     double &d0 = ang_params[3];
-    //Angles Successfully Imported
-//    printf("a0 %.4f, b0 %.4f, c0 %.4f", a0, b0, c0);
-//    printf("Particles p %d, q %d \n", p->index, q->index);
 
     LR_vector<number> rij_unit = *r;
     rij_unit.normalize();
     LR_vector<number> rji_unit = rij_unit*-1.f;
-    //rij and rji are correct
-//    printf("rij %.4f %.4f %.4f \n", rij_unit.x, rij_unit.y, rij_unit.z);
-//    printf("rji %.4f %.4f %.4f \n", rji_unit.x, rji_unit.y, rji_unit.z);
-    //r is normalized
+
     LR_vector<number> &a1 = p->orientationT.v1;
     LR_vector<number> &b1 = q->orientationT.v1;
     LR_vector<number> &a3 = p->orientationT.v3;
     LR_vector<number> &b3 = q->orientationT.v3;
-    //Vectors Are Correct
-//    printf("Before \n");
-//    printf("a1 %.4f, %.4f, %.4f \n", a1.x, a1.y, a1.z);
-//    printf("b1 %.4f, %.4f, %.4f \n", b1.x, b1.y, b1.z);
+//    printf("i %d j %d a1 %.4f %.4f %.4f\n", p->index, q->index, a1.x, a1.y, a1.z);
+//    printf("i %d j %d a3 %.4f %.4f %.4f\n", p->index, q->index, a3.x, a3.y, a3.z);
+//    printf("i %d j %d b1 %.4f %.4f %.4f\n", p->index, q->index, b1.x, b1.y, b1.z);
+//    printf("i %d j %d b3 %.4f %.4f %.4f\n", p->index, q->index, b3.x, b3.y, b3.z);
+
 
     double o1 = rij_unit*a1-a0;
     double o2 = rji_unit*b1-b0;
     double o3 = a1*b1-c0;
     double o4 = a3*b3-d0;
-    //Angles are correct
-//    printf("angle a %.3f, angle b %.3f, angle c %.3f \n", o1, o2, o3);
+
+//    double o1 = rij_unit*a1;
+//    double o2 = rji_unit*b1;
+//    double o3 = a1*b1;
+//    double o4 = a3*b3;
+//    printf("i %d j %d dANg = %.5f, %.5f, %.5f, %.5f \n", p->index, q->index, o1, o2, o3, o4);
 
 
-//    number energy = exp(SQR(o1)/(2*_sigma_bend_sqr) + SQR(o2)/(2*_sigma_bend_sqr) + SQR(o3)/(2*_sigma_tor_sqr));
-    //No Torsion Potential
-//    number energy = _k_bend/2 * (SQR(o1) + SQR(o2));
-    //Just Torsion Potential
-//    number energy = _k_tor/2 * (SQR(o3) + SQR(o4));
-
-    //FULL Version
+    //Torsion and Bending
     number energy = _k_bend/2 * (SQR(o1) + SQR(o2)) + _k_tor/2 * (SQR(o3) + SQR(o4));
-//    printf("energy %.4f\n", energy);
+//    printf("Angular i %d j %d E=%.5f \n", p->index, q->index, energy);
 
     if(update_forces){
 
@@ -314,7 +329,7 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
 
         LR_vector<number> ta = rij_unit.cross(a1) * o1 * _k_bend;
         LR_vector<number> tb = rji_unit.cross(b1) * o2 * _k_bend;
-//
+
         p->torque += p->orientationT*ta;
         q->torque += q->orientationT*tb;
 
@@ -322,51 +337,43 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
 
         p->torque += p->orientationT*-torsion;
         q->torque += q->orientationT*torsion;
-//        LR_vector<number> COAM = ta+tb+r->cross(force);
-//        LR_vector<number> rcross = r->cross(force);
-//        LR_vector<number> tsum = ta+tb;
-
-//        printf("Conservation of Angular Momenta %.2f %.2f %.24f\n", COAM.x, COAM.y, COAM.z);
-//        printf("RCross %.4f %.4f %.24f\n", rcross.x, rcross.y, rcross.z);
-//        printf("ta + tb %.4f %.4f %.24f\n", tsum.x, tsum.y, tsum.z);
-
-//        printf("ta %.4f %.4f %.4f \n", -ta.x, -ta.y, -ta.z);
-//        printf("tb %.4f %.4f %.4f \n", -tb.x, -tb.y, -tb.z);
-
-//        printf("pt %.4f %.4f %.4f qt %.4f %.4f %.4f \n", ptorq.x, ptorq.y, ptorq.z, qtorq.x, qtorq.y, qtorq.z);
-//        printf("ta %.4f %.4f %.4f tb %.4f %.4f %.4f \n", ta.x, ta.y, ta.z, tb.x, tb.y, tb.z);
-
     }
 
     return energy;
 }
 
-//WORKING BENDING ONLY VERSION
-
+////WORKING FULL VERSION -debug statements
 //template<typename number>
 //number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
 //    // Get Angular Parameters
-//    tuple<double, double, double> &ang_params = _ang_vals[p->index];
-//    double a0 = get<0>(ang_params);
-//    double b0 = get<1>(ang_params);
-//    double c0 = get<2>(ang_params);
-//    number &_k = _sigma_bend_sqr;
+//    vector<double> &ang_params = _ang_vals[p->index];
+//    double &a0 = ang_params[0];
+//    double &b0 = ang_params[1];
+//    double &c0 = ang_params[2];
+//    double &d0 = ang_params[3];
 //
-//    LR_vector<number> &rij_unit = *r;
+//    LR_vector<number> rij_unit = *r;
 //    rij_unit.normalize();
-//    LR_vector<number> rji_unit = rij_unit*-1.f;
+//    LR_vector<number> rji_unit = rij_unit * -1.f;
 //
 //    LR_vector<number> &a1 = p->orientationT.v1;
 //    LR_vector<number> &b1 = q->orientationT.v1;
+//    LR_vector<number> &a3 = p->orientationT.v3;
+//    LR_vector<number> &b3 = q->orientationT.v3;
 //
-//    double o1 = rij_unit*a1-a0;
-//    double o2 = rji_unit*b1-b0;
-//    double o3 = a1*b1-c0;
 //
-//    number energy = _k/2 * (SQR(o1) + SQR(o2));
+//    double o1 = rij_unit * a1 - a0;
+//    double o2 = rji_unit * b1 - b0;
+//    double o3 = a1 * b1 - c0;
+//    double o4 = a3 * b3 - d0;
 //
-//    if(update_forces){
-//        LR_vector<number> force = -(rji_unit.cross(rij_unit.cross(a1))*_k_bend*o1 - rji_unit.cross(rij_unit.cross(b1))*_k_bend*o2)/r->module();
+//    //Torsion and Bending
+//    number energy = _k_bend / 2 * (SQR(o1) + SQR(o2)) + _k_tor / 2 * (SQR(o3) + SQR(o4));
+//
+//    if (update_forces) {
+//
+//        LR_vector<number> force = -(rji_unit.cross(rij_unit.cross(a1)) * _k_bend * o1 -
+//                                    rji_unit.cross(rij_unit.cross(b1)) * _k_bend * o2) / r->module();
 //
 //        p->force -= force;
 //        q->force += force;
@@ -374,13 +381,17 @@ number ACTInteraction<number>::_ang_pot(BaseParticle<number> *p, BaseParticle<nu
 //        LR_vector<number> ta = rij_unit.cross(a1) * o1 * _k_bend;
 //        LR_vector<number> tb = rji_unit.cross(b1) * o2 * _k_bend;
 //
-//        p->torque += p->orientationT*ta;
-//        q->torque += q->orientationT*tb;
+//        p->torque += p->orientationT * ta;
+//        q->torque += q->orientationT * tb;
+//
+//        LR_vector<number> torsion = a1.cross(b1) * o3 * _k_tor + a3.cross(b3) * o4 * _k_tor;
+//
+//        p->torque += p->orientationT * -torsion;
+//        q->torque += q->orientationT * torsion;
 //    }
 //
 //    return energy;
 //}
-
 
 
 

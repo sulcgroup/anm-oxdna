@@ -32,7 +32,8 @@ protected:
 	number _rstar, _rc, _b, _sigma;
 
 	inline number _exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces);
-	inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
+
+    virtual inline number _spring(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces );
 	inline number _repulsive_lj(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
     inline number _repulsive_lj_quart(const LR_vector<number> &r, LR_vector<number> &force, bool update_forces);
 

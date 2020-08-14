@@ -34,6 +34,7 @@
 #include "DNANMInteraction.h"
 #include "DNANMInteraction_relax.h"
 #include "RNANMInteraction.h"
+#include "DNACTInteraction.h"
 
 InteractionFactory::InteractionFactory() {
 
@@ -88,6 +89,7 @@ IBaseInteraction<number> *InteractionFactory::make_interaction(input_file &inp) 
 	else if(inter_type.compare("ACT") == 0) return new ACTInteraction<number>();
 	else if(inter_type.compare("RNANM") == 0) return new RNANMInteraction<number>();
 	else if(inter_type.compare("DNANM_relax") == 0) return new DNANMInteraction_relax<number>();
+	else if(inter_type.compare("DNACT") == 0) return new DNACTInteraction<number>();
 	else {
 		IBaseInteraction<number> *res = PluginManager::instance()->get_interaction<number>(inter_type);
 		if(res == NULL) throw oxDNAException ("Interaction '%s' not found. Aborting", inter_type.c_str());

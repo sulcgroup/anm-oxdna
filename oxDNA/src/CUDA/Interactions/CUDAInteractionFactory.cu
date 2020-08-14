@@ -19,6 +19,7 @@
 #include "CUDARNAInteraction.h"
 #include "CUDADNANMInteraction.h"
 #include "CUDARNANMInteraction.h"
+#include "CUDADNACTInteraction.h"
 
 #include "../../Utilities/Utils.h"
 
@@ -44,6 +45,7 @@ CUDABaseInteraction<number, number4> *CUDAInteractionFactory::make_interaction(i
 	else if(inter_type.compare("TEP") == 0) return new CUDATEPInteraction<number, number4>();
 	else if(!inter_type.compare("DNANM")) return new CUDADNANMInteraction<number, number4>();
     else if(!inter_type.compare("RNANM")) return new CUDADNANMInteraction<number, number4>();
+    else if(!inter_type.compare("DNACT")) return new CUDADNACTInteraction<number, number4>();
 	else {
 		std::string cuda_name(inter_type);
 		cuda_name = "CUDA" + cuda_name;

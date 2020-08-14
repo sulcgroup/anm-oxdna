@@ -33,6 +33,7 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 	char parameterfile[500];
 	getInputString(&inp, "PARFILE", parameterfile, 0);
 
+
 	//Addition of Reading Parameter File for ACInteraction Only!
 	int key1, key2;
 	char potswitch;
