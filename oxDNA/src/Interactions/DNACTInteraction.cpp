@@ -328,8 +328,11 @@ number DNACTInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
             number energy = _protein_spring(p,q,r,update_forces);
             energy += _protein_exc_volume(p,q,r,update_forces);
             if (q->index - p->index == 1) energy += _protein_ang_pot(p, q, r, update_forces);
-            printf("pindex cpu %d F %.4f %.4f %.4f, T %.4f %.4f %.4f\n", p->index, p->force.x, p->force.y, p->force.z, p->torque.x, p->torque.y, p->torque.z);
-            printf("qindex cpu %d, F %.4f %.4f %.4f, T %.4f %.4f %.4f\n", q->index, q->force.x, q->force.y, q->force.z, q->torque.x, q->torque.y, q->torque.z);
+//            if (p->index == 2) {
+//                printf("pindex cpu %d F %.4f %.4f %.4f, T %.4f %.4f %.4f\n", p->index, p->force.x, p->force.y, p->force.z, p->torque.x, p->torque.y, p->torque.z);
+//            } else if (q->index ==2){
+//                printf("qindex cpu %d, F %.4f %.4f %.4f, T %.4f %.4f %.4f\n", q->index, q->force.x, q->force.y, q->force.z, q->torque.x, q->torque.y, q->torque.z);
+//            }
             return energy;
         } else{
             return 0.f;
@@ -574,6 +577,9 @@ number DNACTInteraction<number>::_protein_ang_pot(BaseParticle<number> *p, BaseP
     double o3 = a1 * b1 - c0;
     double o4 = a3 * b3 - d0;
 
+//    if (p->index == 2) printf("cpu p %d q %d Angles o1 %.4f o2 %.4f o3 %.4f o4 %.4f\n", p->index, q->index, o1, o2, o3, o4);
+//    if (q->index == 2) printf("cpu p %d q %d Angles o1 %.4f o2 %.4f o3 %.4f o4 %.4f\n", p->index, q->index, o1, o2, o3, o4);
+
     //Torsion and Bending
     number energy = _k_bend / 2 * (SQR(o1) + SQR(o2)) + _k_tor / 2 * (SQR(o3) + SQR(o4));
 
@@ -595,6 +601,16 @@ number DNACTInteraction<number>::_protein_ang_pot(BaseParticle<number> *p, BaseP
 
         p->torque += p->orientationT * -torsion;
         q->torque += q->orientationT * torsion;
+
+        LR_vector<number> TA = p->orientationT * (ta - torsion);
+        LR_vector<number> TB = q->orientationT * (tb + torsion);
+
+//        if (p->index ==2){
+//            printf("p2 Angular F %.4f %.4f %.4f TA %.4f %.4f %.4f\n", -force.x, -force.y, -force.z, TA.x, TA.y, TA.z);
+//        } else if (q->index ==2){
+//            printf("q2 Angular F %.4f %.4f %.4f TB %.4f %.4f %.4f\n", force.x, force.y, force.z, TB.x, TB.y, TB.z);
+//        }
+
     }
 
     return energy;
