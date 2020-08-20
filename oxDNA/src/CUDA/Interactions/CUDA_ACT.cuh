@@ -327,11 +327,13 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
         torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
     } else{
         //Protein Particles
+        LR_bonds bs = bonds[IND];
+//        printf("n3 %d p %d n5 %d\n", bs.n3, IND, bs.n5);
         int pindex = IND - _offset;
+
         int n3, n5 = -1;
-        if(pindex != 0) n3 = pindex-1;
-        if(pindex != _npro-1) n5 = pindex+1;
-        //TODO: Change to using _h_bonds or _d_bonds
+        if(bs.n3 != -1) n3 = bs.n3 - _offset;
+        if(bs.n5 != -1) n5 = bs.n5 - _offset;
 
         number4 p1, p2, p3;
         get_vectors_from_quat<number, number4>(orientations[IND], p1, p2, p3);

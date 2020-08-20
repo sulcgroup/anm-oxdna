@@ -205,6 +205,11 @@ void DNACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 
             ACTParticle<number> *p = dynamic_cast< ACTParticle<number> * > (particles[i]);
 
+            if (nside < 0) p->n3 = P_VIRTUAL;
+            else p->n3 = particles[nside];
+            if (cside < 0) p->n5 = P_VIRTUAL;
+            else p->n5 = particles[cside];
+
             if (strlen(aminoacid) == 1) {
                 p->btype = Utils::decode_aa(aminoacid[0]);
             }
