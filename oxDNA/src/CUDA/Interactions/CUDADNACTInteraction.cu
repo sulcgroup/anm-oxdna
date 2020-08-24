@@ -54,43 +54,43 @@ void CUDADNACTInteraction<number, number4>::get_settings(input_file &inp) {
     if (!getInputString(&inp, "topology", this->_topology_filename, 0) == KEY_FOUND){
         throw oxDNAException("Key 'topology_file' not found.");
     }
-    if (getInputString(&inp, "interaction_type", inter_type, 0) == KEY_FOUND){
-        if (inter_type.compare("DNACT") == 0) {
-            _use_debye_huckel = true;
-            _use_oxDNA2_coaxial_stacking = true;
-            _use_oxDNA2_FENE = true;
-//            // copy-pasted from the DNA2Interaction constructor
-//            this->_int_map[DEBYE_HUCKEL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNA2Interaction<number>::_debye_huckel;
-//            // I assume these are needed. I think the interaction map is used for when the observables want to print energy
-//            //this->_int_map[this->BACKBONE] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNAInteraction<number>::_backbone;
-//            this->_int_map[this->COAXIAL_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNA2Interaction<number>::_coaxial_stacking;
-//            //Protein Methods Function Pointers
-//            this->_int_map[SPRING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_protein_spring;
-//            this->_int_map[PRO_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_protein_exc_volume;
-//            //Protein-DNA Function Pointers
-//            this->_int_map[PRO_DNA_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNANMInteraction<number>::_protein_dna_exc_volume;
-//            // we don't need the F4_... terms as the macros are used in the CUDA_DNA.cuh file; this doesn't apply for the F2_K term
-            this->F2_K[1] = CXST_K_OXDNA2;
-            _debye_huckel_half_charged_ends = true;
-            this->_grooving = true;
-            // end copy from DNA2Interaction
 
-            // copied from DNA2Interaction::get_settings() (CPU), the least bad way of doing things
-            getInputNumber(&inp, "salt_concentration", &_salt_concentration, 1);
-            getInputBool(&inp, "dh_half_charged_ends", &_debye_huckel_half_charged_ends, 0);
+    _use_debye_huckel = true;
+    _use_oxDNA2_coaxial_stacking = true;
+    _use_oxDNA2_FENE = true;
+    // copy-pasted from the DNA2Interaction constructor
+    this->_int_map[this->DEBYE_HUCKEL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_debye_huckel;
+    // I assume these are needed. I think the interaction map is used for when the observables want to print energy
+    //this->_int_map[this->BACKBONE] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNAInteraction<number>::_backbone;
+    this->_int_map[this->COAXIAL_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_coaxial_stacking;
+    //Protein Methods Function Pointers
+    this->_int_map[this->SPRING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_spring;
+    this->_int_map[this->PRO_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_exc_volume;
+    this->_int_map[this->PRO_ANG_POT] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_ang_pot;
+    //Protein-DNA Function Pointers
+    this->_int_map[this->PRO_DNA_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_dna_exc_volume;
+    // we don't need the F4_... terms as the macros are used in the CUDA_DNA.cuh file; this doesn't apply for the F2_K term
+    this->F2_K[1] = CXST_K_OXDNA2;
+    _debye_huckel_half_charged_ends = true;
+    this->_grooving = true;
+    // end copy from DNA2Interaction
 
-            // lambda-factor (the dh length at T = 300K, I = 1.0)
-            _debye_huckel_lambdafactor = 0.3616455f;
-            getInputFloat(&inp, "dh_lambda", &_debye_huckel_lambdafactor, 0);
+    // copied from DNA2Interaction::get_settings() (CPU), the least bad way of doing things
+    getInputNumber(&inp, "salt_concentration", &_salt_concentration, 1);
+    getInputBool(&inp, "dh_half_charged_ends", &_debye_huckel_half_charged_ends, 0);
 
-            // the prefactor to the Debye-Huckel term
-            _debye_huckel_prefactor = 0.0543f;
-            getInputFloat(&inp, "dh_strength", &_debye_huckel_prefactor, 0);
-            // End copy from DNA2Interaction
+    // lambda-factor (the dh length at T = 300K, I = 1.0)
+    _debye_huckel_lambdafactor = 0.3616455f;
+    getInputFloat(&inp, "dh_lambda", &_debye_huckel_lambdafactor, 0);
 
-        }
-    }
-    DNACTInteraction<number>::get_settings(inp);
+    // the prefactor to the Debye-Huckel term
+    _debye_huckel_prefactor = 0.0543f;
+    getInputFloat(&inp, "dh_strength", &_debye_huckel_prefactor, 0);
+    // End copy from DNA2Interaction
+
+//    this->DNACTInteraction<number>::init();
+    this->DNACTInteraction<number>::get_settings(inp);
+
 }
 
 template<typename number, typename number4>

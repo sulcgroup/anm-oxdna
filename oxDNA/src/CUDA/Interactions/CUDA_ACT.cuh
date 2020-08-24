@@ -15,6 +15,8 @@ __constant__ float MD_pro_rstar;
 __constant__ float MD_pro_b;
 __constant__ float MD_pro_rc;
 
+__constant__ float MD_EXCL_EPS;
+
 __constant__ float _kb;
 __constant__ float _kt;
 
@@ -31,52 +33,59 @@ __forceinline__ __device__ void _ang_pot(number4 &dF, number4 &dT, const number4
     number4 rij = make_number4<number, number4>(r.x/_module<number, number4>(r), r.y/_module<number>(r), r.z/_module<number>(r), 0.);
     number4 rji = (double) -1. * rij;
 
-
-
-    number o1 = CUDA_DOT(rij, a1) - ang_params.x;
-    number o2 = CUDA_DOT(rji, b1) - ang_params.y;
-    number o3 = CUDA_DOT(a1, b1) - ang_params.z;
-    number o4 = CUDA_DOT(a3, b3) - ang_params.w;
-//    printf("p %d Angles o1 %.4f o2 %.4f o3 %.4f o4 %.4f\n", IND, o1, o2, o3, o4);
-//    printf("p %d q %d a1 %.4f %.4f %.4f b1 %.4f %.4f %.4f\n", IND - 1, IND, a1.x, a1.y, a1.z, b1.x, b1.y, b1.z);
-//    if(IND == 2) {
-//        if (neighbor == 3)
-//            printf("p %d Angles o1 %.4f o2 %.4f o3 %.4f o4 %.4f\n", IND, o1, o2, o3, o4);
-//        if (neighbor == 5)
-//            printf("p %d Angles o1 %.4f o2 %.4f o3 %.4f o4 %.4f\n", IND, o1, o2, o3, o4);
-//    }
+    number o1 = (CUDA_DOT(rij, a1)) - ang_params.x;
+    number o2 = (CUDA_DOT(rji, b1)) - ang_params.y;
+    number o3 = (CUDA_DOT(a1, b1)) - ang_params.z;
+    number o4 = (CUDA_DOT(a3, b3)) - ang_params.w;
     number energy = _kb / 2 * (SQR(o1) + SQR(o2)) + _kt / 2 * (SQR(o3) + SQR(o4));
 
     if (neighbor == 5) {
-        number4 F = -(_cross<number, number4>(rji, _cross<number, number4>(rij, a1)) * _kb * o1 -
-                _cross<number, number4>(rji, _cross<number, number4>(rij, b1)) * _kb * o2) /
+        number4 F = -1*(((_cross<number, number4>(rji, _cross<number, number4>(rij, a1))) * _kb * o1) -
+                (_cross<number, number4>(rji, _cross<number, number4>(rij, b1))) * _kb * o2) /
               _module<number, number4>(r);
 
         dF -= F;
 
         dF.w = 0.5*energy;
 
-        number4 dTa = (_cross<number, number4>(rij, a1) * o1 *_kb) - (_cross<number, number4>(a1, b1) * o3 * _kt +
-                                                                    _cross<number, number4>(a3, b3) * o4 * _kt);
+        number4 dTa = (_cross<number, number4>(rij, a1) * o1 *_kb) - ((_cross<number, number4>(a1, b1) * o3 * _kt) +
+                                                                      (_cross<number, number4>(a3, b3) * o4 * _kt));
 
         dT += dTa;
-//        printf("p %d q %d Angles o1 %.4f o2 %.4f o3 %.4f o4 %.4f\n", IND, IND+1, o1, o2, o3, o4);
+
+        //Debugging
+        /*if(IND==104){
+            printf("Neigh 5 p=%d\n", IND);
+            printf("p %d q %d E= %.5f Angles o1 %.7f o2 %.7f o3 %.7f o4 %.7f\n", IND, IND +1, energy, o1, o2, o3, o4);
+            printf("rij %.7f %.7f %.7f rji %.7f %.7f %.7f\n", rij.x, rij.y, rij.z, rji.x, rji.y, rji.z);
+            printf("3 a1 %.7f %.7f %.7f b1 %.7f %.7f %.7f a3 %.7f %.7f %.7f b3 %.7f %.7f %.7f\n", a1.x, a1.y, a1.z,
+                   b1.x, b1.y, b1.z, a3.x, a3.y, a3.z, b3.x, b3.y, b3.z);
+            printf("force %.5f %.5f %.5f torque %.5f %.5f %.5f\n", dF.x, dF.y, dF.z, dT.x, dT.y, dT.z);
+        }*/
     }
 
     if (neighbor == 3) {
-        number4 F = -(_cross<number, number4>(rji, _cross<number, number4>(rij, a1)) * _kb * o1 -
-                _cross<number, number4>(rji, _cross<number, number4>(rij, b1)) * _kb * o2) /
-              _module<number, number4>(r);
+        number4 F = -1*(((_cross<number, number4>(rji, _cross<number, number4>(rij, a1))) * _kb * o1) -
+                        (_cross<number, number4>(rji, _cross<number, number4>(rij, b1))) * _kb * o2) /
+                    _module<number, number4>(r);
 
         dF += F;
 
         dF.w = 0.5*energy;
 
-        number4 dTb = (_cross<number, number4>(rji, b1) * o2 *_kb) + (_cross<number, number4>(a1, b1) * o3 * _kt +
-                                                                    _cross<number, number4>(a3, b3) * o4 * _kt);
+        number4 dTb = (_cross<number, number4>(rji, b1) * o2 *_kb) + ((_cross<number, number4>(a1, b1) * o3 * _kt) +
+                                                                      (_cross<number, number4>(a3, b3) * o4 * _kt));
 
         dT += dTb;
-//        printf("p %d q %d Angles o1 %.4f o2 %.4f o3 %.4f o4 %.4f\n", IND, IND-1, o1, o2, o3, o4);
+        //Debugging
+        /*if(IND==104){
+            printf("Neigh 3 p=%d\n", IND);
+            printf("p %d q %d E= %.5f Angles o1 %.7f o2 %.7f o3 %.7f o4 %.7f\n", IND, IND - 1, energy, o1, o2, o3, o4);
+            printf("rij %.7f %.7f %.7f rji %.7f %.7f %.7f\n", rij.x, rij.y, rij.z, rji.x, rji.y, rji.z);
+            printf("3 a1 %.7f %.7f %.7f b1 %.7f %.7f %.7f a3 %.7f %.7f %.7f b3 %.7f %.7f %.7f\n", a1.x, a1.y, a1.z,
+                   b1.x, b1.y, b1.z, a3.x, a3.y, a3.z, b3.x, b3.y, b3.z);
+            printf("force %.5f %.5f %.5f torque %.5f %.5f %.5f\n", dF.x, dF.y, dF.z, dT.x, dT.y, dT.z);
+        }*/
     }
 
 }
@@ -363,6 +372,10 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             //Torque is stored in dT
             ftotal += dF;
             ttotal += dT;
+
+            //Excluded Volume Bonded n3 Neighbor (Since bonded neighs not included in edge list)
+            _excluded_volume_quart(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
+            ftotal -= dF;
         }
 
 //        if(IND == 2) printf("CUDA q2 Angular F %.4f %.4f %.4f T %.4f %.4f %.4f %.4f\n", dF.x, dF.y, dF.z, dT.x, dT.y, dT.z, dT.w);
@@ -385,9 +398,14 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             //Torque is stored in dT
             ftotal += dF;
             ttotal += dT;
+
+            //Excluded Volume Bonded Neighbor n5 (Since bonded neighs not included in edge list)
+            _excluded_volume_quart(r, dF, MD_pro_sigma, MD_pro_rstar, MD_pro_b, MD_pro_rc);
+            ftotal += dF;
         }
 
-//        if(IND == 2) printf("CUDA p2 Angular F %.4f %.4f %.4f T %.4f %.4f %.4f %.4f\n", dF.x, dF.y, dF.z, dT.x, dT.y, dT.z, dT.w);
+        //Debugging
+        //if(IND == 104) printf("CUDA p42 Angular F %.7f %.7f %.7f T %.7f %.7f %.7f %.7f\n", ftotal.x, ftotal.y, ftotal.z, ttotal.x, ttotal.y, ttotal.z, ttotal.w);
 
         //Spring
         for(int i = _npro*(IND - _offset); i < _npro*(IND - _offset)+_npro; i++){
@@ -403,19 +421,21 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
                 number fmod = (-1.0f * gamma) * (d - eqdist) / d;
 
                 dF = fmod*r;
-                dF.w = 0.5f * gamma * SQR(d-eqdist);
-                dF.w *= 0.5f;
+                dF.w = 0.5*(0.5f * gamma * SQR(d-eqdist));
 
                 ftotal -= dF;
             };
         }
-        //Add totals to particles
-        LR_atomicAddXYZ(&(forces[IND]), ftotal);
-        LR_atomicAddXYZ(&(torques[IND]), ttotal);
+
+        //Add totals to particle lists
+        LR_atomicAdd(&(forces[IND]), ftotal);
+        LR_atomicAdd(&(torques[IND]), ttotal);
+
         //Necessary for Quaternion Calculations
         torques[IND] = _vectors_transpose_number4_product(p1, p2, p3, torques[IND]);
-//        if(IND == 2) printf("CUDA p2 Angular+Spring F %.4f %.4f %.4f T %.4f %.4f %.4f\n", ftotal.x, ftotal.y, ftotal.z, torques[IND].x, torques[IND].y, torques[IND].z);
-//        printf("Pindex %d, F %.4f %.4f %.4f, T %.4f %.4f %.4f\n", pindex, forces[IND].x, forces[IND].y, forces[IND].z, torques[IND].x, torques[IND].y, torques[IND].z);
+
+        //Debugging
+        //if(IND == 104) printf("CUDA p2 Angular+Spring F %.7f %.7f %.7f T %.7f %.7f %.7f\n", forces[IND].x, forces[IND].y, forces[IND].z, torques[IND].x, torques[IND].y, torques[IND].z);
     }
 }
 
