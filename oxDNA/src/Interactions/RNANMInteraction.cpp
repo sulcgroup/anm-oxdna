@@ -190,6 +190,10 @@ void RNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
     *N_strands = my_N_strands;
 }
 
+template<typename number>
+void RNANMInteraction<number>::check_input_sanity(BaseParticle<number> **particles, int N) {
+    //not implemented so we can use MC to relax our initial configurations
+}
 
 template<typename number>
 number RNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
@@ -201,7 +205,7 @@ number RNANMInteraction<number>::pair_interaction_nonbonded(BaseParticle<number>
 
     if (p->btype >= 0 && q->btype >= 0) { //RNA-RNA Interaction
         if (r->norm() >= this->_sqr_rcut) return (number) 0.f;
-        number energy = RNA2Interaction<number>::pair_interaction_bonded(p, q, r, update_forces);
+        number energy = RNA2Interaction<number>::pair_interaction_nonbonded(p, q, r, update_forces);
         return energy;
     }
 
@@ -252,9 +256,25 @@ number RNANMInteraction<number>::pair_interaction_bonded(BaseParticle<number> *p
 }
 
 template<typename number>
+number RNANMInteraction<number>::pair_interaction(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces){
+    if (p->btype >= 0 && q->btype >=0){
+        if(p->is_bonded(q)) return this->pair_interaction_bonded(p, q, r, update_forces);
+        else return this->pair_interaction_nonbonded(p, q, r, update_forces);
+    }
+    if ((p->btype >= 0 && q->btype < 0) || (p->btype < 0 && q->btype >= 0)) return this->pair_interaction_nonbonded(p, q, r, update_forces);
+
+    if (p->btype <0 && q->btype <0){
+        ACParticle<number> *cp = dynamic_cast< ACParticle<number> * > (p);
+        if ((*cp).ACParticle<number>::is_bonded(q)) return this->pair_interaction_bonded(p, q, r, update_forces);
+        else return this->pair_interaction_nonbonded(p, q, r, update_forces);
+    }
+    return 0.f;
+}
+
+template<typename number>
 void RNANMInteraction<number>::get_settings(input_file &inp) {
 	this->RNA2Interaction<number>::get_settings(inp);
-    getInputString(&inp, "PARFILE", _parameterfile, 0);
+    getInputString(&inp, "parfile", _parameterfile, 0);
     //Addition of Reading Parameter File
     int key1, key2;
     char potswitch;

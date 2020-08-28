@@ -90,7 +90,7 @@ __global__ void rnanm_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
             LR_atomicAddXYZ(&(forces[to_index]), dF);
 
     } else if (pbtype >= 0 && qbtype < 0) {
-        //Protein-DNA Excluded Volume **NONBONDED
+        //Protein-RNA Excluded Volume **NONBONDED
         number4 ppos_back = a1 * rnamodel.RNA_POS_BACK_a1 + a2 * rnamodel.RNA_POS_BACK_a2 + a3 * rnamodel.RNA_POS_BACK_a3;
         number4 ppos_base = rnamodel.RNA_POS_BASE * a1;
 

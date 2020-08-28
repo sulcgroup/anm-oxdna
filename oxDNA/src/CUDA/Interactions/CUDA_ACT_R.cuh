@@ -1,5 +1,5 @@
 /* System constants */
-//added constants for DNACT
+//added constants for RNACT
 __constant__ float MD_pro_backbone_sigma;
 __constant__ float MD_pro_backbone_rstar;
 __constant__ float MD_pro_backbone_b;
@@ -19,7 +19,7 @@ __constant__ float _kb;
 __constant__ float _kt;
 
 __constant__ int _npro;
-__constant__ int _ndna;
+__constant__ int _nrna;
 __constant__ int _offset;
 
 #include "../cuda_utils/CUDA_lr_common.cuh"
@@ -115,7 +115,7 @@ __forceinline__ __device__ void _excluded_volume_quart(const number4 &r, number4
 }
 
 template <typename number, typename number4>
-__global__ void dnact_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *orientations, number4 *forces, number4 *torques, edge_bond *edge_list, int n_edges, LR_bonds *bonds, bool grooving, bool use_debye_huckel, bool use_oxDNA2_coaxial_stacking, CUDABox<number, number4> *box) {
+__global__ void rnact_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *orientations, number4 *forces, number4 *torques, edge_bond *edge_list, int n_edges,LR_bonds *bonds, bool average,bool use_debye_huckel, bool mismatch_repulsion, CUDABox<number, number4> *box) {
     if (IND >= n_edges) return;
 
     number4 dF = make_number4 < number, number4>(0, 0, 0, 0);
@@ -157,11 +157,9 @@ __global__ void dnact_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
             LR_atomicAddXYZ(&(forces[to_index]), dF);
 
     } else if (pbtype >= 0 && qbtype < 0) {
-        //Protein-DNA Excluded Volume **NONBONDED
-        number4 ppos_back;
-        if(grooving) ppos_back = POS_MM_BACK1 * a1 + POS_MM_BACK2 * a2;
-        else ppos_back = POS_BACK * a1;
-        number4 ppos_base = POS_BASE * a1;
+        //Protein-RNA Excluded Volume **NONBONDED
+        number4 ppos_back = a1 * rnamodel.RNA_POS_BACK_a1 + a2 * rnamodel.RNA_POS_BACK_a2 + a3 * rnamodel.RNA_POS_BACK_a3;
+        number4 ppos_base = rnamodel.RNA_POS_BASE * a1;
 
         number4 r = box->minimum_image(ppos, qpos);
         number4 rback = r - ppos_back;
@@ -200,11 +198,8 @@ __global__ void dnact_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
             LR_atomicAddXYZ(&(torques[to_index]), dT);
         }
     } else if(pbtype < 0 && qbtype >= 0) {
-        number4 qpos_back;
-        if(grooving) qpos_back = POS_MM_BACK1 * b1 + POS_MM_BACK2 * b2;
-        else qpos_back = POS_BACK * b1;
-        number4 qpos_base = POS_BASE * b1;
-        number4 qpos_stack = POS_STACK * b1;
+        number4 qpos_back = b1 * rnamodel.RNA_POS_BACK_a1 + b2 * rnamodel.RNA_POS_BACK_a2 + b3 * rnamodel.RNA_POS_BACK_a3;
+        number4 qpos_base = rnamodel.RNA_POS_BASE * b1;
 
         int to_index = MD_N[0] * (IND % MD_n_forces[0]) + b.to;
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
@@ -246,9 +241,8 @@ __global__ void dnact_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
     } else if(pbtype >= 0 && qbtype >= 0){
         LR_bonds pbonds = bonds[b.from];
         LR_bonds qbonds = bonds[b.to];
-        _particle_particle_interaction<number, number4>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving,
-                                                        use_debye_huckel, use_oxDNA2_coaxial_stacking, pbonds, qbonds,
-                                                        b.from, b.to, box);
+        _particle_particle_interaction<number, number4>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, average,
+                                                        use_debye_huckel, mismatch_repulsion, pbonds, qbonds, box);
 
 
         int from_index = MD_N[0] * (IND % MD_n_forces[0]) + b.from;
@@ -280,7 +274,7 @@ __global__ void dnact_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
 
 // bonded interactions for edge-based approach
 template <typename number, typename number4>
-__global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_spring_eqdist, number *_d_spring_potential, number *_d_ang_params) {
+__global__ void rnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool average, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_spring_eqdist, number *_d_spring_potential, number *_d_ang_params) {
     if(IND >= MD_N[0]) return;
 
     number4 F0, T0;
@@ -301,7 +295,6 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
     int pbtype = get_particle_btype <number, number4>(ppos);
 
     if (pbtype >= 0){
-        //Nucleotide
         LR_bonds bs = bonds[IND];
         // particle axes according to Allen's paper
 
@@ -310,13 +303,12 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
 
         if(bs.n3 != P_INVALID) {
             number4 qpos = poss[bs.n3];
-            number4 r = box->minimum_image(ppos, qpos);
 
             number4 b1, b2, b3;
             get_vectors_from_quat<number, number4>(orientations[bs.n3], b1, b2, b3);
 
-            _bonded_part<number, number4, true>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, grooving,
-                                                use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
+            _bonded_part<number, number4, true>(ppos, a1, a2, a3,
+                                                qpos, b1, b2, b3, dF, dT, average,use_mbf,  mbf_xmax,  mbf_finf);
         }
         if(bs.n5 != P_INVALID) {
             number4 qpos = poss[bs.n5];
@@ -324,14 +316,15 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             number4 b1, b2, b3;
             get_vectors_from_quat<number, number4>(orientations[bs.n5], b1, b2, b3);
 
-            _bonded_part<number, number4, false>(qpos, b1, b2, b3, ppos, a1, a2, a3, dF, dT, grooving,
-                                                 use_oxDNA2_FENE, use_mbf, mbf_xmax, mbf_finf);
+            _bonded_part<number, number4, false>(qpos, b1, b2, b3,
+                                                 ppos, a1, a2, a3, dF, dT, average,use_mbf,  mbf_xmax,  mbf_finf);
         }
 
         forces[IND] = (dF + F0);
         torques[IND] = (dT + T0);
 
         torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
+
     } else{
         //Protein Particles
         LR_bonds bs = bonds[IND];

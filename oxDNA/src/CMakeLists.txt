@@ -105,6 +105,7 @@ SET(interactions_SOURCES
 	Interactions/RNAInteraction.cpp
 	Interactions/RNAInteraction_relax.cpp
 	Interactions/RNANMInteraction.cpp
+	Interactions/RNACTInteraction.cpp
 	Interactions/DNAInteraction.cpp
 	Interactions/RNAInteraction2.cpp
 	Interactions/DNA2Interaction.cpp
@@ -223,6 +224,7 @@ IF(CUDA)
 		CUDA/Interactions/CUDADNANMInteraction.cu
 		CUDA/Interactions/CUDADNACTInteraction.cu
 		CUDA/Interactions/CUDARNANMInteraction.cu
+		CUDA/Interactions/CUDARNACTInteraction.cu
 		CUDA/Interactions/CUDALJInteraction.cu
 		CUDA/Interactions/CUDARNAInteraction.cu
 		CUDA/Interactions/CUDAPatchyInteraction.cu

@@ -1,21 +1,20 @@
 /*
- * CUDARNANMInteraction.cu
+ * CUDARNACTInteraction.cu
  *
- *  Created on: 22/jul/2014
- *      Author: petr
+ *  Created on: 25 Aug 2020
+ *      Author: jonah
  */
 
-#include "CUDARNANMInteraction.h"
-#include "CUDARNAInteraction.h"
+#include "CUDARNACTInteraction.h"
+#include "CUDARNAInteraction.h" //questionable
 #include "CUDA_RNA.cuh"
-#include "CUDA_ANM_R.cuh"
+#include "CUDA_ACT_R.cuh"
 #include "../Lists/CUDASimpleVerletList.h"
 #include "../Lists/CUDANoList.h"
 #include "../../Interactions/RNAInteraction2.h"
-#include "../../Interactions/RNANMInteraction.h"
+#include "../../Interactions/RNACTInteraction.h"
 
-
-void copy_Model_to_CUDAModel_RNANM(Model& model_from, CUDAModel& model_to)
+void copy_Model_to_CUDAModel_RNACT(Model& model_from, CUDAModel& model_to)
 {
     model_to.RNA_POS_BACK =  model_from.RNA_POS_BACK ;
     model_to.RNA_POS_STACK =  model_from.RNA_POS_STACK ;
@@ -223,92 +222,117 @@ void copy_Model_to_CUDAModel_RNANM(Model& model_from, CUDAModel& model_to)
 
 }
 
+
+
+
+
 template<typename number, typename number4>
-CUDARNANMInteraction<number, number4>::CUDARNANMInteraction() {
-    //left alone
+CUDARNACTInteraction<number, number4>::CUDARNACTInteraction() {
+
     _grooving = false;
-    //added
     _d_spring_pottype = NULL;
     _d_spring_potential = NULL;
     _d_spring_eqdist = NULL;
+    _d_ang_params = NULL;
     _h_spring_pottype = NULL;
     _h_spring_potential = NULL;
     _h_spring_eqdist = NULL;
+    _h_ang_params = NULL;
 
     _spring_param_size_number = 0;
     _spring_param_size_char = 0;
+    _ang_param_size = 0;
 }
 
 template<typename number, typename number4>
-CUDARNANMInteraction<number, number4>::~CUDARNANMInteraction() {
+CUDARNACTInteraction<number, number4>::~CUDARNACTInteraction() {
     //Delete All pointers required for spring potential parameters
     if(_d_spring_pottype != NULL) CUDA_SAFE_CALL( cudaFree(_d_spring_pottype) );
     if(_d_spring_potential != NULL) CUDA_SAFE_CALL( cudaFree(_d_spring_potential) );
     if(_d_spring_eqdist != NULL) CUDA_SAFE_CALL( cudaFree(_d_spring_eqdist) );
+    if(_d_ang_params != NULL) CUDA_SAFE_CALL( cudaFree(_d_ang_params) );
     if(_h_spring_pottype != NULL) delete[] _h_spring_pottype;
     if(_h_spring_potential != NULL) delete[] _h_spring_potential;
     if(_h_spring_eqdist != NULL) delete[] _h_spring_eqdist;
+    if(_h_ang_params != NULL) delete[] _h_ang_params;
 }
 
 template<typename number, typename number4>
-void CUDARNANMInteraction<number, number4>::get_settings(input_file &inp) {
-	_use_debye_huckel = false;
-	_mismatch_repulsion = false;
+void CUDARNACTInteraction<number, number4>::get_settings(input_file &inp) {
+    _use_debye_huckel = false;
+    _mismatch_repulsion = false;
+    std::string inter_type;
     if (!getInputString(&inp, "parfile", this->_parameterfile, 0) == KEY_FOUND){
-        throw oxDNAException("Key 'parfile' not found. Necessary for Protein sims.");
+        throw oxDNAException("Key 'PARFILE' not found. Necessary for Protein sims.");
     }
     if (!getInputString(&inp, "topology", this->_topology_filename, 0) == KEY_FOUND){
         throw oxDNAException("Key 'topology_file' not found.");
     }
-	std::string inter_type;
-	if (getInputString(&inp, "interaction_type", inter_type, 0) == KEY_FOUND){
-		if (inter_type.compare("RNANM") == 0) {
-			_use_debye_huckel = true;
-			// copy-pasted from the DNA2Interaction constructor
-			_debye_huckel_half_charged_ends = true;
-			this->_grooving = true;
-			// end copy from DNA2Interaction
 
-			// copied from DNA2Interaction::get_settings() (CPU), the least bad way of doing things
-			getInputNumber(&inp, "salt_concentration", &_salt_concentration, 1);
-			getInputBool(&inp, "dh_half_charged_ends", &_debye_huckel_half_charged_ends, 0);
+    //Aren't these constructed in the implicit RNACT Constructor Call?
+//    this->_int_map[SPRING] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_protein_spring;
+//    this->_int_map[PRO_EXC_VOL] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_protein_exc_volume;
+//    this->_int_map[PRO_ANG_POT] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_protein_ang_pot;
+//
+//    //Protein-DNA Function Pointers
+//    this->_int_map[PRO_RNA_EXC_VOL] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_protein_rna_exc_volume;
+//
+//    this->_int_map[this->DEBYE_HUCKEL] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &CUDARNACTInteraction<number>::_debye_huckel;
+//
+//    this->_int_map[this->BACKBONE] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &CUDARNACTInteraction<number>::_backbone;
+//    this->_int_map[this->BONDED_EXCLUDED_VOLUME] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_bonded_excluded_volume;
+//    this->_int_map[this->STACKING] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_stacking;
+//
+//    this->_int_map[this->NONBONDED_EXCLUDED_VOLUME] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_nonbonded_excluded_volume;
+//    this->_int_map[this->HYDROGEN_BONDING] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_hydrogen_bonding;
+//    this->_int_map[this->CROSS_STACKING] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_cross_stacking;
+//    this->_int_map[this->COAXIAL_STACKING] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_coaxial_stacking;
 
-			// lambda-factor (the dh length at T = 300K, I = 1.0)
-			_debye_huckel_lambdafactor =  0.3667258;
-			getInputFloat(&inp, "dh_lambda", &_debye_huckel_lambdafactor, 0);
+    _use_debye_huckel = true;
+    // copy-pasted from the DNA2Interaction constructor
+    _debye_huckel_half_charged_ends = true;
+    this->_grooving = true;
+    // end copy from DNA2Interaction
 
-			// the prefactor to the Debye-Huckel term
-			_debye_huckel_prefactor = 0.0858;
-			getInputFloat(&inp, "dh_strength", &_debye_huckel_prefactor, 0);
-			// End copy from DNA2Interaction
+    // copied from DNA2Interaction::get_settings() (CPU), the least bad way of doing things
+    getInputNumber(&inp, "salt_concentration", &_salt_concentration, 1);
+    getInputBool(&inp, "dh_half_charged_ends", &_debye_huckel_half_charged_ends, 0);
 
-			int mismatches = 0;
-			if(getInputBoolAsInt(&inp, "mismatch_repulsion", &mismatches, 0) == KEY_FOUND) {
-			         this->_mismatch_repulsion = (bool) mismatches;
-           	}
-           	if(this->_mismatch_repulsion)
-	        {
-		        float temp;
-		        if(getInputFloat(&inp, "mismatch_repulsion_strength", &temp, 0) == KEY_FOUND) {
-					this->_RNA_HYDR_MIS = temp;
-		        }
-		        else
-		        {
-	        		this->_RNA_HYDR_MIS = 1;
-		        }
+    // lambda-factor (the dh length at T = 300K, I = 1.0)
+    _debye_huckel_lambdafactor =  0.3667258;
+    getInputFloat(&inp, "dh_lambda", &_debye_huckel_lambdafactor, 0);
 
-	       }
+    // the prefactor to the Debye-Huckel term
+    _debye_huckel_prefactor = 0.0858;
+    getInputFloat(&inp, "dh_strength", &_debye_huckel_prefactor, 0);
+    // End copy from DNA2Interaction
 
-		}
-	}
+    int mismatches = 0;
+    if(getInputBoolAsInt(&inp, "mismatch_repulsion", &mismatches, 0) == KEY_FOUND) {
+        this->_mismatch_repulsion = (bool) mismatches;
+    }
+    if(this->_mismatch_repulsion)
+    {
+        float temp;
+        if(getInputFloat(&inp, "mismatch_repulsion_strength", &temp, 0) == KEY_FOUND) {
+            this->_RNA_HYDR_MIS = temp;
+        }
+        else
+        {
+            this->_RNA_HYDR_MIS = 1;
+        }
 
-	RNANMInteraction<number>::get_settings(inp);
+    }
+
+    this->RNACTInteraction<number>::get_settings(inp);
+
 }
 
 template<typename number, typename number4>
-void CUDARNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
-	CUDABaseInteraction<number, number4>::cuda_init(box_side, N);
-    //    Addition of Reading Parameter File -> Moved from get_settings due to needing to fill variables that are filled in the CPU version of DNANMInteraction::read_topology
+void CUDARNACTInteraction<number, number4>::cuda_init(number box_side, int N) {
+    CUDABaseInteraction<number, number4>::cuda_init(box_side, N);
+
+//    Addition of Reading Parameter File -> Moved from get_settings due to needing to fill variables that are filled in the CPU version of DNACTInteraction::read_topology
     fstream top;
     int tmp1, tmp2;
     top.open(this->_topology_filename, ios::in);
@@ -329,12 +353,16 @@ void CUDARNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
 //    //Initalizing Host and Device Arrays for Spring Parameters
     _spring_param_size_number = sizeof(number) * (this->npro*this->npro);
     _spring_param_size_char = sizeof(char) * (this->npro*this->npro);
+    _ang_param_size = sizeof(number) * (this->npro*4);
     _h_spring_pottype = new char[this->npro*this->npro]();
     CUDA_SAFE_CALL( cudaMalloc(&_d_spring_pottype, _spring_param_size_char));
     _h_spring_potential = new number[this->npro*this->npro]();
     CUDA_SAFE_CALL(cudaMalloc(&_d_spring_potential, _spring_param_size_number));
     _h_spring_eqdist = new number[this->npro*this->npro]();
     CUDA_SAFE_CALL(cudaMalloc(&_d_spring_eqdist, _spring_param_size_number));
+    //Initializing Host and Device Arrays for Angular Parameters
+    _h_ang_params = new number[this->npro*4]();
+    CUDA_SAFE_CALL( cudaMalloc(&_d_ang_params, _ang_param_size));
 
     char potswitch = 'x';
     number potential = 0.f, dist = 0.f;
@@ -342,132 +370,172 @@ void CUDARNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
         _h_spring_eqdist[i] = dist;
         _h_spring_potential[i] = potential;
         _h_spring_pottype[i] = potswitch;
+        if(i < (this->npro *4 )) _h_ang_params[i] = dist;
     }
 
+    //Checkers as Lambdas
+    auto valid_angles = [](double a, double b, double c, double d)
+    {
+        double anglemin = min({a, b, c, d});
+        double anglemax = max({a, b, c, d});
+        if (anglemin < -1.0 || anglemax > 1.0){
+            throw oxDNAException("Cos of Angle in Parameter File not in Valid bounds");
+        }
+    };
 
+    auto valid_spring_params = [](int N, int x, int y, double d, char s, double k){
+        if(x < 0 || x > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", x);
+        if(y < 0 || y > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", y);
+        if(d < 0) throw oxDNAException("Invalid Eq Distance %d in Parameter File", d);
+        if(s != 's') throw oxDNAException("Potential Type %c Not Supported", s);
+        if(k < 0) throw oxDNAException("Spring Constant %f Not Supported", k);
+    };
+
+    //Reading Parameter File
     int key1, key2 = 0;
+    number a0, b0, c0, d0;
     string carbons;
     fstream parameters;
     parameters.open(this->_parameterfile, ios::in);
-    getline (parameters, carbons);
-
+    getline (parameters,carbons);
     if (parameters.is_open())
     {
         while (parameters.good())
         {
             parameters >> key1 >> key2 >> dist >> potswitch >> potential;
-            //adjust by offset
-            if(offset != 0){
+
+            if(offset != 0) {
                 key1 -= offset;
                 key2 -= offset;
             }
-            _h_spring_potential[key1*this->npro + key2] = potential;
-            _h_spring_eqdist[key1*this->npro + key2] = dist;
-            _h_spring_pottype[key1*this->npro + key2] = potswitch;
-            //added so CUDA will play nice
-            _h_spring_potential[key2*this->npro + key1] = potential;
-            _h_spring_eqdist[key2*this->npro + key1] = dist;
-            _h_spring_pottype[key2*this->npro + key1] = potswitch;
+
+            valid_spring_params(N, key1, key2, dist, potswitch, potential);
+            if (key2 - key1 == 1){
+                //Angular Parameters
+                parameters >> a0 >> b0 >> c0 >> d0;
+                valid_angles(a0, b0, c0, d0);
+                _h_ang_params[key1*4] = a0;
+                _h_ang_params[key1*4+1] = b0;
+                _h_ang_params[key1*4+2] = c0;
+                _h_ang_params[key1*4+3] = d0;
+
+                _h_spring_potential[key1*this->npro + key2] = potential;
+                _h_spring_eqdist[key1*this->npro + key2] = dist;
+                _h_spring_pottype[key1*this->npro + key2] = potswitch;
+                //added so CUDA will play nice
+                _h_spring_potential[key2*this->npro + key1] = potential;
+                _h_spring_eqdist[key2*this->npro + key1] = dist;
+                _h_spring_pottype[key2*this->npro + key1] = potswitch;
+
+            } else {
+                _h_spring_potential[key1*this->npro + key2] = potential;
+                _h_spring_eqdist[key1*this->npro + key2] = dist;
+                _h_spring_pottype[key1*this->npro + key2] = potswitch;
+                //added so CUDA will play nice
+                _h_spring_potential[key2*this->npro + key1] = potential;
+                _h_spring_eqdist[key2*this->npro + key1] = dist;
+                _h_spring_pottype[key2*this->npro + key1] = potswitch;
+            }
         }
         parameters.close();
-    }
-    else
-    {
+    } else {
         throw oxDNAException("ParameterFile Could Not Be Opened");
     }
+    //Some System Checks
+    // WHAT ELSE SHOULD I BE DOUBLE CHECKING?
 
-	RNAInteraction<number>::init();
+    // Copied from CUDADNAINTERACTION
+    RNAInteraction<number>::init();
 
-	float f_copy = 1.0;//this->_hb_multiplier;
-	CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_hb_multi, &f_copy, sizeof(float)) );
+    float f_copy = 1.0;//this->_hb_multiplier;
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_hb_multi, &f_copy, sizeof(float)) );
 
-	CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_N, &N, sizeof(int)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_N, &N, sizeof(int)) );
 
     //mismatch repulsion modification
     if(this->_mismatch_repulsion)
     {
-     float tempmis = -1.0 * this->_RNA_HYDR_MIS / this->model->RNA_HYDR_EPS;
-     this->F1_EPS[RNA_HYDR_F1][0][0] *= tempmis;
-     this->F1_SHIFT[RNA_HYDR_F1][0][0] *= tempmis;
+        float tempmis = -1.0 * this->_RNA_HYDR_MIS / this->model->RNA_HYDR_EPS;
+        this->F1_EPS[RNA_HYDR_F1][0][0] *= tempmis;
+        this->F1_SHIFT[RNA_HYDR_F1][0][0] *= tempmis;
     }
 
-	number tmp[50];
-	for(int i = 0; i < 2; i++) for(int j = 0; j < 5; j++) for(int k = 0; k < 5; k++) tmp[i*25 + j*5 + k] = this->F1_EPS[i][j][k];
+    number tmp[50];
+    for(int i = 0; i < 2; i++) for(int j = 0; j < 5; j++) for(int k = 0; k < 5; k++) tmp[i*25 + j*5 + k] = this->F1_EPS[i][j][k];
 
-	COPY_ARRAY_TO_CONSTANT(MD_F1_EPS, tmp, 50);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_EPS, tmp, 50);
 
-	for(int i = 0; i < 2; i++) for(int j = 0; j < 5; j++) for(int k = 0; k < 5; k++) tmp[i*25 + j*5 + k] = this->F1_SHIFT[i][j][k];
+    for(int i = 0; i < 2; i++) for(int j = 0; j < 5; j++) for(int k = 0; k < 5; k++) tmp[i*25 + j*5 + k] = this->F1_SHIFT[i][j][k];
 
-	COPY_ARRAY_TO_CONSTANT(MD_F1_SHIFT, tmp, 50);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_SHIFT, tmp, 50);
 
-	COPY_ARRAY_TO_CONSTANT(MD_F1_A, this->F1_A, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F1_RC, this->F1_RC, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F1_R0, this->F1_R0, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F1_BLOW, this->F1_BLOW, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F1_BHIGH, this->F1_BHIGH, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F1_RLOW, this->F1_RLOW, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F1_RHIGH, this->F1_RHIGH, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F1_RCLOW, this->F1_RCLOW, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F1_RCHIGH, this->F1_RCHIGH, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_A, this->F1_A, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_RC, this->F1_RC, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_R0, this->F1_R0, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_BLOW, this->F1_BLOW, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_BHIGH, this->F1_BHIGH, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_RLOW, this->F1_RLOW, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_RHIGH, this->F1_RHIGH, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_RCLOW, this->F1_RCLOW, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F1_RCHIGH, this->F1_RCHIGH, 2);
 
-	COPY_ARRAY_TO_CONSTANT(MD_F2_K, this->F2_K, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F2_RC, this->F2_RC, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F2_R0, this->F2_R0, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F2_BLOW, this->F2_BLOW, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F2_BHIGH, this->F2_BHIGH, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F2_RLOW, this->F2_RLOW, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F2_RHIGH, this->F2_RHIGH, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F2_RCLOW, this->F2_RCLOW, 2);
-	COPY_ARRAY_TO_CONSTANT(MD_F2_RCHIGH, this->F2_RCHIGH, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F2_K, this->F2_K, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F2_RC, this->F2_RC, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F2_R0, this->F2_R0, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F2_BLOW, this->F2_BLOW, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F2_BHIGH, this->F2_BHIGH, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F2_RLOW, this->F2_RLOW, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F2_RHIGH, this->F2_RHIGH, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F2_RCLOW, this->F2_RCLOW, 2);
+    COPY_ARRAY_TO_CONSTANT(MD_F2_RCHIGH, this->F2_RCHIGH, 2);
 
-	COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_A, this->F5_PHI_A, 4);
-	COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_B, this->F5_PHI_B, 4);
-	COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XC, this->F5_PHI_XC, 4);
-	COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XS, this->F5_PHI_XS, 4);
-
-
-
-	CUDAModel cudamodel;
-	copy_Model_to_CUDAModel_RNANM(*(this->model), cudamodel);
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(rnamodel,&cudamodel,sizeof(CUDAModel))  );
+    COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_A, this->F5_PHI_A, 4);
+    COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_B, this->F5_PHI_B, 4);
+    COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XC, this->F5_PHI_XC, 4);
+    COPY_ARRAY_TO_CONSTANT(MD_F5_PHI_XS, this->F5_PHI_XS, 4);
 
 
-	if(this->_use_edge) CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_n_forces, &this->_n_forces, sizeof(int)) );
-	if (_use_debye_huckel){
-			// copied from DNA2Interaction::init() (CPU), the least bad way of doing things, adapted for RNA
-			// We wish to normalise with respect to T=300K, I=1M. 300K=0.1 s.u. so divide this->_T by 0.1
-			number lambda = _debye_huckel_lambdafactor * sqrt(this->_T / 0.1f) / sqrt(_salt_concentration);
-			// RHIGH gives the distance at which the smoothing begins
-			_debye_huckel_RHIGH = 3.0 * lambda;
-			_minus_kappa = -1.0/lambda;
 
-			// these are just for convenience for the smoothing parameter computation
-			number x = _debye_huckel_RHIGH;
-			number q = _debye_huckel_prefactor;
-			number l = lambda;
-
-			// compute the some smoothing parameters
-			_debye_huckel_B = -(exp(-x/l) * q * q * (x + l)*(x+l) )/(-4.*x*x*x * l * l * q );
-			_debye_huckel_RC = x*(q*x + 3. * q* l )/(q * (x+l));
+    CUDAModel cudamodel;
+    copy_Model_to_CUDAModel_RNACT(*(this->model), cudamodel);
+    CUDA_SAFE_CALL(cudaMemcpyToSymbol(rnamodel,&cudamodel,sizeof(CUDAModel))  );
 
 
-		    number debyecut =  2. * sqrt(SQR(this->model->RNA_POS_BACK_a1)	+ SQR(this->model->RNA_POS_BACK_a2) + SQR(this->model->RNA_POS_BACK_a3)) + _debye_huckel_RC;
+    if(this->_use_edge) CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_n_forces, &this->_n_forces, sizeof(int)) );
+    if (_use_debye_huckel) {
+        // copied from DNA2Interaction::init() (CPU), the least bad way of doing things
+        // We wish to normalise with respect to T=300K, I=1M. 300K=0.1 s.u. so divide this->_T by 0.1
+        number lambda = _debye_huckel_lambdafactor * sqrt(this->_T / 0.1f) / sqrt(_salt_concentration);
+        // RHIGH gives the distance at which the smoothing begins
+        _debye_huckel_RHIGH = 3.0 * lambda;
+        _minus_kappa = -1.0 / lambda;
 
-			// the cutoff radius for the potential should be the larger of rcut and debyecut
-			if (debyecut > this->_rcut){
-				this->_rcut = debyecut;
-				this->_sqr_rcut = debyecut*debyecut;
-			}
-			// End copy from cpu interaction
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_RC, &_debye_huckel_RC, sizeof(float)) );
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_RHIGH, &_debye_huckel_RHIGH, sizeof(float)) );
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_prefactor, &_debye_huckel_prefactor, sizeof(float)) );
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_B, &_debye_huckel_B, sizeof(float)) );
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_minus_kappa, &_minus_kappa, sizeof(float)) );
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_half_charged_ends, &_debye_huckel_half_charged_ends, sizeof(bool)) );
-	}
+        // these are just for convenience for the smoothing parameter computation
+        number x = _debye_huckel_RHIGH;
+        number q = _debye_huckel_prefactor;
+        number l = lambda;
 
-    //Constants for RNA/Protein Interactions (Same as DNA ones)
+        // compute the some smoothing parameters
+        _debye_huckel_B = -(exp(-x/l) * q * q * (x + l)*(x+l) )/(-4.*x*x*x * l * l * q );
+        _debye_huckel_RC = x*(q*x + 3. * q* l )/(q * (x+l));
+
+
+        number debyecut =  2. * sqrt(SQR(this->model->RNA_POS_BACK_a1)	+ SQR(this->model->RNA_POS_BACK_a2) + SQR(this->model->RNA_POS_BACK_a3)) + _debye_huckel_RC;
+
+        // the cutoff radius for the potential should be the larger of rcut and debyecut
+        if (debyecut > this->_rcut){
+            this->_rcut = debyecut;
+            this->_sqr_rcut = debyecut*debyecut;
+        }
+        // End copy from cpu interaction
+        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_RC, &_debye_huckel_RC, sizeof(float)) );
+        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_RHIGH, &_debye_huckel_RHIGH, sizeof(float)) );
+        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_prefactor, &_debye_huckel_prefactor, sizeof(float)) );
+        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_B, &_debye_huckel_B, sizeof(float)) );
+        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_minus_kappa, &_minus_kappa, sizeof(float)) );
+        CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_dh_half_charged_ends, &_debye_huckel_half_charged_ends, sizeof(bool)) );
+    }
+    //Constants for RNA/Protein Interaction (Same as DNA ones)
     //Backbone-Protein Excluded Volume Parameters
     _pro_backbone_sigma = 0.57f;
     _pro_backbone_rstar= 0.569f;
@@ -484,6 +552,9 @@ void CUDARNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     _pro_b = 306484596.0f;
     _pro_rcut = 0.352894;
 
+    _kbend = this->_k_bend;
+    _ktor = this->_k_tor;
+
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_sigma, &_pro_sigma, sizeof(float)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rstar, &_pro_rstar, sizeof(float)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rc, &_pro_rcut, sizeof(float)) );
@@ -499,28 +570,31 @@ void CUDARNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_rc, &_pro_base_rcut, sizeof(float)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_base_b, &_pro_base_b, sizeof(float)) );
 
-    //Parameters for DNANM book keeping
+    //Parameters for DNACT book keeping
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_nrna, &this->nrna, sizeof(int)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_npro, &this->npro, sizeof(int)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_offset, &this->offset, sizeof(int)) );
+
+    //kb and kt Parameters
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_kb, &_kbend, sizeof(float)) );
+    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_kt, &_ktor, sizeof(float)) );
 
     //Parameters for ANM
     CUDA_SAFE_CALL( cudaMemcpy(_d_spring_pottype, _h_spring_pottype, _spring_param_size_char, cudaMemcpyHostToDevice));
     CUDA_SAFE_CALL( cudaMemcpy(_d_spring_potential, _h_spring_potential, _spring_param_size_number, cudaMemcpyHostToDevice));
     CUDA_SAFE_CALL(cudaMemcpy(_d_spring_eqdist, _h_spring_eqdist, _spring_param_size_number, cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(_d_ang_params, _h_ang_params, _ang_param_size, cudaMemcpyHostToDevice));
 }
 
 template<typename number, typename number4>
-void CUDARNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, number4> *lists, number4 *d_poss, GPU_quat<number> *d_orientations, number4 *d_forces, number4 *d_torques, LR_bonds *d_bonds, CUDABox<number, number4> *d_box) {
-    CUDASimpleVerletList<number, number4> *_v_lists = dynamic_cast<CUDASimpleVerletList<number, number4> *>(lists);
-
-    //this->_grooving = this->_average;
-    if (_v_lists != NULL) {
+void CUDARNACTInteraction<number, number4>::compute_forces(CUDABaseList<number, number4> *lists, number4 *d_poss, GPU_quat<number> *d_orientations, number4 *d_forces, number4 *d_torques, LR_bonds *d_bonds, CUDABox<number, number4> *d_box) {
+	CUDASimpleVerletList<number, number4> *_v_lists = dynamic_cast<CUDASimpleVerletList<number, number4> *>(lists);
+	if(_v_lists != NULL) {
         if (_v_lists->use_edge()) {
-            rnanm_forces_edge_nonbonded<number, number4>
+            rnact_forces_edge_nonbonded<number, number4>
                     << < (_v_lists->_N_edges - 1) / (this->_launch_cfg.threads_per_block) + 1,
                     this->_launch_cfg.threads_per_block >> >
-                    (d_poss, d_orientations, this->_d_edge_forces, this->_d_edge_torques, _v_lists->_d_edge_list, _v_lists->_N_edges, d_bonds, this->_average, this->_use_debye_huckel, this->_mismatch_repulsion, d_box);
+            (d_poss, d_orientations, this->_d_edge_forces, this->_d_edge_torques, _v_lists->_d_edge_list, _v_lists->_N_edges, d_bonds, this->_average, this->_use_debye_huckel, this->_mismatch_repulsion, d_box);
 
             this->_sum_edge_forces_torques(d_forces, d_torques);
 
@@ -528,15 +602,14 @@ void CUDARNANMInteraction<number, number4>::compute_forces(CUDABaseList<number, 
             cudaThreadSynchronize();
             CUT_CHECK_ERROR("forces_second_step error -- after non-bonded");
 
-            rnanm_forces_edge_bonded<number, number4>
+            rnact_forces_edge_bonded<number, number4>
                     << < this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block >> >
-                    (d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_average, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, _d_spring_eqdist, _d_spring_potential);
-        } else
-            throw oxDNAException(
-                    "Edge Approach is only implemented for RNANM Interaction using CUDA approach. Please add use_edge = 1 to your input file.");
-    } else throw oxDNAException("Must Use with Lists to run RNANM simulation");
+            (d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_average, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, _d_spring_eqdist, _d_spring_potential, _d_ang_params);
+
+        } else throw oxDNAException("Edge Approach is only implemented for DNACT Interaction using CUDA approach. Please add use_edge = 1 to your input file.");
+
+	} else throw oxDNAException("Must Use with Lists to run simulation");
 }
 
-
-template class CUDARNANMInteraction<float, float4>;
-template class CUDARNANMInteraction<double, LR_double4>;
+template class CUDARNACTInteraction<float, float4>;
+template class CUDARNACTInteraction<double, LR_double4>;

@@ -19,12 +19,13 @@ template<typename number, typename number4>
 class CUDARNANMInteraction: public CUDABaseInteraction<number, number4>, public RNANMInteraction<number> {
 public:
 
-    enum {
-        DEBYE_HUCKEL = 7,
-        SPRING = 8,
-        PRO_EXC_VOL = 9,
-        PRO_DNA_EXC_VOL = 10
-    };
+    //These should be inherited and are declared in get_settings
+//    enum {
+//        DEBYE_HUCKEL = 7,
+//        SPRING = 8,
+//        PRO_EXC_VOL = 9,
+//        PRO_DNA_EXC_VOL = 10
+//    };
 
 	bool _grooving;
 	bool _use_debye_huckel;

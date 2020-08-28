@@ -58,18 +58,21 @@ void CUDADNACTInteraction<number, number4>::get_settings(input_file &inp) {
     _use_debye_huckel = true;
     _use_oxDNA2_coaxial_stacking = true;
     _use_oxDNA2_FENE = true;
-    // copy-pasted from the DNA2Interaction constructor
-    this->_int_map[this->DEBYE_HUCKEL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_debye_huckel;
-    // I assume these are needed. I think the interaction map is used for when the observables want to print energy
-    //this->_int_map[this->BACKBONE] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNAInteraction<number>::_backbone;
-    this->_int_map[this->COAXIAL_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_coaxial_stacking;
-    //Protein Methods Function Pointers
-    this->_int_map[this->SPRING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_spring;
-    this->_int_map[this->PRO_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_exc_volume;
-    this->_int_map[this->PRO_ANG_POT] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_ang_pot;
-    //Protein-DNA Function Pointers
-    this->_int_map[this->PRO_DNA_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_dna_exc_volume;
-    // we don't need the F4_... terms as the macros are used in the CUDA_DNA.cuh file; this doesn't apply for the F2_K term
+
+    //Aren't these constructed in the implicit DNACT Constructor Call?
+//    // copy-pasted from the DNA2Interaction constructor
+//    this->_int_map[this->DEBYE_HUCKEL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_debye_huckel;
+//    // I assume these are needed. I think the interaction map is used for when the observables want to print energy
+//    //this->_int_map[this->BACKBONE] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNAInteraction<number>::_backbone;
+//    this->_int_map[this->COAXIAL_STACKING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_coaxial_stacking;
+//    //Protein Methods Function Pointers
+//    this->_int_map[this->SPRING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_spring;
+//    this->_int_map[this->PRO_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_exc_volume;
+//    this->_int_map[this->PRO_ANG_POT] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_ang_pot;
+//    //Protein-DNA Function Pointers
+//    this->_int_map[this->PRO_DNA_EXC_VOL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &DNACTInteraction<number>::_protein_dna_exc_volume;
+
+// we don't need the F4_... terms as the macros are used in the CUDA_DNA.cuh file; this doesn't apply for the F2_K term
     this->F2_K[1] = CXST_K_OXDNA2;
     _debye_huckel_half_charged_ends = true;
     this->_grooving = true;
