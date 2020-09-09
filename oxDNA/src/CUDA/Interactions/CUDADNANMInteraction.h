@@ -17,13 +17,7 @@
 template<typename number, typename number4>
 class CUDADNANMInteraction: public CUDABaseInteraction<number, number4>, public DNANMInteraction<number> {
 public:
-    //COPIED from CUDADNAInteraction
-    enum {
-        DEBYE_HUCKEL = 7,
-        SPRING = 8,
-        PRO_EXC_VOL = 9,
-        PRO_DNA_EXC_VOL = 10
-    };
+
     bool _use_debye_huckel;
     bool _use_oxDNA2_coaxial_stacking;
     bool _use_oxDNA2_FENE;
@@ -42,10 +36,15 @@ public:
     float _pro_base_sigma, _pro_base_rstar, _pro_base_b, _pro_base_rcut;
     float _pro_sigma, _pro_rstar, _pro_b, _pro_rcut;
 
-    char *_d_spring_pottype, *_h_spring_pottype;
-    number *_d_spring_potential, *_h_spring_potential;
-    number *_d_spring_eqdist, *_h_spring_eqdist;
-    size_t _spring_param_size_number, _spring_param_size_char;
+    number *_spring_eqdist, *_spring_potential; //Temp arrays for parameter storage
+
+    //compressed parameter arrays
+    number *_h_aff_gamma, *_d_aff_gamma;
+    number *_h_aff_eqdist, *_d_aff_eqdist;
+    int *_h_affected, *_d_affected;
+    int *_affected_len, *_h_affected_indx, *_d_affected_indx;
+    size_t _spring_param_size_number;
+
     int offset; //Will only come into play if proteins are after dna in topology file (particle id wise). Adjusts proteins index for the spring parameter arrays
 	CUDADNANMInteraction();
 	virtual ~CUDADNANMInteraction();

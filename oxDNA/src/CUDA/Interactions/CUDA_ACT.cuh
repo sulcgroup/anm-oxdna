@@ -280,7 +280,7 @@ __global__ void dnact_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
 
 // bonded interactions for edge-based approach
 template <typename number, typename number4>
-__global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_spring_eqdist, number *_d_spring_potential, number *_d_ang_params) {
+__global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_aff_eqdist, number *_d_aff_gamma, number *_d_ang_params, int *_d_affected_indx, int *_d_affected) {
     if(IND >= MD_N[0]) return;
 
     number4 F0, T0;
@@ -406,23 +406,26 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
         //if(IND == 104) printf("CUDA p42 Angular F %.7f %.7f %.7f T %.7f %.7f %.7f %.7f\n", ftotal.x, ftotal.y, ftotal.z, ttotal.x, ttotal.y, ttotal.z, ttotal.w);
 
         //Spring
-        for(int i = _npro*(IND - _offset); i < _npro*(IND - _offset)+_npro; i++){
-            int qindex = i - _npro*(IND - _offset) +_offset;
-            number eqdist = _d_spring_eqdist[i];
-            if(eqdist > (number) 0){
-                number4 qpos = poss[qindex];
-                number4 r = box->minimum_image(ppos, qpos);
+        //bounds for spring loop determined per particle
+        int &lb = _d_affected_indx[pindex];
+        int &ub = _d_affected_indx[pindex+1];
+        //printf("IND %d lb %d ub %d\n", IND, lb, ub);
 
-                number d = _module<number, number4>(r);
-                number gamma = _d_spring_potential[i];
+        for(int i = lb; i < ub; i++) {
+            int j = _d_affected[i];
+            number4 &qpos = poss[j + _offset];
+            number4 r = box->minimum_image(ppos, qpos);
+            number d = _module<number, number4>(r);
 
-                number fmod = (-1.0f * gamma) * (d - eqdist) / d;
+            number &gamma = _d_aff_gamma[i];
+            number &eqdist = _d_aff_eqdist[i];
 
-                dF = fmod*r;
-                dF.w = 0.5*(0.5f * gamma * SQR(d-eqdist));
+            number fmod = (-1.0f * gamma) * (d - eqdist) / d;
 
-                ftotal -= dF;
-            };
+            dF = fmod * r;
+            dF.w = 0.5 * (0.5f * gamma * SQR(d - eqdist));
+
+            ftotal -= dF;
         }
 
         //Add totals to particle lists

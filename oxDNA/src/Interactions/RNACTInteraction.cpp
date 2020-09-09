@@ -28,8 +28,6 @@ RNACTInteraction<number>::RNACTInteraction() : RNA2Interaction<number>() {
 
     this->_int_map[this->DEBYE_HUCKEL] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_debye_huckel;
     this->_RNA_HYDR_MIS = 1;
-    // log the interaction type
-    OX_LOG(Logger::LOG_INFO,"Running modification of oxRNA with additional Debye-Huckel potential");
 
     this->_int_map[this->BACKBONE] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_backbone;
     this->_int_map[this->BONDED_EXCLUDED_VOLUME] = (number (RNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces)) &RNACTInteraction<number>::_bonded_excluded_volume;
@@ -46,7 +44,6 @@ RNACTInteraction<number>::RNACTInteraction() : RNA2Interaction<number>() {
         for(int j = 0; j < 5; j++)
             this->_cross_seq_dep_K[i][j] = 1.;
 
-    OX_LOG(Logger::LOG_INFO,"Running oxRNA version %s",RNA_MODEL_VERSION);
     this->_generate_consider_bonded_interactions = true;
 
     this->_use_mbf = false;
