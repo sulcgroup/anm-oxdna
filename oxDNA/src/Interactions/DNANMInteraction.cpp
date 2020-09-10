@@ -53,9 +53,8 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
     getline (parameters,carbons);
     if (parameters.is_open())
     {
-        while (parameters.good())
+        while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
         {
-            parameters >> key1 >> key2 >> dist >> potswitch >> potential;
             pair <int, int> lkeys (key1, key2);
             pair <char, double> pot (potswitch, potential);
             _rknot[lkeys] = dist;
@@ -179,7 +178,6 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
             int tmpn3, tmpn5;
             ss >> base >> tmpn3 >> tmpn5;
 
-//            BaseParticle<number> *p = particles[i];
             DNANucleotide<number> *p = dynamic_cast<DNANucleotide<number> *> (particles[i]);
 
             if (tmpn3 < 0) p->n3 = P_VIRTUAL;
@@ -213,6 +211,8 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
             if (p->n3 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p->n3, p));
             if (p->n5 != P_VIRTUAL) p->affected.push_back(ParticlePair<number>(p, p->n5));
 
+
+            //Debug
 //            typedef typename std::vector<ParticlePair<number> >::iterator iter;
 //            iter it;
 //            for (it = p->affected.begin(); it != p->affected.end(); ++it) {

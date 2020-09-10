@@ -76,6 +76,7 @@ void DNACTInteraction<number>::get_settings(input_file &inp){
     char s[5] = "none";
     if(strcmp(_parameterfile, s) != 0){
         //Reading Parameter File
+        OX_LOG(Logger::LOG_INFO, "Parfile: %s, No protein parameters were filled", _parameterfile);
         int key1, key2;
         char potswitch;
         double potential, dist;
@@ -87,9 +88,8 @@ void DNACTInteraction<number>::get_settings(input_file &inp){
         int N = stoi(carbons);
         if (parameters.is_open())
         {
-            while (parameters.good())
+            while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
             {
-                parameters >> key1 >> key2 >> dist >> potswitch >> potential;
                 valid_spring_params(N, key1, key2, dist, potswitch, potential);
                 if (key2 - key1 == 1){
                     //Angular Parameters
@@ -116,6 +116,8 @@ void DNACTInteraction<number>::get_settings(input_file &inp){
         {
             throw oxDNAException("ParameterFile Could Not Be Opened");
         }
+    } else {
+        OX_LOG(Logger::LOG_INFO, "Parfile: none, No protein parameters were filled");
     }
 
 }
