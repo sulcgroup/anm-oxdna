@@ -92,46 +92,46 @@ void RNACTInteraction<number>::get_settings(input_file &inp){
         if(k < 0) throw oxDNAException("Spring Constant %f Not Supported", k);
     };
 
-    //Reading Parameter File
-    int key1, key2;
-    char potswitch;
-    double potential, dist;
-    double a0, b0, c0, d0;
-    string carbons;
-    fstream parameters;
-    parameters.open(_parameterfile, ios::in);
-    getline (parameters,carbons);
-    int N = stoi(carbons);
-    if (parameters.is_open())
-    {
-        while (parameters.good())
-        {
-            parameters >> key1 >> key2 >> dist >> potswitch >> potential;
-            valid_spring_params(N, key1, key2, dist, potswitch, potential);
-            if (key2 - key1 == 1){
-                //Angular Parameters
-                parameters >> a0 >> b0 >> c0 >> d0;
-                valid_angles(a0, b0, c0, d0);
-                vector<double> angles {a0, b0, c0, d0};
-                _ang_vals[key1] = angles;
+    char s[5] = "none";
+    if(strcmp(_parameterfile, s) != 0) {
+        //Reading Parameter File
+        int key1, key2;
+        char potswitch;
+        double potential, dist;
+        double a0, b0, c0, d0;
+        string carbons;
+        fstream parameters;
+        parameters.open(_parameterfile, ios::in);
+        getline(parameters, carbons);
+        int N = stoi(carbons);
+        if (parameters.is_open()) {
+            while (parameters >> key1 >> key2 >> dist >> potswitch >> potential) {
+                valid_spring_params(N, key1, key2, dist, potswitch, potential);
+                if (key2 - key1 == 1) {
+                    //Angular Parameters
+                    parameters >> a0 >> b0 >> c0 >> d0;
+                    valid_angles(a0, b0, c0, d0);
+                    vector<double> angles{a0, b0, c0, d0};
+                    _ang_vals[key1] = angles;
 
-                pair <int, int> lkeys (key1, key2);
-                pair <char, double> pot (potswitch, potential);
+                    pair<int, int> lkeys(key1, key2);
+                    pair<char, double> pot(potswitch, potential);
 
-                this->_rknot[lkeys] = dist;
-                this->_potential[lkeys] = pot;
-            } else {
-                pair <int, int> lkeys (key1, key2);
-                pair <char, double> pot (potswitch, potential);
-                this->_rknot[lkeys] = dist;
-                this->_potential[lkeys] = pot;
+                    this->_rknot[lkeys] = dist;
+                    this->_potential[lkeys] = pot;
+                } else {
+                    pair<int, int> lkeys(key1, key2);
+                    pair<char, double> pot(potswitch, potential);
+                    this->_rknot[lkeys] = dist;
+                    this->_potential[lkeys] = pot;
+                }
             }
+            parameters.close();
+        } else {
+            throw oxDNAException("ParameterFile Could Not Be Opened");
         }
-        parameters.close();
-    }
-    else
-    {
-        throw oxDNAException("ParameterFile Could Not Be Opened");
+    } else {
+        OX_LOG(Logger::LOG_INFO, "Parfile: NONE, No protein parameters were filled");
     }
 }
 
@@ -170,12 +170,10 @@ void RNACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
                              this->_topology_filename);
 
     topology.getline(line, 5120);
-    try{
-        sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &nrna, &npro, &nrnas);
-    }catch(...){
-        throw oxDNAException("Problem with header make sure the format is correct for DNACT Interaction");
+    sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &nrna, &npro, &nrnas);
+    if(N < 0 || my_N_strands < 0 || my_N_strands > my_N || nrna > my_N || nrna < 0 || npro > my_N || npro < 0 || nrnas < 0 || nrnas > my_N) {
+        throw oxDNAException("Problem with header make sure the format is correct for RNACTM Interaction");
     }
-
 
     int strand, i = 0;
     while (topology.good()) {

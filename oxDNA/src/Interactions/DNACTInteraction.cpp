@@ -76,7 +76,6 @@ void DNACTInteraction<number>::get_settings(input_file &inp){
     char s[5] = "none";
     if(strcmp(_parameterfile, s) != 0){
         //Reading Parameter File
-        OX_LOG(Logger::LOG_INFO, "Parfile: %s, No protein parameters were filled", _parameterfile);
         int key1, key2;
         char potswitch;
         double potential, dist;
@@ -117,7 +116,7 @@ void DNACTInteraction<number>::get_settings(input_file &inp){
             throw oxDNAException("ParameterFile Could Not Be Opened");
         }
     } else {
-        OX_LOG(Logger::LOG_INFO, "Parfile: none, No protein parameters were filled");
+        OX_LOG(Logger::LOG_INFO, "Parfile: NONE, No protein parameters were filled");
     }
 
 }
@@ -161,9 +160,8 @@ void DNACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
                              this->_topology_filename);
 
     topology.getline(line, 5120);
-    try{
-        sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
-    }catch(...){
+    sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
+    if(N < 0 || my_N_strands < 0 || my_N_strands > my_N || ndna > my_N || ndna < 0 || npro > my_N || npro < 0 || ndnas < 0 || ndnas > my_N) {
         throw oxDNAException("Problem with header make sure the format is correct for DNACT Interaction");
     }
 

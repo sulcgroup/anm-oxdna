@@ -15,6 +15,8 @@
 
 template<typename number, typename number4>
 CUDADNANMInteraction<number, number4>::CUDADNANMInteraction() {
+
+    _read_par = false;
     //Not copied over to device memory
     _spring_potential = NULL;
     _spring_eqdist = NULL;
@@ -65,6 +67,10 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
     if (!getInputString(&inp, "PARFILE", this->_parameterfile, 0) == KEY_FOUND){
         throw oxDNAException("Key 'PARFILE' not found. Necessary for Protein sims.");
     }
+
+    char s[5] = "none";
+    if(strcmp(this->_parameterfile, s) != 0) _read_par = true;
+
     if (!getInputString(&inp, "topology", this->_topology_filename, 0) == KEY_FOUND){
         throw oxDNAException("Key 'topology_file' not found.");
     }
@@ -119,135 +125,137 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
     else if(this->_firststrand > 0) offset = this->ndna;
     else throw oxDNAException("No Strand should have an ID of 0");
 
+    if(_read_par){
+        //Initalizing Some Host and Device Arrays for Spring Parameters
+        _spring_param_size_number = sizeof(number) * (this->npro*this->npro);
+        _spring_potential = new number[this->npro*this->npro]();
+        _spring_eqdist = new number[this->npro*this->npro]();
 
-    //Initalizing Some Host and Device Arrays for Spring Parameters
-    _spring_param_size_number = sizeof(number) * (this->npro*this->npro);
-    _spring_potential = new number[this->npro*this->npro]();
-    _spring_eqdist = new number[this->npro*this->npro]();
+        char potswitch = 'x';
+        number potential = 0.f, dist = 0.f;
+        for(int i = 0; i< (this->npro*this->npro); i++){
+            _spring_eqdist[i] = dist;
+            _spring_potential[i] = potential;
+        }
 
-    char potswitch = 'x';
-    number potential = 0.f, dist = 0.f;
-    for(int i = 0; i< (this->npro*this->npro); i++){
-        _spring_eqdist[i] = dist;
-        _spring_potential[i] = potential;
-    }
+        auto valid_spring_params = [](int N, int x, int y, double d, char s, double k){
+            if(x < 0 || x > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", x);
+            if(y < 0 || y > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", y);
+            if(d < 0) throw oxDNAException("Invalid Eq Distance %d in Parameter File", d);
+            if(s != 's') throw oxDNAException("Potential Type %c Not Supported", s);
+            if(k < 0) throw oxDNAException("Spring Constant %f Not Supported", k);
+        };
 
-    auto valid_spring_params = [](int N, int x, int y, double d, char s, double k){
-        if(x < 0 || x > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", x);
-        if(y < 0 || y > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", y);
-        if(d < 0) throw oxDNAException("Invalid Eq Distance %d in Parameter File", d);
-        if(s != 's') throw oxDNAException("Potential Type %c Not Supported", s);
-        if(k < 0) throw oxDNAException("Spring Constant %f Not Supported", k);
-    };
+        int key1, key2 = 0;
+        string carbons;
+        fstream parameters;
+        parameters.open(this->_parameterfile, ios::in);
+        getline (parameters, carbons);
 
-    int key1, key2 = 0;
-    string carbons;
-    fstream parameters;
-    parameters.open(this->_parameterfile, ios::in);
-    getline (parameters, carbons);
+        //total connections
+        int spring_connection_num = 0;
 
-    //total connections
-    int spring_connection_num = 0;
+        //allocate and declare affected_len vector
+        _affected_len = new int[this->npro]();
+        for(int i = 0; i < this->npro; i++) _affected_len[i] = 0;
 
-    //allocate and declare affected_len vector
-    _affected_len = new int[this->npro]();
-    for(int i = 0; i < this->npro; i++) _affected_len[i] = 0;
-
-    if (parameters.is_open())
-    {
-        while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
+        if (parameters.is_open())
         {
-            valid_spring_params(N, key1, key2, dist, potswitch, potential);
-            spring_connection_num += 1;
+            while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
+            {
+                valid_spring_params(N, key1, key2, dist, potswitch, potential);
+                spring_connection_num += 1;
 
-            if(offset != 0) {
-                key1 -= offset;
-                key2 -= offset;
+                if(offset != 0) {
+                    key1 -= offset;
+                    key2 -= offset;
+                }
+
+                _affected_len[key1] += 1;
+                _affected_len[key2] += 1;
+
+                _spring_potential[key1*this->npro + key2] = potential;
+                _spring_eqdist[key1*this->npro + key2] = dist;
+
+                _spring_potential[key2*this->npro + key1] = potential;
+                _spring_eqdist[key2*this->npro + key1] = dist;
             }
-
-            _affected_len[key1] += 1;
-            _affected_len[key2] += 1;
-
-            _spring_potential[key1*this->npro + key2] = potential;
-            _spring_eqdist[key1*this->npro + key2] = dist;
-
-            _spring_potential[key2*this->npro + key1] = potential;
-            _spring_eqdist[key2*this->npro + key1] = dist;
+            parameters.close();
         }
-        parameters.close();
-    }
-    else
-    {
-        throw oxDNAException("ParameterFile Could Not Be Opened");
-    }
+        else
+        {
+            throw oxDNAException("ParameterFile Could Not Be Opened");
+        }
 
-    //Compressed Parameter Initialization
-    _h_affected_indx = new int[this->npro + 1]();
-    _h_affected = new int[spring_connection_num*2]();
-    _h_aff_gamma = new number[spring_connection_num*2]();
-    _h_aff_eqdist = new number[spring_connection_num*2]();
-    number zero = (number) 0.f;
-    for(int i = 0; i < this->npro+1; i++) _h_affected_indx[i] = 0;
-    for(int i = 0; i < spring_connection_num*2; i++){
-        _h_affected[i] = 0;
-        _h_aff_gamma[i] = zero;
-        _h_aff_eqdist[i] = zero;
-    }
+        //Compressed Parameter Initialization
+        _h_affected_indx = new int[this->npro + 1]();
+        _h_affected = new int[spring_connection_num*2]();
+        _h_aff_gamma = new number[spring_connection_num*2]();
+        _h_aff_eqdist = new number[spring_connection_num*2]();
+        number zero = (number) 0.f;
+        for(int i = 0; i < this->npro+1; i++) _h_affected_indx[i] = 0;
+        for(int i = 0; i < spring_connection_num*2; i++){
+            _h_affected[i] = 0;
+            _h_aff_gamma[i] = zero;
+            _h_aff_eqdist[i] = zero;
+        }
 
-    //Compressed Index
-    int param_indx = 0;
-    //For each residue
-    for(int i = 0; i < this->npro; i++){
-        //Fill _h_affected filtering through larger arrays filled in parameter file reading
-        for(int j = i*this->npro; j < i*this->npro+this->npro; j++){
-            if(_spring_eqdist[j] != 0.f){
-                //Affected List, Access is controlled with indices in _h_affected_indx
-                _h_affected[param_indx] = j % this->npro;
-                //Stored in same way for easy access, spring constants
-                _h_aff_gamma[param_indx] = _spring_potential[j];
-                //eq_distance
-                _h_aff_eqdist[param_indx] = _spring_eqdist[j];
-                param_indx += 1;
+        //Compressed Index
+        int param_indx = 0;
+        //For each residue
+        for(int i = 0; i < this->npro; i++){
+            //Fill _h_affected filtering through larger arrays filled in parameter file reading
+            for(int j = i*this->npro; j < i*this->npro+this->npro; j++){
+                if(_spring_eqdist[j] != 0.f){
+                    //Affected List, Access is controlled with indices in _h_affected_indx
+                    _h_affected[param_indx] = j % this->npro;
+                    //Stored in same way for easy access, spring constants
+                    _h_aff_gamma[param_indx] = _spring_potential[j];
+                    //eq_distance
+                    _h_aff_eqdist[param_indx] = _spring_eqdist[j];
+                    param_indx += 1;
+                }
             }
         }
-    }
 
-    //Don't need Larger arrays anymore, safe to delete
-    if(_spring_eqdist != NULL) delete[] _spring_eqdist;
-    _spring_eqdist = NULL; //Otherwise dangling Pointer
-    if(_spring_potential != NULL) delete[] _spring_potential;
-    _spring_potential = NULL;
+        //Don't need Larger arrays anymore, safe to delete
+        if(_spring_eqdist != NULL) delete[] _spring_eqdist;
+        _spring_eqdist = NULL; //Otherwise dangling Pointer
+        if(_spring_potential != NULL) delete[] _spring_potential;
+        _spring_potential = NULL;
 
-    //Allocation and Copying of Compressed Parameters
-    CUDA_SAFE_CALL(cudaMalloc(&_d_affected, 2 * spring_connection_num * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMemcpy(_d_affected, _h_affected, 2 * spring_connection_num * sizeof(int), cudaMemcpyHostToDevice));
+        //Allocation and Copying of Compressed Parameters
+        CUDA_SAFE_CALL(cudaMalloc(&_d_affected, 2 * spring_connection_num * sizeof(int)));
+        CUDA_SAFE_CALL(cudaMemcpy(_d_affected, _h_affected, 2 * spring_connection_num * sizeof(int), cudaMemcpyHostToDevice));
 
-    CUDA_SAFE_CALL(cudaMalloc(&_d_aff_gamma, 2 * spring_connection_num * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMemcpy(_d_aff_gamma, _h_aff_gamma, 2 * spring_connection_num * sizeof(int), cudaMemcpyHostToDevice));
+        CUDA_SAFE_CALL(cudaMalloc(&_d_aff_gamma, 2 * spring_connection_num * sizeof(int)));
+        CUDA_SAFE_CALL(cudaMemcpy(_d_aff_gamma, _h_aff_gamma, 2 * spring_connection_num * sizeof(int), cudaMemcpyHostToDevice));
 
-    CUDA_SAFE_CALL(cudaMalloc(&_d_aff_eqdist, 2 * spring_connection_num * sizeof(int)));
-    CUDA_SAFE_CALL(cudaMemcpy(_d_aff_eqdist, _h_aff_eqdist, 2 * spring_connection_num * sizeof(int), cudaMemcpyHostToDevice));
+        CUDA_SAFE_CALL(cudaMalloc(&_d_aff_eqdist, 2 * spring_connection_num * sizeof(int)));
+        CUDA_SAFE_CALL(cudaMemcpy(_d_aff_eqdist, _h_aff_eqdist, 2 * spring_connection_num * sizeof(int), cudaMemcpyHostToDevice));
 
-    int ind = 0;
-    _h_affected_indx[0] = 0;
-    //make indx access list where: _h_affected_indx[i] lower bound of i's parameters, _h_affected_indx[i+1] upper bound of i's parameters
-    for(int i = 0; i < this->npro; i++){
-        ind += _affected_len[i];
-        _h_affected_indx[i+1] += ind;
-    }
+        int ind = 0;
+        _h_affected_indx[0] = 0;
+        //make indx access list where: _h_affected_indx[i] lower bound of i's parameters, _h_affected_indx[i+1] upper bound of i's parameters
+        for(int i = 0; i < this->npro; i++){
+            ind += _affected_len[i];
+            _h_affected_indx[i+1] += ind;
+        }
 
-    //Don't need this anymore
-    if(_affected_len != NULL) delete[] _affected_len;
-    _affected_len = NULL;
+        //Don't need this anymore
+        if(_affected_len != NULL) delete[] _affected_len;
+        _affected_len = NULL;
 
-    //Allocation and copying of Indice List for accessing compressed parameters
-    CUDA_SAFE_CALL(cudaMalloc(&_d_affected_indx, (this->npro+1)*sizeof(int)));
-    CUDA_SAFE_CALL( cudaMemcpy(_d_affected_indx, _h_affected_indx, (this->npro+1)*sizeof(int), cudaMemcpyHostToDevice));
+        //Allocation and copying of Indice List for accessing compressed parameters
+        CUDA_SAFE_CALL(cudaMalloc(&_d_affected_indx, (this->npro+1)*sizeof(int)));
+        CUDA_SAFE_CALL( cudaMemcpy(_d_affected_indx, _h_affected_indx, (this->npro+1)*sizeof(int), cudaMemcpyHostToDevice));
 
-    //Memory Used by Parameters
-    float param_memory_mb = (spring_connection_num * 2 * sizeof(int) + 2 * spring_connection_num * 2 * sizeof(number)
-                             + (this->npro + 1) * sizeof(int) + 4 * this->npro * sizeof(number))/SQR(1024);
-    OX_LOG(Logger::LOG_INFO, "Spring Parameters Size: %.2f MB", param_memory_mb);
+        //Memory Used by Parameters
+        float param_memory_mb = (spring_connection_num * 2 * sizeof(int) + 2 * spring_connection_num * 2 * sizeof(number)
+                                 + (this->npro + 1) * sizeof(int) + 4 * this->npro * sizeof(number))/SQR(1024);
+        OX_LOG(Logger::LOG_INFO, "Spring Parameters Size: %.2f MB", param_memory_mb);
+
+    } else OX_LOG(Logger::LOG_INFO, "Parfile: NONE, No protein parameters were filled");
 
     // Copied from CUDADNAINTERACTION
     DNAInteraction<number>::init();

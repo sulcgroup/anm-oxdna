@@ -74,6 +74,9 @@ void RNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 
     topology.getline(line, 5120);
     sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &nrna, &npro, &nrnas);
+    if(N < 0 || my_N_strands < 0 || my_N_strands > my_N || nrna > my_N || nrna < 0 || npro > my_N || npro < 0 || nrnas < 0 || nrnas > my_N) {
+        throw oxDNAException("Problem with header make sure the format is correct for RNANM Interaction");
+    }
 
     int strand, i = 0;
     while (topology.good()) {
@@ -275,30 +278,36 @@ template<typename number>
 void RNANMInteraction<number>::get_settings(input_file &inp) {
 	this->RNA2Interaction<number>::get_settings(inp);
     getInputString(&inp, "parfile", _parameterfile, 0);
-    //Addition of Reading Parameter File
-    int key1, key2;
-    char potswitch;
-    double potential, dist;
-    string carbons;
-    fstream parameters;
-    parameters.open(_parameterfile, ios::in);
-    getline (parameters,carbons);
-    if (parameters.is_open())
-    {
-        while (parameters.good())
+
+    char s[5] = "none";
+    if(strcmp(_parameterfile, s) != 0) {
+        //Addition of Reading Parameter File
+        int key1, key2;
+        char potswitch;
+        double potential, dist;
+        string carbons;
+        fstream parameters;
+        parameters.open(_parameterfile, ios::in);
+        getline (parameters,carbons);
+        if (parameters.is_open())
         {
-            parameters >> key1 >> key2 >> dist >> potswitch >> potential;
-            pair <int, int> lkeys (key1, key2);
-            pair <char, double> pot (potswitch, potential);
-            _rknot[lkeys] = dist;
-            _potential[lkeys] = pot;
+            while (parameters.good())
+            {
+                parameters >> key1 >> key2 >> dist >> potswitch >> potential;
+                pair <int, int> lkeys (key1, key2);
+                pair <char, double> pot (potswitch, potential);
+                _rknot[lkeys] = dist;
+                _potential[lkeys] = pot;
+            }
         }
+        else
+        {
+            throw oxDNAException("ParameterFile Could Not Be Opened on cpu");
+        }
+        parameters.close();
+    } else {
+        OX_LOG(Logger::LOG_INFO, "Parfile: NONE, No protein parameters were filled");
     }
-    else
-    {
-        throw oxDNAException("ParameterFile Could Not Be Opened on cpu");
-    }
-    parameters.close();
 }
 
 template<typename number> //initialise the interaction

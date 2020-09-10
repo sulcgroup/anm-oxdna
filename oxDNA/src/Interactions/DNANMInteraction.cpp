@@ -44,28 +44,33 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
 	this->DNA2Interaction<number>::get_settings(inp);
 	getInputString(&inp, "PARFILE", _parameterfile, 0);
 	//Addition of Reading Parameter File
-    int key1, key2;
-    char potswitch;
-    double potential, dist;
-    string carbons;
-    fstream parameters;
-    parameters.open(_parameterfile, ios::in);
-    getline (parameters,carbons);
-    if (parameters.is_open())
-    {
-        while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
+    char s[5] = "none";
+    if(strcmp(_parameterfile, s) != 0) {
+        int key1, key2;
+        char potswitch;
+        double potential, dist;
+        string carbons;
+        fstream parameters;
+        parameters.open(_parameterfile, ios::in);
+        getline (parameters,carbons);
+        if (parameters.is_open())
         {
-            pair <int, int> lkeys (key1, key2);
-            pair <char, double> pot (potswitch, potential);
-            _rknot[lkeys] = dist;
-            _potential[lkeys] = pot;
+            while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
+            {
+                pair <int, int> lkeys (key1, key2);
+                pair <char, double> pot (potswitch, potential);
+                _rknot[lkeys] = dist;
+                _potential[lkeys] = pot;
+            }
         }
+        else
+        {
+            throw oxDNAException("ParameterFile Could Not Be Opened");
+        }
+        parameters.close();
+    } else {
+        OX_LOG(Logger::LOG_INFO, "Parfile: NONE, No protein parameters were filled");
     }
-    else
-    {
-        throw oxDNAException("ParameterFile Could Not Be Opened on cpu");
-    }
-    parameters.close();
 }
 
 template<typename number>
@@ -108,9 +113,8 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
                              this->_topology_filename);
 
     topology.getline(line, 5120);
-    try{
-        sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
-    }catch(...){
+    sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
+    if(N < 0 || my_N_strands < 0 || my_N_strands > my_N || ndna > my_N || ndna < 0 || npro > my_N || npro < 0 || ndnas < 0 || ndnas > my_N) {
         throw oxDNAException("Problem with header make sure the format is correct for DNANM Interaction");
     }
 

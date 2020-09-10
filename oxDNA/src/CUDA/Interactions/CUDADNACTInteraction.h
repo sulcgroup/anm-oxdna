@@ -42,6 +42,8 @@ public:
     number *_d_ang_params, *_h_ang_params;
     size_t _spring_param_size_number, _ang_param_size;
 
+    bool _read_par;
+
     //compressed parameter arrays
     number *_h_aff_gamma, *_d_aff_gamma;
     number *_h_aff_eqdist, *_d_aff_eqdist;
