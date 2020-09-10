@@ -133,6 +133,9 @@ void ACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<n
 	topology.getline(line, 5120);
 
 	sscanf(line, "%d %d\n", &my_N, &my_N_strands);
+    if(my_N < 0 || my_N < my_N_strands || my_N_strands < 0){
+        throw oxDNAException("Problem with header make sure the format is correct for ACT Interaction");
+    }
 
 	char aminoacid[256];
 	int strand, i = 0;
