@@ -131,8 +131,10 @@ void ACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<n
 				this->_topology_filename);
 
 	topology.getline(line, 5120);
+    std::stringstream head(line);
+    head >> my_N >> my_N_strands;
+    if (head.fail()) throw oxDNAException("Problem with header make sure the format is correct for ACT Interaction");
 
-	sscanf(line, "%d %d\n", &my_N, &my_N_strands);
     if(my_N < 0 || my_N < my_N_strands || my_N_strands < 0){
         throw oxDNAException("Problem with header make sure the format is correct for ACT Interaction");
     }
@@ -140,7 +142,7 @@ void ACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<n
 	char aminoacid[256];
 	int strand, i = 0;
 	while (topology.good()) {
-		topology.getline(line, 2040);
+		topology.getline(line, 5120);
 		if (strlen(line) == 0 || line[0] == '#')
 			continue;
 		if (i == N)

@@ -118,7 +118,7 @@ number ACInteraction<number>::_repulsive_lj_quart(const LR_vector<number> &r, LR
 
 template<typename number>
 number ACInteraction<number>::_exc_volume(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces) {
-	if (p->index != q->index && abs(q->index - p->index) != 1){
+	if (p->index != q->index){
 		LR_vector<number> force(0,0,0);
 
 		number energy =  this->_repulsive_lj_quart(*r, force, update_forces);

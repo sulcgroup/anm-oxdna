@@ -170,9 +170,12 @@ void RNACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
                              this->_topology_filename);
 
     topology.getline(line, 5120);
-    sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &nrna, &npro, &nrnas);
+    //header
+    std::stringstream head(line);
+    head >> my_N >> my_N_strands >> nrna >> npro >>nrnas;
+    if (head.fail()) throw oxDNAException("Problem with header make sure the format is correct for RNACT Interaction");
     if(N < 0 || my_N_strands < 0 || my_N_strands > my_N || nrna > my_N || nrna < 0 || npro > my_N || npro < 0 || nrnas < 0 || nrnas > my_N) {
-        throw oxDNAException("Problem with header make sure the format is correct for RNACTM Interaction");
+        throw oxDNAException("Problem with header make sure the format is correct for RNACT Interaction");
     }
 
     int strand, i = 0;

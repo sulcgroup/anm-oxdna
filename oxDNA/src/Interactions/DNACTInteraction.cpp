@@ -160,7 +160,11 @@ void DNACTInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
                              this->_topology_filename);
 
     topology.getline(line, 5120);
-    sscanf(line, "%d %d %d %d %d\n", &my_N, &my_N_strands, &ndna, &npro, &ndnas);
+    std::stringstream head(line);
+
+    head >> my_N >> my_N_strands >> ndna >> npro >>ndnas;
+    if (head.fail()) throw oxDNAException("Problem with header make sure the format is correct for DNACT Interaction");
+
     if(N < 0 || my_N_strands < 0 || my_N_strands > my_N || ndna > my_N || ndna < 0 || npro > my_N || npro < 0 || ndnas < 0 || ndnas > my_N) {
         throw oxDNAException("Problem with header make sure the format is correct for DNACT Interaction");
     }

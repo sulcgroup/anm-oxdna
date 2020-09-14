@@ -31,8 +31,7 @@ template<typename number>
 void ACInteraction<number>::get_settings(input_file &inp) {
 	IBaseInteraction<number>::get_settings(inp);
 	char parameterfile[500];
-	getInputString(&inp, "PARFILE", parameterfile, 0);
-
+	getInputString(&inp, "parfile", parameterfile, 0);
 
 	//Addition of Reading Parameter File for ACInteraction Only!
 	int key1, key2;
@@ -44,9 +43,8 @@ void ACInteraction<number>::get_settings(input_file &inp) {
 	getline (parameters,carbons);
 	if (parameters.is_open())
 	{
-		while (parameters.good())
+		while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
 		{
-			parameters >> key1 >> key2 >> dist >> potswitch >> potential;
             pair <int, int> lkeys (key1, key2);
             pair <char, double> pot (potswitch, potential);
 			_rknot[lkeys] = dist;
@@ -119,7 +117,10 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 	topology.getline(line, 5120);
 
-	sscanf(line, "%d %d\n", &my_N, &my_N_strands);
+    std::stringstream head(line);
+    head >> my_N >> my_N_strands;
+    if (head.fail()) throw oxDNAException("Problem with header make sure the format is correct for AC Interaction");
+
 	if(my_N < 0 || my_N < my_N_strands || my_N_strands < 0){
         throw oxDNAException("Problem with header make sure the format is correct for AC Interaction");
 	}
