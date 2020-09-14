@@ -186,6 +186,8 @@ void ACInteraction<number>::read_topology(int N, int *N_strands, BaseParticle<nu
 
 	}
 
+    if(abs(strand) != my_N_strands) throw oxDNAException("Mismatching strand number in header of Topology file");
+
 	if (i < my_N)
 		throw oxDNAException(
 				"Not enough particles found in the topology file (should be %d). Aborting",
