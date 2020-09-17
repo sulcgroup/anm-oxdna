@@ -5,13 +5,13 @@ Included in the repository is the simulation code in the oxDNA directory as well
 # Models 
 Below are the Interaction Types for protein and DNA/RNA - protein hybrid simulations along with a brief description of their purpose:
 
-  ## AC -> For Simulation of Proteins exclusively, Treats the system as the classic ANM
-  ## ACT -> For Simulation of Proteins exclusively, Uses classic ANM and bending/torsional modulation
-  ## DNANM -> For Simulation of Proteins and DNA, Uses classic ANM for protein and oxDNA2 for DNA
-  ## DNACT -> For Simulation of Proteins and DNA, Uses ANMT model for protein and oxDNA2 for DNA
-  ## RNANM -> For Simulation of Proteins and RNA, Uses classic ANM for protein and oxRNA2 for RNA
-  ## RNACT -> For Simulation of Proteins and RNA, Uses ANMT model for protein and oxRNA2 for RNA
-  ## CUDADNANM -> CUDA version of DNANM
-  ## CUDADNACT -> CUDA version of DNACT
-  ## CUDARNANM -> CUDA version of RNANM
-  ## CUDARNACT -> CUDA version of RNACT
+  #### AC -> For Simulation of Proteins exclusively, Treats the system as the classic ANM
+  #### ACT -> For Simulation of Proteins exclusively, Uses classic ANM and bending/torsional modulation
+  #### DNANM -> For Simulation of Proteins and DNA, Uses classic ANM for protein and oxDNA2 for DNA
+  #### DNACT -> For Simulation of Proteins and DNA, Uses ANMT model for protein and oxDNA2 for DNA
+  #### RNANM -> For Simulation of Proteins and RNA, Uses classic ANM for protein and oxRNA2 for RNA
+  #### RNACT -> For Simulation of Proteins and RNA, Uses ANMT model for protein and oxRNA2 for RNA
+  #### CUDADNANM -> CUDA version of DNANM
+  #### CUDADNACT -> CUDA version of DNACT
+  #### CUDARNANM -> CUDA version of RNANM
+  #### CUDARNACT -> CUDA version of RNACT
