@@ -15,3 +15,8 @@ Below are the Interaction Types for protein and DNA/RNA - protein hybrid simulat
   #### CUDADNACT -> CUDA version of DNACT
   #### CUDARNANM -> CUDA version of RNANM
   #### CUDARNACT -> CUDA version of RNACT
+
+# Documentation
+Basic Documentation relating to file formats (.top, .par, .dat, and input) can be found in BLANK directory
+
+Example Usage of the model is shown in a series of Jupyter Notebooks availabe in the ANM_EXAMPLES directory
