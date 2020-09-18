@@ -72,9 +72,10 @@ void RNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 
     if (!topology.good()) throw oxDNAException("Can't read topology file '%s'. Aborting",this->_topology_filename);
 
+    topology.getline(line, 5120);
     std::stringstream head(line);
 
-    head >> my_N >> my_N_strands >> nrna >> npro >>nrnas;
+    head >> my_N >> my_N_strands >> nrna >> npro >> nrnas;
     if (head.fail()) throw oxDNAException("Problem with header make sure the format is correct for RNANM Interaction");
 
     if(N < 0 || my_N_strands < 0 || my_N_strands > my_N || nrna > my_N || nrna < 0 || npro > my_N || npro < 0 || nrnas < 0 || nrnas > my_N) {
@@ -186,8 +187,6 @@ void RNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
         if (strand == 0) throw oxDNAException("No strand 0 should be present please check topology file");
 
     }
-
-    if(abs(strand) != my_N_strands) throw oxDNAException("Mismatching strand number in header of Topology file");
 
     if (i < my_N) throw oxDNAException("Not enough particles found in the topology file (should be %d). Aborting", my_N);
 

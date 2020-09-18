@@ -232,7 +232,6 @@ void DNANMInteraction<number>::read_topology(int N, int *N_strands, BaseParticle
 
     }
 
-    if(abs(strand) != my_N_strands) throw oxDNAException("Mismatching strand number in header of Topology file");
 
     if (i < my_N)
         throw oxDNAException(

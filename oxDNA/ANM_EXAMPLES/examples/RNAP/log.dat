@@ -1,0 +1,32 @@
+INFO: seeding the RNG with 1422760920
+INFO: Initializing backend 
+INFO: Backend precision: double
+INFO: Simulation type: MC
+INFO: Running oxRNA version DEC2013
+INFO: Running modification of oxRNA with additional Debye-Huckel potential
+INFO: Running modification of oxRNA with additional Debye-Huckel potential
+INFO: Running oxRNA version DEC2013
+INFO: The generator will try to take into account bonded interactions by choosing distances between bonded neighbours no larger than 2.000000
+INFO: Running Debye-Huckel at salt_concentration =  1
+INFO: Setting the maximum IO limit to 4 MB/s
+INFO: pid: 551641
+INFO: DEBUGGING: rhigh is 1.09678, Cutoff is 2.54087, RC huckel is 1.64644, B huckel is 0.0130111, V is 0, lambda is 0.366726 
+INFO: DEBUGGING: dh_half_charged_ends = true
+INFO: (Cells.cpp) N_cells_side: 17, 17, 17; rcut=3.34087, IS_MC: 1
+INFO: N: 3272
+INFO: SVN CODE VERSION: SVN_NOT_FOUND
+INFO: COMPILED ON: 09/09/20
+
+INFO: Total Running Time: 414.992 s, per step: 207.496 ms
+INFO: Timings, in seconds, by Timer (total, own, spent in children)
+> SimBackend                        414.992 (100.0%)        3.775 (  0.9%)      411.217 ( 99.1%)
+***> Rotations+Translations         411.217 ( 99.1%)      411.217 ( 99.1%)        0.000 (  0.0%)
+> Lists                              15.029 (  3.6%)       15.029 (  3.6%)        0.000 (  0.0%)
+
+INFO: END OF THE SIMULATION, everything went OK!
+INFO: Lists updated 215 times (every ~9.302326 steps)
+INFO: Aggregated I/O statistics (set debug=1 for file-wise information)
+	  1.723 MB written to files
+	150.000  B written to stdout/stderr
+	For a total of  0.00415 MB/s
+
