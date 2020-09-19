@@ -64,7 +64,7 @@ void CUDADNANMInteraction<number, number4>::get_settings(input_file &inp) {
     _use_oxDNA2_coaxial_stacking = false;
     _use_oxDNA2_FENE = false;
     std::string inter_type;
-    if (!getInputString(&inp, "PARFILE", this->_parameterfile, 0) == KEY_FOUND){
+    if (!getInputString(&inp, "parfile", this->_parameterfile, 0) == KEY_FOUND){
         throw oxDNAException("Key 'PARFILE' not found. Necessary for Protein sims.");
     }
 

@@ -1,19 +1,53 @@
-DEBUG: Initializing
-INFO: seeding the RNG with -1379393279
+INFO: seeding the RNG with -304379727
 INFO: Initializing backend 
-INFO: Backend precision: double
+INFO: Backend precision: mixed
 INFO: Simulation type: MD
-DEBUG: Adding new timer with description SimBackend and no parent
+INFO: The generator will try to take into account bonded interactions by choosing distances between bonded neighbours no larger than 2.000000
+INFO: Running Debye-Huckel at salt concentration =  1
+INFO: Using different widths for major and minor grooves
 INFO: Setting the maximum IO limit to 4 MB/s
-INFO: pid: 298792
-INFO: (Cells.cpp) N_cells_side: 7, 7, 7; rcut=2.9, IS_MC: 0
+INFO: CUDA device not specified
+INFO: The generator will try to take into account bonded interactions by choosing distances between bonded neighbours no larger than 2.000000
+INFO: Running Debye-Huckel at salt concentration =  1
+INFO: Using different widths for major and minor grooves
+INFO: Using edge-based approach...
+INFO: pid: 560476
+DEBUG: Debye-Huckel parameters: Q=0.054300, lambda_0=0.361645, lambda=0.361645, r_high=1.084936, cutoff=2.590202
+DEBUG: Debye-Huckel parameters: debye_huckel_RC=1.627405e+00, debye_huckel_B=8.467662e-03
+INFO: The Debye length at this temperature and salt concentration is 0.361645
+INFO: No DNA Particles Specified, Continuing with just Protein Particles
+INFO: (Cells.cpp) N_cells_side: 7, 7, 7; rcut=2.9902, IS_MC: 0
 INFO: N: 605
 INFO: Using randomly distributed velocities
-INFO: Initial kinetic energy: 173.637447
-DEBUG: Adding new timer with description First Step and parent SimBackend
-DEBUG: Adding new timer with description Forces and parent SimBackend
-DEBUG: Adding new timer with description Thermostat and parent SimBackend
-DEBUG: Adding new timer with description Lists and parent SimBackend
+INFO: Initial kinetic energy: 182.040619
+INFO: Choosing device automatically
+INFO: Computer has 1 devices
+INFO:  - Trying device 0
+INFO:  -- device 0 has properties 6.1
+INFO:  -- using device 0
+INFO:  --- Running on device 0
+INFO: Spring Parameters Size: 0.00 MB
+INFO: threads_per_block was not specified or set to 0. The default value (64) will be used
+INFO: CUDA max_neigh: 565, max_N_per_cell: 166, N_cells: 343 (per side: 7 7 7)
+INFO: CUDA Cells mem: 0.22 MBs, lists mem: 1.31 MBs
+INFO: Allocated CUDA memory: 6.87 MBs
 INFO: SVN CODE VERSION: SVN_NOT_FOUND
 INFO: COMPILED ON: 09/09/20
-DEBUG: Running
+INFO: diffusion fixed.. 188.351 188.351
+
+INFO: Total Running Time: 18.5367 s, per step: 0.185367 ms
+INFO: Timings, in seconds, by Timer (total, own, spent in children)
+> SimBackend                         18.537 (100.0%)        0.359 (  1.9%)       18.178 ( 98.1%)
+***> Hilbert sorting                  0.112 (  0.6%)        0.112 (  0.6%)        0.000 (  0.0%)
+***> Lists                           12.384 ( 66.8%)       12.384 ( 66.8%)        0.000 (  0.0%)
+***> Thermostat                       0.206 (  1.1%)        0.206 (  1.1%)        0.000 (  0.0%)
+***> Forces                           4.123 ( 22.2%)        4.123 ( 22.2%)        0.000 (  0.0%)
+***> First Step                       1.353 (  7.3%)        1.353 (  7.3%)        0.000 (  0.0%)
+
+INFO: END OF THE SIMULATION, everything went OK!
+INFO: Lists updated 1104 times (every ~90.579710 steps)
+INFO: Aggregated I/O statistics (set debug=1 for file-wise information)
+	  6.512 MB written to files
+	  1.271 KB written to stdout/stderr
+	For a total of    0.351 MB/s
+

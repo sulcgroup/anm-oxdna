@@ -13,7 +13,7 @@ max_io = 4
 ##############################
 ####    SIM PARAMETERS    ####
 ##############################
-steps = 2000
+steps = 20000
 
 ensemble = nvt
 delta_translation = 0.15
@@ -31,7 +31,7 @@ newtonian_steps = 103
 ##############################
 parfile = rnap_complex.par
 topology = rnap_complex.top
-conf_file = rnap_complex.dat
+conf_file = s2.dat
 trajectory_file = trajectory.dat
 refresh_vel = 0
 log_file = log.dat

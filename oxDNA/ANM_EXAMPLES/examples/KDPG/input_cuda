@@ -8,8 +8,8 @@ CUDA_sort_every = 0
 use_edge = 1
 edge_n_forces = 1
 max_density_multiplier = 10
-debug = 1
-seed = 1
+#debug = 1
+#seed = 1
 interaction_type = DNACT
 salt_concentration = 1.
 max_io = 4
@@ -20,7 +20,7 @@ max_io = 4
 T = 300K
 verlet_skin = 0.20
 sim_type = MD
-steps = 10
+steps = 100000
 
 ### MD PARAMS ###
 dt = 0.002
@@ -46,15 +46,15 @@ torsion_k = 50.0
 ##############################
 ####    INPUT / OUTPUT    ####
 ##############################
-parfile = generated.par
-topology = generated.top
-conf_file = s1.dat
+parfile = kdpgt.par
+topology = ckdpgt.top
+conf_file = kdpgt.dat
 trajectory_file = trajectory.dat
 log_file = log.dat
 no_stdout_energy = 0
 restart_step_counter = 1
 energy_file = energy.dat
-print_conf_interval = 10000
-print_energy_every = 5
+print_conf_interval = 5000
+print_energy_every = 5000
 time_scale = linear
 external_forces=0

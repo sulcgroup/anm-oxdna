@@ -4,7 +4,7 @@
 
 backend = CPU
 backend_precision = double
-interaction_type=RNANM
+interaction_type=RNACT
 salt_concentration=1.0
 sim_type = MC
 max_io = 4
@@ -26,12 +26,17 @@ dt = 0.002
 diff_coeff = 2.5
 newtonian_steps = 103
 
+
+bending_k = 50.0
+torsion_k = 50.0
+
+
 ##############################
 ####    INPUT / OUTPUT    ####
 ##############################
-parfile = rnap_complex.par
-topology = rnap_complex.top
-conf_file = rnap_complex.dat
+parfile = rnapt.par
+topology = rnapt_complex.top
+conf_file = rnapt_complex2.dat
 trajectory_file = trajectory.dat
 refresh_vel = 0
 log_file = log.dat

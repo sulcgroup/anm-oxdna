@@ -42,7 +42,7 @@ DNANMInteraction<number>::DNANMInteraction() : DNA2Interaction<number>() { // @s
 template<typename number>
 void DNANMInteraction<number>::get_settings(input_file &inp){
 	this->DNA2Interaction<number>::get_settings(inp);
-	getInputString(&inp, "PARFILE", _parameterfile, 0);
+	getInputString(&inp, "parfile", _parameterfile, 0);
 	//Addition of Reading Parameter File
     char s[5] = "none";
     if(strcmp(_parameterfile, s) != 0) {
