@@ -1,0 +1,66 @@
+INFO: seeding the RNG with -697824773
+INFO: Initializing backend 
+INFO: Backend precision: mixed
+INFO: Simulation type: MD
+INFO: The generator will try to take into account bonded interactions by choosing distances between bonded neighbours no larger than 2.000000
+INFO: Running Debye-Huckel at salt concentration =  1
+INFO: Using different widths for major and minor grooves
+INFO: Setting the maximum IO limit to 4 MB/s
+INFO: CUDA device not specified
+INFO: The generator will try to take into account bonded interactions by choosing distances between bonded neighbours no larger than 2.000000
+INFO: Running Debye-Huckel at salt concentration =  1
+INFO: Using different widths for major and minor grooves
+INFO: Using edge-based approach...
+INFO: pid: 562398
+DEBUG: Debye-Huckel parameters: Q=0.054300, lambda_0=0.361645, lambda=0.361645, r_high=1.084936, cutoff=2.590202
+DEBUG: Debye-Huckel parameters: debye_huckel_RC=1.627405e+00, debye_huckel_B=8.467662e-03
+INFO: The Debye length at this temperature and salt concentration is 0.361645
+INFO: Parsing Force file trap.txt
+INFO:    Using temporary file
+INFO: Adding MutualTrap (stiff=69.87, rate=0, r0=0.35, ref_particle=702, PBC=1 on particle 201
+INFO:    Using temporary file
+INFO: Adding MutualTrap (stiff=69.87, rate=0, r0=0.35, ref_particle=201, PBC=1 on particle 702
+INFO:    Using temporary file
+INFO: Adding MutualTrap (stiff=69.87, rate=0, r0=0.35, ref_particle=403, PBC=1 on particle 898
+INFO:    Using temporary file
+INFO: Adding MutualTrap (stiff=69.87, rate=0, r0=0.35, ref_particle=898, PBC=1 on particle 403
+INFO:    Using temporary file
+INFO: Adding MutualTrap (stiff=69.87, rate=0, r0=0.35, ref_particle=604, PBC=1 on particle 800
+INFO:    Using temporary file
+INFO: Adding MutualTrap (stiff=69.87, rate=0, r0=0.35, ref_particle=800, PBC=1 on particle 604
+INFO:    Force file parsed
+INFO: (Cells.cpp) N_cells_side: 13, 13, 13; rcut=2.9902, IS_MC: 0
+INFO: N: 998
+INFO: Using randomly distributed velocities
+INFO: Initial kinetic energy: 300.042114
+INFO: Choosing device automatically
+INFO: Computer has 1 devices
+INFO:  - Trying device 0
+INFO:  -- device 0 has properties 6.1
+INFO:  -- using device 0
+INFO:  --- Running on device 0
+INFO: Spring Parameters Size: 0.00 MB
+INFO: threads_per_block was not specified or set to 0. The default value (64) will be used
+INFO: CUDA max_neigh: 565, max_N_per_cell: 998, N_cells: 2197 (per side: 13 13 13)
+INFO: CUDA Cells mem: 8.37 MBs, lists mem: 2.15 MBs
+INFO: Allocated CUDA memory: 20.25 MBs
+INFO: SVN CODE VERSION: SVN_NOT_FOUND
+INFO: COMPILED ON: 09/09/20
+INFO: diffusion fixed.. -464.494 -464.493
+
+INFO: Total Running Time: 22.3788 s, per step: 0.223788 ms
+INFO: Timings, in seconds, by Timer (total, own, spent in children)
+> SimBackend                         22.379 (100.0%)        0.362 (  1.6%)       22.017 ( 98.4%)
+***> Hilbert sorting                  0.117 (  0.5%)        0.117 (  0.5%)        0.000 (  0.0%)
+***> Lists                           14.346 ( 64.1%)       14.346 ( 64.1%)        0.000 (  0.0%)
+***> Thermostat                       0.325 (  1.5%)        0.325 (  1.5%)        0.000 (  0.0%)
+***> Forces                           5.899 ( 26.4%)        5.899 ( 26.4%)        0.000 (  0.0%)
+***> First Step                       1.329 (  5.9%)        1.329 (  5.9%)        0.000 (  0.0%)
+
+INFO: END OF THE SIMULATION, everything went OK!
+INFO: Lists updated 1130 times (every ~88.495575 steps)
+INFO: Aggregated I/O statistics (set debug=1 for file-wise information)
+	  5.507 MB written to files
+	682.000  B written to stdout/stderr
+	For a total of    0.246 MB/s
+
