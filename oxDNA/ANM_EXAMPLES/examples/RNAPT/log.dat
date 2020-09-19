@@ -1,4 +1,4 @@
-INFO: seeding the RNG with -560524902
+INFO: seeding the RNG with -127473007
 INFO: Initializing backend 
 INFO: Backend precision: mixed
 INFO: Simulation type: MD
@@ -13,23 +13,40 @@ INFO: Running modification of oxRNA with additional Debye-Huckel potential
 INFO: The generator will try to take into account bonded interactions by choosing distances between bonded neighbours no larger than 2.000000
 INFO: Running Debye-Huckel at salt_concentration =  1
 INFO: Using edge-based approach...
-INFO: pid: 581022
+INFO: pid: 4681
 INFO: DEBUGGING: rhigh is 1.09678, Cutoff is 2.54087, RC huckel is 1.64644, B huckel is 0.0130111, V is 0, lambda is 0.366726 
 INFO: DEBUGGING: dh_half_charged_ends = true
-INFO: (Cells.cpp) N_cells_side: 19, 19, 19; rcut=2.94087, IS_MC: 0
-INFO: N: 3272
+INFO: (Cells.cpp) N_cells_side: 15, 15, 15; rcut=2.94087, IS_MC: 0
+INFO: N: 3293
 INFO: Using randomly distributed velocities
-INFO: Initial kinetic energy: 978.297424
+INFO: Initial kinetic energy: 986.678772
 INFO: Choosing device automatically
 INFO: Computer has 1 devices
 INFO:  - Trying device 0
 INFO:  -- device 0 has properties 6.1
 INFO:  -- using device 0
 INFO:  --- Running on device 0
-INFO: Parfile: NONE, No protein parameters were filled
+INFO: Spring Parameters Size: 2.00 MB
 INFO: threads_per_block was not specified or set to 0. The default value (64) will be used
-INFO: CUDA max_neigh: 1130, max_N_per_cell: 270, N_cells: 6859 (per side: 19 19 19)
-INFO: CUDA Cells mem: 7.09 MBs, lists mem: 14.12 MBs
-INFO: Allocated CUDA memory: 78.31 MBs
+INFO: CUDA max_neigh: 1130, max_N_per_cell: 270, N_cells: 3375 (per side: 15 15 15)
+INFO: CUDA Cells mem: 3.49 MBs, lists mem: 14.21 MBs
+INFO: Allocated CUDA memory: 75.17 MBs
 INFO: SVN CODE VERSION: SVN_NOT_FOUND
-INFO: COMPILED ON: 09/09/20
+INFO: COMPILED ON: 19/09/20
+
+INFO: Total Running Time: 2.20041 s, per step: 0.220041 ms
+INFO: Timings, in seconds, by Timer (total, own, spent in children)
+> SimBackend                          2.200 (100.0%)        0.035 (  1.6%)        2.165 ( 98.4%)
+***> Hilbert sorting                  0.011 (  0.5%)        0.011 (  0.5%)        0.000 (  0.0%)
+***> Lists                            0.653 ( 29.7%)        0.653 ( 29.7%)        0.000 (  0.0%)
+***> Thermostat                       0.021 (  1.0%)        0.021 (  1.0%)        0.000 (  0.0%)
+***> Forces                           1.320 ( 60.0%)        1.320 ( 60.0%)        0.000 (  0.0%)
+***> First Step                       0.159 (  7.2%)        0.159 (  7.2%)        0.000 (  0.0%)
+
+INFO: END OF THE SIMULATION, everything went OK!
+INFO: Lists updated 34 times (every ~294.117647 steps)
+INFO: Aggregated I/O statistics (set debug=1 for file-wise information)
+	 18.025 MB written to files
+	682.000  B written to stdout/stderr
+	For a total of     8.19 MB/s
+

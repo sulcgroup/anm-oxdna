@@ -71,7 +71,7 @@ void CUDADNACTInteraction<number, number4>::get_settings(input_file &inp) {
     _use_oxDNA2_FENE = false;
     std::string inter_type;
     if (!getInputString(&inp, "parfile", this->_parameterfile, 0) == KEY_FOUND){
-        throw oxDNAException("Key 'PARFILE' not found. Necessary for Protein sims.");
+        throw oxDNAException("Key 'parfile' not found. Necessary for Protein sims.");
     }
 
     char s[5] = "none";

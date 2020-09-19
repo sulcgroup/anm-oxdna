@@ -1,8 +1,8 @@
 /*
  * CUDARNANMInteraction.cu
  *
- *  Created on: 22/jul/2014
- *      Author: petr
+ *  Created on: 22/aug/2020
+ *      Author: jonah
  */
 
 #include "CUDARNANMInteraction.h"

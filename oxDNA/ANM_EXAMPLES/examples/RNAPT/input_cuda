@@ -19,7 +19,7 @@ max_io = 4
 T = 25C
 verlet_skin = 0.20
 sim_type = MD
-steps = 100
+steps = 10000
 
 ### MD PARAMS ###
 dt = 0.0005
@@ -45,16 +45,16 @@ torsion_k = 50.0
 ##############################
 ####    INPUT / OUTPUT    ####
 ##############################
-parfile = rnapt.par
-topology = rnapt_complex.top
-conf_file = rnapt_complex_amc.dat
+parfile = rnap_fullcomplex.par
+topology = rnap_fullcomplex.top
+conf_file = rnap_fullcomplex_r.dat
 trajectory_file = trajectory.dat
 log_file = log.dat
 no_stdout_energy = 0
 restart_step_counter = 1
 energy_file = energy.dat
-print_conf_interval = 1
-print_energy_every = 1
+print_conf_interval = 1000
+print_energy_every = 1000
 time_scale = linear
 external_forces=0
 #external_forces_file = trap.txt

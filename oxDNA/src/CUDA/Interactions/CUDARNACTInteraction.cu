@@ -230,7 +230,7 @@ template<typename number, typename number4>
 CUDARNACTInteraction<number, number4>::CUDARNACTInteraction() {
 
     _grooving = false;
-    _read_par = false;
+    _read_par = true;
 
     //Not copied over to device memory
     _spring_potential = NULL;
@@ -286,7 +286,11 @@ void CUDARNACTInteraction<number, number4>::get_settings(input_file &inp) {
     _mismatch_repulsion = false;
     std::string inter_type;
     if (!getInputString(&inp, "parfile", this->_parameterfile, 0) == KEY_FOUND){
-        throw oxDNAException("Key 'PARFILE' not found. Necessary for Protein sims.");
+        throw oxDNAException("Key 'parfile' not found. Necessary for Protein sims.");
+
+    char s[5] = "none";
+    if(strcmp(this->_parameterfile, s) == 0) _read_par = false;
+
     }
     if (!getInputString(&inp, "topology", this->_topology_filename, 0) == KEY_FOUND){
         throw oxDNAException("Key 'topology_file' not found.");
