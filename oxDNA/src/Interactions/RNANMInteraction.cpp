@@ -291,13 +291,15 @@ void RNANMInteraction<number>::get_settings(input_file &inp) {
         double potential, dist;
         string carbons;
         fstream parameters;
+        int N = stoi(carbons);
         parameters.open(_parameterfile, ios::in);
         getline (parameters,carbons);
+        int spring_connection_num = 0;
         if (parameters.is_open())
         {
-            while (parameters.good())
+            while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
             {
-                parameters >> key1 >> key2 >> dist >> potswitch >> potential;
+                spring_connection_num += 1;
                 pair <int, int> lkeys (key1, key2);
                 pair <char, double> pot (potswitch, potential);
                 _rknot[lkeys] = dist;
@@ -308,6 +310,7 @@ void RNANMInteraction<number>::get_settings(input_file &inp) {
         {
             throw oxDNAException("ParameterFile Could Not Be Opened on cpu");
         }
+        if(spring_connection_num == 1 && N > 2) throw oxDNAException("Invalid Parameter File Format, cannot use a RNACT Parameter File");
         parameters.close();
     } else {
         OX_LOG(Logger::LOG_INFO, "Parfile: NONE, No protein parameters were filled");

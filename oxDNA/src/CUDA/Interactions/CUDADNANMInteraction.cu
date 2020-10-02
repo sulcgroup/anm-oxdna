@@ -181,10 +181,11 @@ void CUDADNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
                 _spring_eqdist[key2*this->npro + key1] = dist;
             }
             parameters.close();
+            if(spring_connection_num == 1 && N > 2) throw oxDNAException("Invalid Parameter File Format, cannot use a DNACT Parameter File");
         }
         else
         {
-            throw oxDNAException("ParameterFile Could Not Be Opened");
+            throw oxDNAException("Parameter File Could Not Be Opened");
         }
 
         //Compressed Parameter Initialization

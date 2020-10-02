@@ -403,6 +403,7 @@ void CUDARNANMInteraction<number, number4>::cuda_init(number box_side, int N) {
                 _spring_potential[key2 * this->npro + key1] = potential;
                 _spring_eqdist[key2 * this->npro + key1] = dist;
             }
+            if(spring_connection_num == 1 && N > 2) throw oxDNAException("Invalid Parameter File Format, cannot use a RNACT Parameter File");
             parameters.close();
         } else {
             throw oxDNAException("ParameterFile Could Not Be Opened");

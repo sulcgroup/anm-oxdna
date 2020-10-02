@@ -44,8 +44,17 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
 	this->DNA2Interaction<number>::get_settings(inp);
 	getInputString(&inp, "parfile", _parameterfile, 0);
 	//Addition of Reading Parameter File
-    char s[5] = "none";
-    if(strcmp(_parameterfile, s) != 0) {
+    char n[5] = "none";
+
+    auto valid_spring_params = [](int N, int x, int y, double d, char s, double k){
+        if(x < 0 || x > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", x);
+        if(y < 0 || y > N) throw oxDNAException("Invalid Particle ID %d in Parameter File", y);
+        if(d < 0) throw oxDNAException("Invalid Eq Distance %d in Parameter File", d);
+        if(s != 's') throw oxDNAException("Potential Type %c Not Supported", s);
+        if(k < 0) throw oxDNAException("Spring Constant %f Not Supported", k);
+    };
+
+    if(strcmp(_parameterfile, n) != 0) {
         int key1, key2;
         char potswitch;
         double potential, dist;
@@ -53,10 +62,14 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
         fstream parameters;
         parameters.open(_parameterfile, ios::in);
         getline (parameters,carbons);
+        int N = stoi(carbons);
+        int spring_connection_num = 0;
         if (parameters.is_open())
         {
             while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
             {
+                valid_spring_params(N, key1, key2, dist, potswitch, potential);
+                spring_connection_num += 1;
                 pair <int, int> lkeys (key1, key2);
                 pair <char, double> pot (potswitch, potential);
                 _rknot[lkeys] = dist;
@@ -68,6 +81,7 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
             throw oxDNAException("ParameterFile Could Not Be Opened");
         }
         parameters.close();
+        if(spring_connection_num == 1 && N > 2) throw oxDNAException("Invalid Parameter File Format, cannot use a DNACT Parameter File");
     } else {
         OX_LOG(Logger::LOG_INFO, "Parfile: NONE, No protein parameters were filled");
     }
