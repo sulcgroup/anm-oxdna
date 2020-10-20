@@ -24,7 +24,7 @@ __constant__ int _offset;
 
 #include "../cuda_utils/CUDA_lr_common.cuh"
 template<typename number, typename number4>
-__forceinline__ __device__ void _ang_pot(number4 &dF, number4 &dT, const number4 &a1, const number4 &a3, const number4 &b1, const number4 &b3, const number4 &r, const number4& ang_params, int neighbor) {
+__forceinline__ __device__ void _ang_pot(number4 &dF, number4 &dT, const number4 &a1, const number4 &a3, const number4 &b1, const number4 &b3, const number4 &r, const number4 &ang_params, number (&kbkt)[2], int neighbor) {
     dF.x = dF.y = dF.z = dF.w = (number) 0.;
     dT.x = dT.y = dT.z = dT.w = (number) 0.;
     if(neighbor != 3 && neighbor != 5) return;
@@ -35,19 +35,21 @@ __forceinline__ __device__ void _ang_pot(number4 &dF, number4 &dT, const number4
     number o2 = (CUDA_DOT(rji, b1)) - ang_params.y;
     number o3 = (CUDA_DOT(a1, b1)) - ang_params.z;
     number o4 = (CUDA_DOT(a3, b3)) - ang_params.w;
-    number energy = _kb / 2 * (SQR(o1) + SQR(o2)) + _kt / 2 * (SQR(o3) + SQR(o4));
+    number& kb = kbkt[0];
+    number& kt = kbkt[1];
+    number energy = kb / 2 * (SQR(o1) + SQR(o2)) + kt / 2 * (SQR(o3) + SQR(o4));
 
     if (neighbor == 5) {
-        number4 F = -1*(((_cross<number, number4>(rji, _cross<number, number4>(rij, a1))) * _kb * o1) -
-                (_cross<number, number4>(rji, _cross<number, number4>(rij, b1))) * _kb * o2) /
+        number4 F = -1*(((_cross<number, number4>(rji, _cross<number, number4>(rij, a1))) * kb * o1) -
+                (_cross<number, number4>(rji, _cross<number, number4>(rij, b1))) * kb * o2) /
               _module<number, number4>(r);
 
         dF -= F;
 
         dF.w = 0.5*energy;
 
-        number4 dTa = (_cross<number, number4>(rij, a1) * o1 *_kb) - ((_cross<number, number4>(a1, b1) * o3 * _kt) +
-                                                                      (_cross<number, number4>(a3, b3) * o4 * _kt));
+        number4 dTa = (_cross<number, number4>(rij, a1) * o1 *kb) - ((_cross<number, number4>(a1, b1) * o3 * kt) +
+                                                                      (_cross<number, number4>(a3, b3) * o4 * kt));
 
         dT += dTa;
 
@@ -63,16 +65,16 @@ __forceinline__ __device__ void _ang_pot(number4 &dF, number4 &dT, const number4
     }
 
     if (neighbor == 3) {
-        number4 F = -1*(((_cross<number, number4>(rji, _cross<number, number4>(rij, a1))) * _kb * o1) -
-                        (_cross<number, number4>(rji, _cross<number, number4>(rij, b1))) * _kb * o2) /
+        number4 F = -1*(((_cross<number, number4>(rji, _cross<number, number4>(rij, a1))) * kb * o1) -
+                        (_cross<number, number4>(rji, _cross<number, number4>(rij, b1))) * kb * o2) /
                     _module<number, number4>(r);
 
         dF += F;
 
         dF.w = 0.5*energy;
 
-        number4 dTb = (_cross<number, number4>(rji, b1) * o2 *_kb) + ((_cross<number, number4>(a1, b1) * o3 * _kt) +
-                                                                      (_cross<number, number4>(a3, b3) * o4 * _kt));
+        number4 dTb = (_cross<number, number4>(rji, b1) * o2 *kb) + ((_cross<number, number4>(a1, b1) * o3 * kt) +
+                                                                      (_cross<number, number4>(a3, b3) * o4 * kt));
 
         dT += dTb;
         //Debugging
@@ -280,7 +282,7 @@ __global__ void dnact_forces_edge_nonbonded(number4 *poss, GPU_quat<number> *ori
 
 // bonded interactions for edge-based approach
 template <typename number, typename number4>
-__global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_aff_eqdist, number *_d_aff_gamma, number *_d_ang_params, int *_d_affected_indx, int *_d_affected) {
+__global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orientations,  number4 *forces, number4 *torques, LR_bonds *bonds, bool grooving, bool use_oxDNA2_FENE, bool use_mbf, number mbf_xmax, number mbf_finf, CUDABox<number, number4> *box, number *_d_aff_eqdist, number *_d_aff_gamma, number *_d_ang_params, number *_d_ang_kbkt, int *_d_affected_indx, int *_d_affected) {
     if(IND >= MD_N[0]) return;
 
     number4 F0, T0;
@@ -332,23 +334,32 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
         torques[IND] = (dT + T0);
 
         torques[IND] = _vectors_transpose_number4_product(a1, a2, a3, torques[IND]);
-    } else{
+    } else {
         //Protein Particles
         LR_bonds bs = bonds[IND];
 //        printf("n3 %d p %d n5 %d\n", bs.n3, IND, bs.n5);
         int pindex = IND - _offset;
 
         int n3, n5 = -1;
-        if(bs.n3 != -1) n3 = bs.n3 - _offset;
-        if(bs.n5 != -1) n5 = bs.n5 - _offset;
+        if (bs.n3 != -1) n3 = bs.n3 - _offset;
+        if (bs.n5 != -1) n5 = bs.n5 - _offset;
 
         number4 p1, p2, p3;
         get_vectors_from_quat<number, number4>(orientations[IND], p1, p2, p3);
         //printf("p %d p1 %.4f %.4f %.4f p2 % .4f %.4f %.4f p3 %.4f %.4f %.4f\n", IND, p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, p3.x, p3.y, p3.z);
 
-        number4 ftotal = make_number4<number, number4>(0,0,0,0);
-        number4 ttotal = make_number4<number, number4>(0,0,0,0);
+        number4 ftotal = make_number4<number, number4>(0, 0, 0, 0);
+        number4 ttotal = make_number4<number, number4>(0, 0, 0, 0);
 
+        number n3kbkt[2] = {_kb, _kt};
+        number n5kbkt[2] = {_kb, _kt};
+
+        if (_d_ang_kbkt != NULL) {
+            n3kbkt[0] = _d_ang_kbkt[n3];
+            n3kbkt[1] = _d_ang_kbkt[n3 + 1];
+            n5kbkt[0] = _d_ang_kbkt[pindex];
+            n5kbkt[1] = _d_ang_kbkt[pindex + 1];
+        }
 
         //Previous neighbor
         if (n3 >= 0){
@@ -363,7 +374,7 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             number4 a1, a2, a3;
             get_vectors_from_quat<number, number4>(orientations[IND-1], a1, a2, a3);
             //printf("p %d q %d a1 %.4f %.4f %.4f b1 %.4f %.4f %.4f\n", IND-1, IND, a1.x, a1.y, a1.z, b1.x, b1.y, b1.z);
-            _ang_pot<number, number4>(dF, dT, a1, a3, b1, b3, r, angle_o, 3);
+            _ang_pot<number, number4>(dF, dT, a1, a3, b1, b3, r, angle_o, n3kbkt, 3);
 
             //Add contribution from Angular Potential
             //Energy is halved in each _ang_pot call
@@ -389,7 +400,7 @@ __global__ void dnact_forces_edge_bonded(number4 *poss, GPU_quat<number> *orient
             number4 b1, b2, b3;
             get_vectors_from_quat<number, number4>(orientations[IND+1], b1, b2, b3);
             //printf("p %d q %d a1 %.4f %.4f %.4f b1 %.4f %.4f %.4f\n", IND, IND+1, a1.x, a1.y, a1.z, b1.x, b1.y, b1.z);
-            _ang_pot<number, number4>(dF, dT, a1, a3, b1, b3, r, angle_o, 5);
+            _ang_pot<number, number4>(dF, dT, a1, a3, b1, b3, r, angle_o, n5kbkt, 5);
 
             //Add contribution from Angular Potential
             //Energy is halved in each _ang_pot call

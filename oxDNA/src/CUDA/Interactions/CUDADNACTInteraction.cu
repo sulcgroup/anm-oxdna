@@ -26,6 +26,9 @@ CUDADNACTInteraction<number, number4>::CUDADNACTInteraction() {
     _h_ang_params = NULL;
     _d_ang_params = NULL;
 
+    _h_ang_kbkt = NULL;
+    _d_ang_kbkt = NULL;
+
     _h_affected_indx = NULL;
     _d_affected_indx = NULL;
 
@@ -49,7 +52,9 @@ CUDADNACTInteraction<number, number4>::~CUDADNACTInteraction() {
     if(_spring_eqdist != NULL) delete[] _spring_eqdist;
 
     if(_h_ang_params != NULL) delete[] _h_ang_params;
+    if(_h_ang_kbkt != NULL) delete[] _h_ang_kbkt;
     if(_d_ang_params != NULL) CUDA_SAFE_CALL( cudaFree(_d_ang_params) );
+    if(_d_ang_kbkt != NULL) CUDA_SAFE_CALL( cudaFree(_d_ang_kbkt) );
 
     if(_affected_len != NULL) delete[] _affected_len;
 
@@ -144,6 +149,10 @@ void CUDADNACTInteraction<number, number4>::cuda_init(number box_side, int N) {
         //Initializing Host and Device Arrays for Angular Parameters
         _h_ang_params = new number[this->npro*4]();
         CUDA_SAFE_CALL( cudaMalloc(&_d_ang_params, _ang_param_size));
+        if(this->_parameter_kbkt){
+            _h_ang_kbkt = new number[this->npro*4]();
+            CUDA_SAFE_CALL( cudaMalloc(&_d_ang_kbkt, sizeof(number) * (this->npro*2)));
+        }
 
         char potswitch = 'x';
         number potential = 0.f, dist = 0.f;
@@ -211,6 +220,13 @@ void CUDADNACTInteraction<number, number4>::cuda_init(number box_side, int N) {
                     _h_ang_params[key1*4+1] = b0;
                     _h_ang_params[key1*4+2] = c0;
                     _h_ang_params[key1*4+3] = d0;
+
+                    if(this ->_parameter_kbkt) {
+                        parameters >> _kbend >> _ktor;
+                        if(_kbend < 0 || _ktor < 0) throw oxDNAException("Invalid pairwise kb/kt Value Declared in Parameter File");
+                        _h_ang_kbkt[key1*2] = _kbend;
+                        _h_ang_kbkt[key1*2+1] = _ktor;
+                    }
 
                     _spring_potential[key1*this->npro + key2] = potential;
                     _spring_eqdist[key1*this->npro + key2] = dist;
@@ -296,10 +312,18 @@ void CUDADNACTInteraction<number, number4>::cuda_init(number box_side, int N) {
 
         //Parameters for Bending/Torsional, _h_ang_params is filled in parameter file reading
         CUDA_SAFE_CALL(cudaMemcpy(_d_ang_params, _h_ang_params, _ang_param_size, cudaMemcpyHostToDevice));
-
+        if(this->_parameter_kbkt){
+            CUDA_SAFE_CALL(cudaMemcpy(_d_ang_kbkt, _h_ang_kbkt, sizeof(number) * (this->npro*2), cudaMemcpyHostToDevice));
+        }
+        float param_memory_mb;
         //Memory Used by Parameters
-        float param_memory_mb = (spring_connection_num * 2 * sizeof(int) + 2 * spring_connection_num * 2 * sizeof(number)
-                                 + (this->npro + 1) * sizeof(int) + 4 * this->npro * sizeof(number))/SQR(1024);
+        if(this->_parameter_kbkt){
+            param_memory_mb = (spring_connection_num * 2 * sizeof(int) + 2 * spring_connection_num * 2 * sizeof(number)
+                                     + (this->npro + 1) * sizeof(int) + 6 * this->npro * sizeof(number))/SQR(1024);
+        } else {
+            param_memory_mb = (spring_connection_num * 2 * sizeof(int) + 2 * spring_connection_num * 2 * sizeof(number)
+                                     + (this->npro + 1) * sizeof(int) + 4 * this->npro * sizeof(number))/SQR(1024);
+        }
         OX_LOG(Logger::LOG_INFO, "Spring Parameters Size: %.2f MB", param_memory_mb);
 
     } else OX_LOG(Logger::LOG_INFO, "Parfile: NONE, No protein parameters were filled");
@@ -403,8 +427,14 @@ void CUDADNACTInteraction<number, number4>::cuda_init(number box_side, int N) {
     _pro_b = 306484596.0f;
     _pro_rcut = 0.352894;
 
-    _kbend = this->_k_bend;
-    _ktor = this->_k_tor;
+    if(!this->_parameter_kbkt){
+        _kbend = this->_k_bend;
+        _ktor = this->_k_tor;
+
+        //kb and kt Parameters
+        CUDA_SAFE_CALL( cudaMemcpyToSymbol(_kb, &_kbend, sizeof(float)) );
+        CUDA_SAFE_CALL( cudaMemcpyToSymbol(_kt, &_ktor, sizeof(float)) );
+    }
 
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_sigma, &_pro_sigma, sizeof(float)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(MD_pro_rstar, &_pro_rstar, sizeof(float)) );
@@ -425,10 +455,6 @@ void CUDADNACTInteraction<number, number4>::cuda_init(number box_side, int N) {
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_ndna, &this->ndna, sizeof(int)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_npro, &this->npro, sizeof(int)) );
     CUDA_SAFE_CALL( cudaMemcpyToSymbol(_offset, &this->offset, sizeof(int)) );
-
-    //kb and kt Parameters
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_kb, &_kbend, sizeof(float)) );
-    CUDA_SAFE_CALL( cudaMemcpyToSymbol(_kt, &_ktor, sizeof(float)) );
 }
 
 template<typename number, typename number4>
@@ -449,7 +475,7 @@ void CUDADNACTInteraction<number, number4>::compute_forces(CUDABaseList<number, 
 
             dnact_forces_edge_bonded<number, number4>
                     << < this->_launch_cfg.blocks, this->_launch_cfg.threads_per_block >> >
-                   (d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, _d_aff_eqdist, _d_aff_gamma, _d_ang_params, _d_affected_indx, _d_affected);
+                   (d_poss, d_orientations, d_forces, d_torques, d_bonds, this->_grooving, _use_oxDNA2_FENE, this->_use_mbf, this->_mbf_xmax, this->_mbf_finf, d_box, _d_aff_eqdist, _d_aff_gamma, _d_ang_params, _d_ang_kbkt, _d_affected_indx, _d_affected);
 
         } else throw oxDNAException("Edge Approach is only implemented for DNACT Interaction using CUDA approach. Please add use_edge = 1 to your input file.");
 

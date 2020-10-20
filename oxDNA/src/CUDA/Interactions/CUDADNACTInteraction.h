@@ -40,6 +40,7 @@ public:
     number *_spring_eqdist, *_spring_potential; //Temp arrays for parameter storage
 
     number *_d_ang_params, *_h_ang_params;
+    number *_d_ang_kbkt, *_h_ang_kbkt;
     size_t _spring_param_size_number, _ang_param_size;
 
     bool _read_par;

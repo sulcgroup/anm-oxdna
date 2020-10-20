@@ -479,14 +479,16 @@ class ANM(object):
                 print('Check that sklearn module is installed')
                 sys.exit()
             flex_data = np.asarray([x * self.bconv for x in self.msds])
+            print(flex_data)
             exp_data = np.asarray(self.exp_bfactors)
+            print(exp_data)
             X = flex_data.reshape(-1, 1) #.transpose()
             Y = exp_data
             fitting = LinearRegression(fit_intercept=False)
             fitting.fit(X, Y)
             slope = fitting.coef_
-            #print(slope)
-            #print(X, Y)
+            # print(slope)
+            # print(X, Y)
             self.ana_gamma = float(1/slope)
             self.ana_msd = [x * 1 / self.ana_gamma for x in self.msds]
             self.ana_bfactors = [self.bconv * x * 1 / self.ana_gamma for x in self.msds]
@@ -516,6 +518,8 @@ class ANM(object):
         iH = self.calc_inv_Hess(hess, cuda=cuda)
 
         self.calc_msds(iH)
+        print(self.msds)
+        # self.ANM_fit_to_exp()
         self.ANM_fit_to_exp_linear()
 
     def anm_compare_bfactors(self, outfile, bmap=''):
@@ -731,10 +735,12 @@ class Multiscale_ANM(ANM):
 
 
 class ANMT(ANM):
-    def __init__(self, coord, exp_bfactors, T=300, cutoff=13):
+    def __init__(self, coord, exp_bfactors, T=300, cutoff=13, kb=0, kt=0):
         super().__init__(coord, exp_bfactors, T=T, cutoff=cutoff)
         self.model_id = 'ANMT'
         self.kernels = []
+        self.kbend = kb
+        self.ktor = kt
 
 #     def get_rotation_matrix(self, axis, anglest):
 #         # copied from oxDNA UTILS (Not currently used but could be helpful later)
@@ -1151,7 +1157,7 @@ n='\n'
 #Giant File Writer
 class protein:
     def __init__(self, pdbfile, cutoff=15, pottype='s', potential=5.0, offset_indx=0, strand_offset=0, backbone_weight=0,
-                 importscmatrix=False, scmatrix=0, angconstrain=False, upstreamdir=''):
+                 importscmatrix=False, scmatrix=0, kb=0, kt=0, angconstrain=False, upstreamdir=''):
         self.su = 8.518
         self.boxsize = 0
         self.pi = 0
@@ -1183,6 +1189,8 @@ class protein:
         self.rc = cutoff
         self.topbonds = []
         self.chainnum = 0
+        self.kbend = kb
+        self.ktor = kt
 
         self.strand_offset = strand_offset
         self.offset_indx = offset_indx
@@ -1305,9 +1313,15 @@ class protein:
                     dist = math.sqrt(abs(dx) ** 2 + abs(dy) ** 2 + abs(dz) ** 2)
                     r = np.asarray([dx / dist, dy / dist, dz / dist])
                     a0, b0, c0, d0 = np.dot(self.a1s[i], r), np.dot(self.a1s[j], -1. * r), np.dot(self.a1s[i], self.a1s[j]), np.dot(self.a3s[i], self.a3s[j])
-                    print(i + self.offset_indx, j + self.offset_indx, dist, 's', po+self.backbone_weight,
+                    if(self.kbend > 0 and self.ktor > 0):
+                        print(i + self.offset_indx, j + self.offset_indx, dist, 's', po+self.backbone_weight,
+                          a0, b0, c0, d0, self.kbend, self.ktor,
+                          file=p)
+                    else: 
+                        print(i + self.offset_indx, j + self.offset_indx, dist, 's', po+self.backbone_weight,
                           a0, b0, c0, d0,
                           file=p)
+                    
                 else:
                     self.topbonds.append((i, j))
                     dx = self.coord[j, 0] - self.coord[i, 0]
@@ -1324,12 +1338,15 @@ class protein:
                     dz = self.coord[j, 2] - self.coord[i, 2]
                     dist = math.sqrt(abs(dx) ** 2 + abs(dy) ** 2 + abs(dz) ** 2)
                     r = np.asarray([dx / dist, dy / dist, dz / dist])
-                    a0, b0, c0, d0 = np.dot(self.a1s[i], r), np.dot(self.a1s[j], -1. * r), np.dot(self.a1s[i],
-                                                                                                  self.a1s[j]), np.dot(
-                        self.a3s[i], self.a3s[j])
-                    print(i + self.offset_indx, j + self.offset_indx, dist, 's', potential + self.backbone_weight,
-                          a0, b0, c0, d0,
+                    a0, b0, c0, d0 = np.dot(self.a1s[i], r), np.dot(self.a1s[j], -1. * r), np.dot(self.a1s[i], self.a1s[j]), np.dot(self.a3s[i], self.a3s[j])
+                    if(self.kbend > 0 and self.ktor > 0):
+                        print(i + self.offset_indx, j + self.offset_indx, dist, 's', potential + self.backbone_weight,
+                          a0, b0, c0, d0, self.kbend, self.ktor,
                           file=p)
+                    else: 
+                        print(i + self.offset_indx, j + self.offset_indx, dist, 's', potential + self.backbone_weight,
+                          a0, b0, c0, d0,
+                          file=p)   
                 else:
                     self.topbonds.append((i, j))
                     dx = self.coord[j, 0] - self.coord[i, 0]
@@ -1368,9 +1385,15 @@ class protein:
                                         r = np.asarray([dx/dist, dy/dist, dz/dist])
                                         a0, b0, c0, d0 = np.dot(self.a1s[i], r), np.dot(self.a1s[j], -1.*r), np.dot(self.a1s[i], self.a1s[j]), np.dot(self.a3s[i], self.a3s[j])
                                         spring_constant = self.spring_constant_matrix[i, j] / self.sim_force_const
-                                        print(i + self.offset_indx, j + self.offset_indx, dist, self.pottype, spring_constant,
+                                        if(self.kbend > 0 and self.ktor > 0):
+                                            print(i + self.offset_indx, j + self.offset_indx, dist, self.pottype, spring_constant,
+                                              a0, b0, c0, d0, self.kbend, self.ktor,
+                                              file=p)
+                                        else: 
+                                            print(i + self.offset_indx, j + self.offset_indx, dist, self.pottype, spring_constant,
                                               a0, b0, c0, d0,
                                               file=p)
+                                        
                                     else:
                                         spring_constant = self.spring_constant_matrix[i, j] / self.sim_force_const
                                         print(i + self.offset_indx, j + self.offset_indx, dist, self.pottype, spring_constant,
@@ -1379,7 +1402,12 @@ class protein:
                                     if self.angconstrain:
                                         r = np.asarray([dx/dist, dy/dist, dz/dist])
                                         a0, b0, c0, d0 = np.dot(self.a1s[i], r), np.dot(self.a1s[j], -1.*r), np.dot(self.a1s[i], self.a1s[j]), np.dot(self.a3s[i], self.a3s[j])
-                                        print(i + self.offset_indx, j + self.offset_indx, dist, self.pottype, self.potential,
+                                        if(self.kbend > 0 and self.ktor > 0):
+                                            print(i + self.offset_indx, j + self.offset_indx, dist, self.pottype, self.potential,
+                                              a0, b0, c0, d0, self.kbend, self.ktor,
+                                              file=p)
+                                        else: 
+                                            print(i + self.offset_indx, j + self.offset_indx, dist, self.pottype, self.potential,
                                               a0, b0, c0, d0,
                                               file=p)
                                     else:
@@ -1475,7 +1503,10 @@ def export_to_simulation(model, pdbfile, upstreamdir = ''):
         p.WriteConfFile()
         p.WriteTopFile()
     elif model.model_id == 'ANMT':
-        p = protein(pdbfile, cutoff=model.cutoff, potential=model.ana_gamma/0.05709, angconstrain=True, upstreamdir=upstreamdir)
+        if model.kbend > 0 and model.ktor >0:
+            p = protein(pdbfile, cutoff=model.cutoff, potential=model.ana_gamma/0.05709, angconstrain=True, upstreamdir=upstreamdir, kb=model.kbend, kt=model.ktor)
+        else:
+            p = protein(pdbfile, cutoff=model.cutoff, potential=model.ana_gamma/0.05709, angconstrain=True, upstreamdir=upstreamdir)
         p.WriteSimFiles()
     else:
         print('Model Type', model.model_id, 'is not supported')

@@ -38,6 +38,7 @@ DNACTInteraction<number>::DNACTInteraction() : DNA2Interaction<number>() { // @s
 	this->_int_map[this->HYDROGEN_BONDING] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNACTInteraction<number>::_dna_hydrogen_bonding;
 	this->_int_map[this->NONBONDED_EXCLUDED_VOLUME] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNACTInteraction<number>::_dna_nonbonded_excluded_volume;
 	this->_int_map[this->DEBYE_HUCKEL] = (number (DNAInteraction<number>::*)(BaseParticle<number> *p, BaseParticle<number> *q, LR_vector<number> *r, bool update_forces))  &DNACTInteraction<number>::_dna_debye_huckel;
+	_parameter_kbkt = false;
 }
 
 template<typename number>
@@ -45,7 +46,8 @@ void DNACTInteraction<number>::get_settings(input_file &inp){
 	this->DNA2Interaction<number>::get_settings(inp);
 
     //ACT Settings
-    float kb_tmp, kt_tmp;
+    float kb_tmp = -1.f;
+    float kt_tmp = -1.f;
     getInputString(&inp, "parfile", _parameterfile, 1);
     getInputFloat(&inp, "bending_k", &kb_tmp, 0);
     _k_bend = (number) kb_tmp;
@@ -53,7 +55,14 @@ void DNACTInteraction<number>::get_settings(input_file &inp){
     getInputFloat(&inp, "torsion_k", &kt_tmp, 0);
     _k_tor = (number) kt_tmp;
 
-    if(_k_bend < 0 || _k_tor < 0) throw oxDNAException("Invalid Bending or Torsion Constants");
+    if((_k_bend < 0 && kt_tmp >= 0) || (_k_tor < 0 && _k_bend >= 0)){
+        throw oxDNAException("Bending & Torsion Constants Must BOTH be set globally or in parameter file");
+    } else if(_k_bend >= 0 && _k_tor >= 0){
+        OX_LOG(Logger::LOG_INFO, "Using Global kb/kt values set in Input File");
+    } else if(_k_bend < 0 && _k_tor < 0){
+        OX_LOG(Logger::LOG_INFO, "No Global kb/kt values set in Input File, Attempting to read from Parameter File");
+        _parameter_kbkt = true;
+    }
 
     //Checkers as Lambdas
     auto valid_angles = [](double a, double b, double c, double d)
@@ -84,16 +93,24 @@ void DNACTInteraction<number>::get_settings(input_file &inp){
         fstream parameters;
         parameters.open(_parameterfile, ios::in);
         getline (parameters,carbons);
+        int spring_connection_num = 0; //total connections
         int N = stoi(carbons);
         if (parameters.is_open())
         {
             while (parameters >> key1 >> key2 >> dist >> potswitch >> potential)
             {
                 valid_spring_params(N, key1, key2, dist, potswitch, potential);
+                spring_connection_num += 1;
                 if (key2 - key1 == 1){
                     //Angular Parameters
                     parameters >> a0 >> b0 >> c0 >> d0;
                     valid_angles(a0, b0, c0, d0);
+                    if(_parameter_kbkt) {
+                        parameters >> _k_bend >> _k_tor;
+                        if(_k_bend < 0 || _k_tor < 0) throw oxDNAException("Invalid pairwise kb/kt Value Declared in Parameter File");
+                        pair <double, double> ang_constants (_k_bend, _k_tor);
+                        _ang_stiff[key1] = ang_constants;
+                    }
                     vector<double> angles {a0, b0, c0, d0};
                     _ang_vals[key1] = angles;
 
@@ -109,6 +126,8 @@ void DNACTInteraction<number>::get_settings(input_file &inp){
                     this->_potential[lkeys] = pot;
                 }
             }
+            if(spring_connection_num == 1 && N > 2 && _parameter_kbkt) throw oxDNAException("Invalid Parameter File Format, pairwise kb and kt values incorrectly formatted or missing");
+            if(spring_connection_num == 1 && N > 2 && !_parameter_kbkt) throw oxDNAException("Invalid Parameter File Format, global kb and kt values have been set in Inputfile");
             parameters.close();
         }
         else
@@ -578,6 +597,12 @@ number DNACTInteraction<number>::_protein_ang_pot(BaseParticle<number> *p, BaseP
     double &b0 = ang_params[1];
     double &c0 = ang_params[2];
     double &d0 = ang_params[3];
+
+    if(_parameter_kbkt){ //Uses array with per particle kb and kt
+        _k_bend = this->_ang_stiff[p->index].first;
+        _k_tor = this->_ang_stiff[p->index].second;
+    } // If False, the global kb and kt will be used
+
 
     LR_vector<number> rij_unit = *r;
     rij_unit.normalize();

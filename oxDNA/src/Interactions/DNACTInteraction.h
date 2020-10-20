@@ -22,6 +22,8 @@ protected:
 	int npro;//How many bonds b/t different particle types
 	int ndnas;//Number of Strands that are dna
 	int _firststrand; //+ for dna, - for protein
+	bool _parameter_kbkt; //Controls whether kb/kt values are global or read from parameter file
+    map<int, pair<double, double> > _ang_stiff; // Stores per particle pair, kb kt values
     map<int, vector <double> > _ang_vals;
     number _k_bend, _k_tor;
 
