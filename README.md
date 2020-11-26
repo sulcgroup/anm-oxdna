@@ -20,3 +20,8 @@ are specified as interaction_type in the input file. The respective interaction 
 Basic Documentation relating to file formats (.top, .par, .dat, and input) can be found in [documentation](https://github.com/sulcgroup/anm-oxdna/blob/master/oxDNA/ANMUtils/anm-oxdna-overview.pdf) and their genration from PDB file are provided in [ANMUtils directory](https://github.com/sulcgroup/anm-oxdna/tree/master/oxDNA/ANMUtils). 
 
 Example Usage of the model with the provided scripts is shown in a series of example [Jupyter Notebooks](https://github.com/sulcgroup/anm-oxdna/tree/master/oxDNA/ANMUtils) that are designed as walk-through of settign up simulation files and model parameters, as well as running simulations of the respective systems.
+
+# Citation
+If you use the ANM-oxDNA model, we would appreciate if you can cite the following [article](https://arxiv.org/abs/2009.09589):
+J Procyk, E Poppleton, P Šulc: Coarse-Grained Nucleic Acid-Protein Model for Hybrid Nanotechnology - arXiv preprint arXiv:2009.09589, 2020
+
