@@ -289,11 +289,10 @@ void RNANMInteraction<number>::get_settings(input_file &inp) {
         int key1, key2;
         char potswitch;
         double potential, dist;
-        string carbons;
+        int N;
         fstream parameters;
-        int N = stoi(carbons);
         parameters.open(_parameterfile, ios::in);
-        getline (parameters,carbons);
+        parameters >> N;
         int spring_connection_num = 0;
         if (parameters.is_open())
         {

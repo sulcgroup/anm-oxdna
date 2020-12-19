@@ -99,11 +99,10 @@ void RNACTInteraction<number>::get_settings(input_file &inp){
         char potswitch;
         double potential, dist;
         double a0, b0, c0, d0;
-        string carbons;
+        int N;
         fstream parameters;
         parameters.open(_parameterfile, ios::in);
-        getline(parameters, carbons);
-        int N = stoi(carbons);
+        parameters >> N;
         if (parameters.is_open()) {
             while (parameters >> key1 >> key2 >> dist >> potswitch >> potential) {
                 valid_spring_params(N, key1, key2, dist, potswitch, potential);

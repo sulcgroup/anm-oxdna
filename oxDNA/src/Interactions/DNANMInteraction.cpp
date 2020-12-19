@@ -58,11 +58,10 @@ void DNANMInteraction<number>::get_settings(input_file &inp){
         int key1, key2;
         char potswitch;
         double potential, dist;
-        string carbons;
+        int N;
         fstream parameters;
         parameters.open(_parameterfile, ios::in);
-        getline (parameters,carbons);
-        int N = stoi(carbons);
+        parameters >> N;
         int spring_connection_num = 0;
         if (parameters.is_open())
         {
