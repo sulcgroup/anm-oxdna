@@ -473,7 +473,7 @@ class ANM(object):
         self.ana_msd = [x * 1 / self.ana_gamma for x in self.msds]
         self.ana_bfactors = [self.bconv * x * 1 / self.ana_gamma for x in self.msds]
 
-    def ANM_fit_to_exp_linear(self, max_deviations=2):
+    def ANM_fit_to_exp_linear(self, max_deviations=2, bmax=10000):
         if self.msds: # The mean square deviations must be precomputed
             try:
                 from sklearn.linear_model import LinearRegression
@@ -482,6 +482,7 @@ class ANM(object):
                 sys.exit()
             # Check for outlier data (Unconstrained Residues)
             flex_data = np.asarray([x * self.bconv for x in self.msds]) # Bfactors of all
+
             mean = np.mean(flex_data)
             standard_deviation = np.std(flex_data)
             distance_from_mean = abs(flex_data - mean)
@@ -494,18 +495,48 @@ class ANM(object):
             # Prep Exp Data
             exp_data = np.asarray(self.exp_bfactors)
             adj_bfactors = exp_data[not_outlier] # Remove exp data for outliers for fitting
-            print("INFO:", "Residues who's B factors were ignored during fitting:", outlier_indxs)
+            print("INFO:", "Residues who's B factors were ignored during fitting, pre-cutoff:", self.outliers)
 
             X = no_outliers.reshape(-1, 1) #.transpose()
-            Y = adj_bfactors
+            prevX = np.copy(X)
+            flexX = np.copy(X)
+            Y = adj_bfactors.copy()
+            prevY = Y.copy()
+            # print(Y)
             fitting = LinearRegression(fit_intercept=False)
-            fitting.fit(X, Y)
-            slope = fitting.coef_
-            # print(slope)
-            # print(X, Y)
-            self.ana_gamma = float(1/slope)
+            cut_in_progress = True
+
+            newX = X.copy()
+            slope = 1
+            while(cut_in_progress):
+                ndata = flexX*slope < bmax
+                newX = flexX.copy()[ndata].reshape(-1, 1)
+                newX_cpy = np.copy(newX)
+                newY = np.asarray(prevY.copy()[ndata.reshape(1,-1)[0]])
+                fitting.fit(newX, newY)
+                slope = fitting.coef_
+
+                if max((newX*slope).tolist()[0]) > bmax:
+                    max((newX*slope).tolist()[0])
+                    cut_in_progress = True
+                else:
+                    max((newX*slope).tolist()[0])
+                    cut_in_progress = False
+
+            # Non Outlier Indices
+            flex_data_indxs = [np.where(flex_data == i)[0][0] for i in newX_cpy.tolist()]
+            #print(flex_data_indxs)
+            self.no_outliers = flex_data_indxs
+
+            # Outlier Indices
+            outliers = [xid for xid, x in enumerate(flex_data) if xid not in flex_data_indxs]
+            self.outliers = outliers
+            print("INFO:", "Residues who's B factors were ignored during fitting, post-cutoff:", self.outliers)
+
+            self.ana_gamma = float(1 / slope)
             self.ana_msd = [x * 1 / self.ana_gamma for x in self.msds]
             self.ana_bfactors = [self.bconv * x * 1 / self.ana_gamma for x in self.msds]
+
         else:
             print("Prior to Calling ANM_fit_to_exp_linear you must calc the msds")
 
@@ -526,7 +557,7 @@ class ANM(object):
         self.calc_msds(iH)
         self.ana_bfactors = [self.bconv * x for x in self.msds]
 
-    def calc_ANM_unitary(self, cuda=False, max_devs=2):
+    def calc_ANM_unitary(self, cuda=False, max_devs=2, bmax=10000):
         self.calc_dist_matrix()
         hess = self.calc_hess_fast_unitary()
         iH = self.calc_inv_Hess(hess, cuda=cuda)
@@ -534,7 +565,7 @@ class ANM(object):
         self.calc_msds(iH)
         #print(self.msds)
         # self.ANM_fit_to_exp()
-        self.ANM_fit_to_exp_linear(max_deviations=max_devs)
+        self.ANM_fit_to_exp_linear(max_deviations=max_devs, bmax=bmax)
 
     def anm_compare_bfactors(self, outfile, bmap='', view_outliers=True):
         if self.ana_bfactors:
@@ -551,7 +582,7 @@ class ANM(object):
                 free_compare(outfile, exp_data, ana_data,
                     legends=['Experimental  (PDB)', 'Analytical (ANM)' + str(round(self.ana_gamma*100, 3))+ "(pN/A)"])
             if(not view_outliers):
-                print("Residues removed from Graph:", [i for i in self.outliers])
+                print("INFO: Residues removed from Graph:", [i for i in self.outliers])
         else:
             print('Analytical B Factors have not been Calculated')
 
@@ -571,7 +602,7 @@ class ANM(object):
                              legends=['Experimental  (PDB)',
                                       'Analytical (ANM)' + str(round(self.ana_gamma * 100, 3)) + "(pN/A)"])
             if (not view_outliers):
-                print("Residues removed from Graph:", [i for i in self.outliers])
+                print("INFO: Residues removed from Graph:", [i for i in self.outliers])
         else:
             print('Analytical B Factors have not been Calculated')
 
