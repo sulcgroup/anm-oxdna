@@ -322,6 +322,8 @@ class ANM(object):
         self.ana_bfactors = []
         self.ana_msd = []
         self.ana_gamma = 0.
+        self.no_outliers = [] # list of indices of elements considered not outliers
+        self.outliers = [] # list of indices of elements considered  outliers
         # Angstroms
         self.cutoff = cutoff
         #Angstroms in 1 sim unit length
@@ -471,19 +473,31 @@ class ANM(object):
         self.ana_msd = [x * 1 / self.ana_gamma for x in self.msds]
         self.ana_bfactors = [self.bconv * x * 1 / self.ana_gamma for x in self.msds]
 
-    def ANM_fit_to_exp_linear(self):
+    def ANM_fit_to_exp_linear(self, max_deviations=2):
         if self.msds: # The mean square deviations must be precomputed
             try:
                 from sklearn.linear_model import LinearRegression
             except ImportError:
                 print('Check that sklearn module is installed')
                 sys.exit()
-            flex_data = np.asarray([x * self.bconv for x in self.msds])
-            print(flex_data)
+            # Check for outlier data (Unconstrained Residues)
+            flex_data = np.asarray([x * self.bconv for x in self.msds]) # Bfactors of all
+            mean = np.mean(flex_data)
+            standard_deviation = np.std(flex_data)
+            distance_from_mean = abs(flex_data - mean)
+            not_outlier = distance_from_mean < max_deviations * standard_deviation
+            outlier = distance_from_mean > max_deviations * standard_deviation
+            outlier_indxs = [i for i, x in enumerate(outlier) if x]
+            self.no_outliers = [i for i, x in enumerate(not_outlier) if x]
+            no_outliers = flex_data[not_outlier]
+            self.outliers = outlier_indxs
+            # Prep Exp Data
             exp_data = np.asarray(self.exp_bfactors)
-            print(exp_data)
-            X = flex_data.reshape(-1, 1) #.transpose()
-            Y = exp_data
+            adj_bfactors = exp_data[not_outlier] # Remove exp data for outliers for fitting
+            print("INFO:", "Residues who's B factors were ignored during fitting:", outlier_indxs)
+
+            X = no_outliers.reshape(-1, 1) #.transpose()
+            Y = adj_bfactors
             fitting = LinearRegression(fit_intercept=False)
             fitting.fit(X, Y)
             slope = fitting.coef_
@@ -512,38 +526,52 @@ class ANM(object):
         self.calc_msds(iH)
         self.ana_bfactors = [self.bconv * x for x in self.msds]
 
-    def calc_ANM_unitary(self, cuda=False):
+    def calc_ANM_unitary(self, cuda=False, max_devs=2):
         self.calc_dist_matrix()
         hess = self.calc_hess_fast_unitary()
         iH = self.calc_inv_Hess(hess, cuda=cuda)
 
         self.calc_msds(iH)
-        print(self.msds)
+        #print(self.msds)
         # self.ANM_fit_to_exp()
-        self.ANM_fit_to_exp_linear()
+        self.ANM_fit_to_exp_linear(max_deviations=max_devs)
 
-    def anm_compare_bfactors(self, outfile, bmap=''):
+    def anm_compare_bfactors(self, outfile, bmap='', view_outliers=True):
         if self.ana_bfactors:
+            exp_data = self.exp_bfactors
+            ana_data = self.ana_bfactors
+            if(not view_outliers):
+                exp_data = [self.exp_bfactors[x] for x in self.no_outliers]
+                ana_data = [self.ana_bfactors[x] for x in self.no_outliers]
             if bmap:
-                free_compare(outfile, self.exp_bfactors, self.ana_bfactors, bmap=bmap,
+                free_compare(outfile, exp_data, ana_data, bmap=bmap,
                              legends=['Experimental  (PDB)',
                                       'Analytical (ANM)' + str(round(self.ana_gamma * 100, 3)) + "(pN/A)"])
             else:
-                free_compare(outfile, self.exp_bfactors, self.ana_bfactors,
+                free_compare(outfile, exp_data, ana_data,
                     legends=['Experimental  (PDB)', 'Analytical (ANM)' + str(round(self.ana_gamma*100, 3))+ "(pN/A)"])
+            if(not view_outliers):
+                print("Residues removed from Graph:", [i for i in self.outliers])
         else:
             print('Analytical B Factors have not been Calculated')
 
-    def anm_compare_bfactors_jupyter(self, bmap=''):
+    def anm_compare_bfactors_jupyter(self, bmap='', view_outliers=True):
         if self.ana_bfactors:
+            exp_data = self.exp_bfactors
+            ana_data = self.ana_bfactors
+            if (not view_outliers):
+                exp_data = [self.exp_bfactors[x] for x in self.no_outliers]
+                ana_data = [self.ana_bfactors[x] for x in self.no_outliers]
             if bmap:
-                free_compare_jupyter(self.exp_bfactors, self.ana_bfactors, bmap=bmap,
+                free_compare_jupyter(exp_data, ana_data, bmap=bmap,
                              legends=['Experimental  (PDB)',
                                       'Analytical (ANM)' + str(round(self.ana_gamma * 100, 3)) + "(pN/A)"])
             else:
-                free_compare_jupyter(self.exp_bfactors, self.ana_bfactors,
+                free_compare_jupyter(exp_data, ana_data,
                              legends=['Experimental  (PDB)',
                                       'Analytical (ANM)' + str(round(self.ana_gamma * 100, 3)) + "(pN/A)"])
+            if (not view_outliers):
+                print("Residues removed from Graph:", [i for i in self.outliers])
         else:
             print('Analytical B Factors have not been Calculated')
 
@@ -682,11 +710,11 @@ class Multiscale_ANM(ANM):
         exp_data = np.asarray(self.inv_bfactors)
         X = flex_data.transpose()
         Y = exp_data
-        print(flex_data)
+        # print(flex_data)
         fitting = LinearRegression(fit_intercept=False)
         fitting.fit(X, Y)
         slope = fitting.coef_
-        print(slope)
+        # print(slope)
         for i in range(len(self.kernels)):
             self.kernels[i].fitting_a = slope[i]
 
