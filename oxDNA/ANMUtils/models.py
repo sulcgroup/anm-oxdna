@@ -669,7 +669,7 @@ class kernel():
         self.mu = []
         self.cutoff = 0
 
-    def algorithim(self, dist, scale_resolution, k_factor, alg='ge'):
+    def algorithm(self, dist, scale_resolution, k_factor, alg='ge'):
         # Can choose between Generalized Exponential and Generalized Lorentz Function
         def gen_exp(dist):
             return math.exp(-1 * (dist / scale_resolution) ** k_factor)
@@ -692,11 +692,11 @@ class kernel():
             for j in range(cc):
                 d = dist(coordinates, i, j)
                 if cutoff > 0. and d <= cutoff:
-                    ker = self.algorithim(d, scale_resolution, k_factor, alg=alg)
+                    ker = self.algorithm(d, scale_resolution, k_factor, alg=alg)
                 elif cutoff > 0. and d > cutoff:
                     ker = 0.
                 else:
-                    ker = self.algorithim(d, scale_resolution, k_factor, alg=alg)
+                    ker = self.algorithm(d, scale_resolution, k_factor, alg=alg)
                 self.kerns.append(ker)
                 ker_i += ker
             self.mu.append(ker_i)
